@@ -11,13 +11,13 @@
     <gva-card custom-class="col-span-1 lg:col-span-2 ">
       <gva-chart :type="3" title="解决数量" />
     </gva-card>
-    <gva-card
+    <!-- <gva-card
       title="快捷功能"
       show-action
       custom-class="col-start-1 md:col-start-3 lg:col-start-7 row-span-2 "
     >
       <gva-quick-link />
-    </gva-card>
+    </gva-card> -->
     <gva-card
       title="内容数据"
       custom-class="col-span-1 md:col-span-2 md:row-start-2 lg:col-span-6 col-start-1 row-span-2"

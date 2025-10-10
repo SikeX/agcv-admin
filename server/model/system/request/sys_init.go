@@ -2,8 +2,9 @@ package request
 
 import (
 	"fmt"
-	"github.com/flipped-aurora/gin-vue-admin/server/config"
 	"os"
+
+	"github.com/flipped-aurora/gin-vue-admin/server/config"
 )
 
 type InitDB struct {
@@ -93,22 +94,6 @@ func (i *InitDB) ToPgsqlConfig() config.Pgsql {
 // Author [Kafumio](https://github.com/Kafumio)
 func (i *InitDB) ToSqliteConfig() config.Sqlite {
 	return config.Sqlite{
-		GeneralDB: config.GeneralDB{
-			Path:         i.DBPath,
-			Port:         i.Port,
-			Dbname:       i.DBName,
-			Username:     i.UserName,
-			Password:     i.Password,
-			MaxIdleConns: 10,
-			MaxOpenConns: 100,
-			LogMode:      "error",
-			Config:       "",
-		},
-	}
-}
-
-func (i *InitDB) ToMssqlConfig() config.Mssql {
-	return config.Mssql{
 		GeneralDB: config.GeneralDB{
 			Path:         i.DBPath,
 			Port:         i.Port,

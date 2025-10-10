@@ -23,16 +23,6 @@ func NewOss() OSS {
 		return &Local{}
 	case "qiniu":
 		return &Qiniu{}
-	case "tencent-cos":
-		return &TencentCOS{}
-	case "aliyun-oss":
-		return &AliyunOSS{}
-	case "huawei-obs":
-		return HuaWeiObs
-	case "aws-s3":
-		return &AwsS3{}
-	case "cloudflare-r2":
-		return &CloudflareR2{}
 	case "minio":
 		minioClient, err := GetMinio(global.GVA_CONFIG.Minio.Endpoint, global.GVA_CONFIG.Minio.AccessKeyId, global.GVA_CONFIG.Minio.AccessKeySecret, global.GVA_CONFIG.Minio.BucketName, global.GVA_CONFIG.Minio.UseSSL)
 		if err != nil {

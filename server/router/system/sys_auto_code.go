@@ -20,11 +20,6 @@ func (s *AutoCodeRouter) InitAutoCodeRouter(Router *gin.RouterGroup, RouterPubli
 		autoCodeRouter.POST("addFunc", autoCodeTemplateApi.AddFunc)   // 为代码插入方法
 	}
 	{
-		autoCodeRouter.POST("mcp", autoCodeTemplateApi.MCP)         // 自动创建Mcp Tool模板
-		autoCodeRouter.POST("mcpList", autoCodeTemplateApi.MCPList) // 获取MCP ToolList
-		autoCodeRouter.POST("mcpTest", autoCodeTemplateApi.MCPTest) // MCP 工具测试
-	}
-	{
 		autoCodeRouter.POST("getPackage", autoCodePackageApi.All)       // 获取package包
 		autoCodeRouter.POST("delPackage", autoCodePackageApi.Delete)    // 删除package包
 		autoCodeRouter.POST("createPackage", autoCodePackageApi.Create) // 创建package包
@@ -38,7 +33,7 @@ func (s *AutoCodeRouter) InitAutoCodeRouter(Router *gin.RouterGroup, RouterPubli
 
 	}
 	{
-		publicAutoCodeRouter.POST("llmAuto", autoCodeApi.LLMAuto)
+		// publicAutoCodeRouter.POST("llmAuto", autoCodeApi.LLMAuto)
 		publicAutoCodeRouter.POST("initMenu", autoCodePluginApi.InitMenu) // 同步插件菜单
 		publicAutoCodeRouter.POST("initAPI", autoCodePluginApi.InitAPI)   // 同步插件API
 	}

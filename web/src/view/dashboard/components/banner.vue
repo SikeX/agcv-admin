@@ -11,7 +11,7 @@
       :key="index"
       @click="openLink(item.link)"
     >
-      <el-image class="h-full w-full" :src="item.img" fit="fill"></el-image>
+      <!-- <el-image class="h-full w-full" :src="item.img" fit="fill"></el-image> -->
     </el-carousel-item>
   </el-carousel>
 </template>
