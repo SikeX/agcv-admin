@@ -30,6 +30,8 @@ func RunServer() {
 		system.LoadAll()
 	}
 
+	initialize.InfluxDB() // 初始化InfluxDB
+
 	Router := initialize.Routers()
 
 	address := fmt.Sprintf(":%d", global.GVA_CONFIG.System.Addr)

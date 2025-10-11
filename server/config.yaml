@@ -246,3 +246,11 @@ zap:
   show-line: true
   log-in-console: true
   retention-day: -1
+influxdb:
+  host: ""
+  port: "8086"
+  token: ""
+  org: ""
+  bucket: ""
+  username: ""
+  password: ""
