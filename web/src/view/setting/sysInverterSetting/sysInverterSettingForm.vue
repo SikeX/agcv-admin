@@ -3,31 +3,34 @@
   <div>
     <div class="gva-form-box">
       <el-form :model="formData" ref="elFormRef" label-position="right" :rules="rule" label-width="80px">
+        <el-form-item label="逆变器编号:" prop="inverterNo">
+    <el-input v-model.number="formData.inverterNo" :clearable="true" placeholder="请输入逆变器编号" />
+</el-form-item>
         <el-form-item label="逆变器名称:" prop="name">
     <el-input v-model="formData.name" :clearable="true" placeholder="请输入逆变器名称" />
 </el-form-item>
-        <el-form-item label="额定有功功率:" prop="ratedActivePower">
+        <el-form-item label="额定有功(kW):" prop="ratedActivePower">
     <el-input-number v-model="formData.ratedActivePower" style="width:100%" :precision="2" :clearable="true" />
 </el-form-item>
-        <el-form-item label="额定无功功率:" prop="ratedReactivePower">
+        <el-form-item label="额定无功(kVar):" prop="ratedReactivePower">
     <el-input-number v-model="formData.ratedReactivePower" style="width:100%" :precision="2" :clearable="true" />
 </el-form-item>
-        <el-form-item label="功率抖动区间:" prop="jitterRange">
+        <el-form-item label="抖动区间(kW):" prop="jitterRange">
     <el-input-number v-model="formData.jitterRange" style="width:100%" :precision="2" :clearable="true" />
 </el-form-item>
-        <el-form-item label="功率死区区间:" prop="deadbandRange">
+        <el-form-item label="死区区间(kW):" prop="deadbandRange">
     <el-input-number v-model="formData.deadbandRange" style="width:100%" :precision="2" :clearable="true" />
 </el-form-item>
         <el-form-item label="升额优先级:" prop="upgradePriority">
     <el-input-number v-model="formData.upgradePriority" style="width:100%" :precision="2" :clearable="true" />
 </el-form-item>
         <el-form-item label="降级优先级:" prop="downgradePriority">
-    <el-input-number v-model="formData.downgradePriority" style="width:100%" :precision="2" :clearable="true" />
+    <el-input-number v-model.number="formData.downgradePriority" style="width:100%" :clearable="true" />
 </el-form-item>
-        <el-form-item label="是否参与调节:" prop="isParticipateAdjust">
+        <el-form-item label="参与调节:" prop="isParticipateAdjust">
     <el-switch v-model="formData.isParticipateAdjust" active-color="#13ce66" inactive-color="#ff4949" active-text="是" inactive-text="否" clearable ></el-switch>
 </el-form-item>
-        <el-form-item label="是否为标杆逆变器:" prop="isBenchmarkInverter">
+        <el-form-item label="标杆逆变器:" prop="isBenchmarkInverter">
     <el-switch v-model="formData.isBenchmarkInverter" active-color="#13ce66" inactive-color="#ff4949" active-text="是" inactive-text="否" clearable ></el-switch>
 </el-form-item>
         <el-form-item>
@@ -65,6 +68,7 @@ const btnLoading = ref(false)
 
 const type = ref('')
 const formData = ref({
+            inverterNo: undefined,
             name: '',
             ratedActivePower: 0,
             ratedReactivePower: 0,
@@ -74,11 +78,14 @@ const formData = ref({
             downgradePriority: 0,
             isParticipateAdjust: false,
             isBenchmarkInverter: false,
-            createdAt: new Date(),
-            updatedAt: new Date(),
         })
 // 验证规则
 const rule = reactive({
+               inverterNo : [{
+                   required: true,
+                   message: '',
+                   trigger: ['input','blur'],
+               }],
 })
 
 const elFormRef = ref()

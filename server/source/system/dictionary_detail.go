@@ -3,6 +3,7 @@ package system
 import (
 	"context"
 	"fmt"
+
 	sysModel "github.com/flipped-aurora/gin-vue-admin/server/model/system"
 	"github.com/flipped-aurora/gin-vue-admin/server/service/system"
 	"github.com/pkg/errors"
@@ -97,6 +98,12 @@ func (i *initDictDetail) InitializeData(ctx context.Context) (context.Context, e
 	dicts[5].SysDictionaryDetails = []sysModel.SysDictionaryDetail{
 		{Label: "tinyint", Value: "1", Extend: "mysql", Status: &True},
 		{Label: "bool", Value: "2", Extend: "pgsql", Status: &True},
+	}
+	dicts[6].SysDictionaryDetails = []sysModel.SysDictionaryDetail{
+		{Label: "正常", Value: "1", Status: &True, Sort: 1},
+		{Label: "降额", Value: "2", Status: &True, Sort: 2},
+		{Label: "关机", Value: "3", Status: &True, Sort: 3},
+		{Label: "通讯异常", Value: "4", Status: &True, Sort: 4},
 	}
 	for _, dict := range dicts {
 		if err := db.Model(&dict).Association("SysDictionaryDetails").

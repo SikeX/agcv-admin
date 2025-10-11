@@ -53,6 +53,18 @@ func (sysInverterSettingService *SysInverterSettingService)GetSysInverterSetting
     var sysInverterSettings []setting.SysInverterSetting
     // 如果有条件搜索 下方会自动创建搜索语句
     
+    if info.InverterNo != nil {
+        db = db.Where("inverter_no = ?", *info.InverterNo)
+    }
+    if info.Name != nil && *info.Name != "" {
+        db = db.Where("name LIKE ?", "%"+ *info.Name+"%")
+    }
+    if info.IsParticipateAdjust != nil {
+        db = db.Where("is_participate_adjust = ?", *info.IsParticipateAdjust)
+    }
+    if info.IsBenchmarkInverter != nil {
+        db = db.Where("is_benchmark_inverter = ?", *info.IsBenchmarkInverter)
+    }
 	err = db.Count(&total).Error
 	if err!=nil {
     	return

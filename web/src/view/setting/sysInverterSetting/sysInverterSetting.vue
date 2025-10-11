@@ -3,6 +3,28 @@
   <div>
     <div class="gva-search-box">
       <el-form ref="elSearchFormRef" :inline="true" :model="searchInfo" class="demo-form-inline" @keyup.enter="onSubmit">
+            <el-form-item label="逆变器编号" prop="inverterNo">
+  <el-input v-model.number="searchInfo.inverterNo" placeholder="搜索条件" />
+</el-form-item>
+            
+            <el-form-item label="逆变器名称" prop="name">
+  <el-input v-model="searchInfo.name" placeholder="搜索条件" />
+</el-form-item>
+            
+            <el-form-item label="参与调节" prop="isParticipateAdjust">
+  <el-select v-model="searchInfo.isParticipateAdjust" clearable placeholder="请选择">
+    <el-option key="true" label="是" value="true"></el-option>
+    <el-option key="false" label="否" value="false"></el-option>
+  </el-select>
+</el-form-item>
+            
+            <el-form-item label="标杆逆变器" prop="isBenchmarkInverter">
+  <el-select v-model="searchInfo.isBenchmarkInverter" clearable placeholder="请选择">
+    <el-option key="true" label="是" value="true"></el-option>
+    <el-option key="false" label="否" value="false"></el-option>
+  </el-select>
+</el-form-item>
+            
 
         <template v-if="showAllQuery">
           <!-- 将需要控制显示状态的查询条件添加到此范围内 -->
@@ -20,7 +42,9 @@
         <div class="gva-btn-list">
             <el-button  type="primary" icon="plus" @click="openDialog()">新增</el-button>
             <el-button  icon="delete" style="margin-left: 10px;" :disabled="!multipleSelection.length" @click="onDelete">删除</el-button>
-            
+            <ExportTemplate  template-id="setting_SysInverterSetting" />
+            <ExportExcel  template-id="setting_SysInverterSetting" filterDeleted/>
+            <ImportExcel  template-id="setting_SysInverterSetting" @on-success="getTableData" />
         </div>
         <el-table
         ref="multipleTable"
@@ -37,29 +61,23 @@
 
             <el-table-column align="left" label="逆变器名称" prop="name" width="120" />
 
-            <el-table-column align="left" label="额定有功功率" prop="ratedActivePower" width="120" />
+            <el-table-column align="left" label="额定有功(kW)" prop="ratedActivePower" width="120" />
 
-            <el-table-column align="left" label="额定无功功率" prop="ratedReactivePower" width="120" />
+            <el-table-column align="left" label="额定无功(kVar)" prop="ratedReactivePower" width="120" />
 
-            <el-table-column align="left" label="功率抖动区间" prop="jitterRange" width="120" />
+            <el-table-column align="left" label="抖动区间(kW)" prop="jitterRange" width="120" />
 
-            <el-table-column align="left" label="功率死区区间" prop="deadbandRange" width="120" />
+            <el-table-column align="left" label="死区区间(kW)" prop="deadbandRange" width="120" />
 
             <el-table-column align="left" label="升额优先级" prop="upgradePriority" width="120" />
 
             <el-table-column align="left" label="降级优先级" prop="downgradePriority" width="120" />
 
-            <el-table-column align="left" label="是否参与调节" prop="isParticipateAdjust" width="120">
+            <el-table-column align="left" label="参与调节" prop="isParticipateAdjust" width="120">
     <template #default="scope">{{ formatBoolean(scope.row.isParticipateAdjust) }}</template>
 </el-table-column>
-            <el-table-column align="left" label="是否为标杆逆变器" prop="isBenchmarkInverter" width="120">
+            <el-table-column align="left" label="标杆逆变器" prop="isBenchmarkInverter" width="120">
     <template #default="scope">{{ formatBoolean(scope.row.isBenchmarkInverter) }}</template>
-</el-table-column>
-            <el-table-column align="left" label="创建时间" prop="createdAt" width="180">
-   <template #default="scope">{{ formatDate(scope.row.createdAt) }}</template>
-</el-table-column>
-            <el-table-column align="left" label="更新时间" prop="updatedAt" width="180">
-   <template #default="scope">{{ formatDate(scope.row.updatedAt) }}</template>
 </el-table-column>
         <el-table-column align="left" label="操作" fixed="right" :min-width="appStore.operateMinWith">
             <template #default="scope">
@@ -93,19 +111,22 @@
             </template>
 
           <el-form :model="formData" label-position="top" ref="elFormRef" :rules="rule" label-width="80px">
+            <el-form-item label="逆变器编号:" prop="inverterNo">
+    <el-input v-model.number="formData.inverterNo" :clearable="true" placeholder="请输入逆变器编号" />
+</el-form-item>
             <el-form-item label="逆变器名称:" prop="name">
     <el-input v-model="formData.name" :clearable="true" placeholder="请输入逆变器名称" />
 </el-form-item>
-            <el-form-item label="额定有功功率:" prop="ratedActivePower">
+            <el-form-item label="额定有功(kW):" prop="ratedActivePower">
     <el-input-number v-model="formData.ratedActivePower" style="width:100%" :precision="2" :clearable="true" />
 </el-form-item>
-            <el-form-item label="额定无功功率:" prop="ratedReactivePower">
+            <el-form-item label="额定无功(kVar):" prop="ratedReactivePower">
     <el-input-number v-model="formData.ratedReactivePower" style="width:100%" :precision="2" :clearable="true" />
 </el-form-item>
-            <el-form-item label="功率抖动区间:" prop="jitterRange">
+            <el-form-item label="抖动区间(kW):" prop="jitterRange">
     <el-input-number v-model="formData.jitterRange" style="width:100%" :precision="2" :clearable="true" />
 </el-form-item>
-            <el-form-item label="功率死区区间:" prop="deadbandRange">
+            <el-form-item label="死区区间(kW):" prop="deadbandRange">
     <el-input-number v-model="formData.deadbandRange" style="width:100%" :precision="2" :clearable="true" />
 </el-form-item>
             <el-form-item label="升额优先级:" prop="upgradePriority">
@@ -114,10 +135,10 @@
             <el-form-item label="降级优先级:" prop="downgradePriority">
     <el-input-number v-model="formData.downgradePriority" style="width:100%" :precision="2" :clearable="true" />
 </el-form-item>
-            <el-form-item label="是否参与调节:" prop="isParticipateAdjust">
+            <el-form-item label="参与调节:" prop="isParticipateAdjust">
     <el-switch v-model="formData.isParticipateAdjust" active-color="#13ce66" inactive-color="#ff4949" active-text="是" inactive-text="否" clearable ></el-switch>
 </el-form-item>
-            <el-form-item label="是否为标杆逆变器:" prop="isBenchmarkInverter">
+            <el-form-item label="标杆逆变器:" prop="isBenchmarkInverter">
     <el-switch v-model="formData.isBenchmarkInverter" active-color="#13ce66" inactive-color="#ff4949" active-text="是" inactive-text="否" clearable ></el-switch>
 </el-form-item>
           </el-form>
@@ -131,16 +152,16 @@
                     <el-descriptions-item label="逆变器名称">
     {{ detailForm.name }}
 </el-descriptions-item>
-                    <el-descriptions-item label="额定有功功率">
+                    <el-descriptions-item label="额定有功(kW)">
     {{ detailForm.ratedActivePower }}
 </el-descriptions-item>
-                    <el-descriptions-item label="额定无功功率">
+                    <el-descriptions-item label="额定无功(kVar)">
     {{ detailForm.ratedReactivePower }}
 </el-descriptions-item>
-                    <el-descriptions-item label="功率抖动区间">
+                    <el-descriptions-item label="抖动区间(kW)">
     {{ detailForm.jitterRange }}
 </el-descriptions-item>
-                    <el-descriptions-item label="功率死区区间">
+                    <el-descriptions-item label="死区区间(kW)">
     {{ detailForm.deadbandRange }}
 </el-descriptions-item>
                     <el-descriptions-item label="升额优先级">
@@ -149,17 +170,11 @@
                     <el-descriptions-item label="降级优先级">
     {{ detailForm.downgradePriority }}
 </el-descriptions-item>
-                    <el-descriptions-item label="是否参与调节">
+                    <el-descriptions-item label="参与调节">
     {{ detailForm.isParticipateAdjust }}
 </el-descriptions-item>
-                    <el-descriptions-item label="是否为标杆逆变器">
+                    <el-descriptions-item label="标杆逆变器">
     {{ detailForm.isBenchmarkInverter }}
-</el-descriptions-item>
-                    <el-descriptions-item label="创建时间">
-    {{ detailForm.createdAt }}
-</el-descriptions-item>
-                    <el-descriptions-item label="更新时间">
-    {{ detailForm.updatedAt }}
 </el-descriptions-item>
             </el-descriptions>
         </el-drawer>
@@ -183,7 +198,12 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { ref, reactive } from 'vue'
 import { useAppStore } from "@/pinia"
 
-
+// 导出组件
+import ExportExcel from '@/components/exportExcel/exportExcel.vue'
+// 导入组件
+import ImportExcel from '@/components/exportExcel/importExcel.vue'
+// 导出模板组件
+import ExportTemplate from '@/components/exportExcel/exportTemplate.vue'
 
 
 defineOptions({
@@ -199,6 +219,7 @@ const showAllQuery = ref(false)
 
 // 自动化生成的字典（可能为空）以及字段
 const formData = ref({
+            inverterNo: undefined,
             name: '',
             ratedActivePower: 0,
             ratedReactivePower: 0,
@@ -208,14 +229,18 @@ const formData = ref({
             downgradePriority: 0,
             isParticipateAdjust: false,
             isBenchmarkInverter: false,
-            createdAt: new Date(),
-            updatedAt: new Date(),
         })
 
 
 
 // 验证规则
 const rule = reactive({
+               inverterNo : [{
+                   required: true,
+                   message: '',
+                   trigger: ['input','blur'],
+               },
+              ],
 })
 
 const elFormRef = ref()
@@ -393,6 +418,7 @@ const openDialog = () => {
 const closeDialog = () => {
     dialogFormVisible.value = false
     formData.value = {
+        inverterNo: undefined,
         name: '',
         ratedActivePower: 0,
         ratedReactivePower: 0,
@@ -402,8 +428,6 @@ const closeDialog = () => {
         downgradePriority: 0,
         isParticipateAdjust: false,
         isBenchmarkInverter: false,
-        createdAt: new Date(),
-        updatedAt: new Date(),
         }
 }
 // 弹窗确定
