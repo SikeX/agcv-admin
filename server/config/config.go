@@ -28,4 +28,7 @@ type Server struct {
 
 	// 跨域配置
 	Cors CORS `mapstructure:"cors" json:"cors" yaml:"cors"`
+
+	// InfluxDB 配置
+	InfluxDB InfluxDB `mapstructure:"influxdb" json:"influxdb" yaml:"influxdb"`
 }

@@ -45,6 +45,8 @@
   "/src/view/login/index.vue": "Login",
   "/src/view/person/person.vue": "Person",
   "/src/view/routerHolder.vue": "RouterHolder",
+  "/src/view/setting/sysInverterSetting/sysInverterSetting.vue": "SysInverterSetting",
+  "/src/view/setting/sysInverterSetting/sysInverterSettingForm.vue": "SysInverterSettingForm",
   "/src/view/superAdmin/api/api.vue": "Api",
   "/src/view/superAdmin/authority/authority.vue": "Authority",
   "/src/view/superAdmin/authority/components/apis.vue": "Apis",

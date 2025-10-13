@@ -120,12 +120,6 @@
             <el-form-item label="是否为标杆逆变器:" prop="isBenchmarkInverter">
     <el-switch v-model="formData.isBenchmarkInverter" active-color="#13ce66" inactive-color="#ff4949" active-text="是" inactive-text="否" clearable ></el-switch>
 </el-form-item>
-            <el-form-item label="创建时间:" prop="createdAt">
-    <el-date-picker v-model="formData.createdAt" type="date" style="width:100%" placeholder="选择日期" :clearable="true" />
-</el-form-item>
-            <el-form-item label="更新时间:" prop="updatedAt">
-    <el-date-picker v-model="formData.updatedAt" type="date" style="width:100%" placeholder="选择日期" :clearable="true" />
-</el-form-item>
           </el-form>
     </el-drawer>
 

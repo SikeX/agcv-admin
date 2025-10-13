@@ -38,6 +38,7 @@ var (
 	GVA_ACTIVE_DBNAME       *string
 	GVA_MCP_SERVER          *server.MCPServer
 	BlackCache              local_cache.Cache
+	GVA_INFLUXDB            interface{} // InfluxDB client
 	lock                    sync.RWMutex
 )
 
