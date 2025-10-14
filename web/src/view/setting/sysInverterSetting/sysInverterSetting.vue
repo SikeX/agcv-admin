@@ -61,13 +61,13 @@
 
             <el-table-column align="left" label="逆变器名称" prop="name" width="120" />
 
-            <el-table-column align="left" label="额定有功(kW)" prop="ratedActivePower" width="120" />
+            <el-table-column align="left" label="额定有功功率" prop="ratedActivePower" width="120" />
 
-            <el-table-column align="left" label="额定无功(kVar)" prop="ratedReactivePower" width="120" />
+            <el-table-column align="left" label="额定无功功率" prop="ratedReactivePower" width="120" />
 
-            <el-table-column align="left" label="抖动区间(kW)" prop="jitterRange" width="120" />
+            <el-table-column align="left" label="功率抖动区间" prop="jitterRange" width="120" />
 
-            <el-table-column align="left" label="死区区间(kW)" prop="deadbandRange" width="120" />
+            <el-table-column align="left" label="功率死区区间" prop="deadbandRange" width="120" />
 
             <el-table-column align="left" label="升额优先级" prop="upgradePriority" width="120" />
 
@@ -79,6 +79,34 @@
             <el-table-column align="left" label="标杆逆变器" prop="isBenchmarkInverter" width="120">
     <template #default="scope">{{ formatBoolean(scope.row.isBenchmarkInverter) }}</template>
 </el-table-column>
+            <el-table-column align="left" label="有功功率点号" prop="ygPreal" width="120" />
+
+            <el-table-column align="left" label="无功功率点号" prop="wgPreal" width="120" />
+
+            <el-table-column align="left" label="有功调节上限点号" prop="ygPmax" width="120" />
+
+            <el-table-column align="left" label="有功调节下限点号" prop="ygPMin" width="120" />
+
+            <el-table-column align="left" label="无功调节上限点号" prop="wgPmax" width="120" />
+
+            <el-table-column align="left" label="无功调节下限点号" prop="wgPMin" width="120" />
+
+            <el-table-column align="left" label="功率因数点号" prop="pf" width="120" />
+
+            <el-table-column align="left" label="有功调节模式点号" prop="ygCmd" width="120" />
+
+            <el-table-column align="left" label="有功调节模式点号" prop="ygMode" width="120" />
+
+            <el-table-column align="left" label="有功功率变化梯度点号" prop="ygRate" width="120" />
+
+            <el-table-column align="left" label="有功固定值降额点号" prop="ygFixW" width="120" />
+
+            <el-table-column align="left" label="有功百分比降额点号" prop="ygFixPercent" width="120" />
+
+            <el-table-column align="left" label="电网电压点号" prop="wgU" width="120" />
+
+            <el-table-column align="left" label="Q-U特征曲线模式点号" prop="quMode" width="120" />
+
         <el-table-column align="left" label="操作" fixed="right" :min-width="appStore.operateMinWith">
             <template #default="scope">
             <el-button  type="primary" link class="table-button" @click="getDetails(scope.row)"><el-icon style="margin-right: 5px"><InfoFilled /></el-icon>查看</el-button>
@@ -112,21 +140,21 @@
 
           <el-form :model="formData" label-position="top" ref="elFormRef" :rules="rule" label-width="80px">
             <el-form-item label="逆变器编号:" prop="inverterNo">
-    <el-input v-model.number="formData.inverterNo" :clearable="true" placeholder="请输入逆变器编号" />
+    <el-input v-model="formData.inverterNo" :clearable="true" placeholder="请输入逆变器编号" />
 </el-form-item>
             <el-form-item label="逆变器名称:" prop="name">
     <el-input v-model="formData.name" :clearable="true" placeholder="请输入逆变器名称" />
 </el-form-item>
-            <el-form-item label="额定有功(kW):" prop="ratedActivePower">
+            <el-form-item label="额定有功功率:" prop="ratedActivePower">
     <el-input-number v-model="formData.ratedActivePower" style="width:100%" :precision="2" :clearable="true" />
 </el-form-item>
-            <el-form-item label="额定无功(kVar):" prop="ratedReactivePower">
+            <el-form-item label="额定无功功率:" prop="ratedReactivePower">
     <el-input-number v-model="formData.ratedReactivePower" style="width:100%" :precision="2" :clearable="true" />
 </el-form-item>
-            <el-form-item label="抖动区间(kW):" prop="jitterRange">
+            <el-form-item label="功率抖动区间:" prop="jitterRange">
     <el-input-number v-model="formData.jitterRange" style="width:100%" :precision="2" :clearable="true" />
 </el-form-item>
-            <el-form-item label="死区区间(kW):" prop="deadbandRange">
+            <el-form-item label="功率死区区间:" prop="deadbandRange">
     <el-input-number v-model="formData.deadbandRange" style="width:100%" :precision="2" :clearable="true" />
 </el-form-item>
             <el-form-item label="升额优先级:" prop="upgradePriority">
@@ -141,6 +169,48 @@
             <el-form-item label="标杆逆变器:" prop="isBenchmarkInverter">
     <el-switch v-model="formData.isBenchmarkInverter" active-color="#13ce66" inactive-color="#ff4949" active-text="是" inactive-text="否" clearable ></el-switch>
 </el-form-item>
+            <el-form-item label="有功功率点号:" prop="ygPreal">
+    <el-input v-model="formData.ygPreal" :clearable="true" placeholder="请输入有功功率点号" />
+</el-form-item>
+            <el-form-item label="无功功率点号:" prop="wgPreal">
+    <el-input v-model="formData.wgPreal" :clearable="true" placeholder="请输入无功功率点号" />
+</el-form-item>
+            <el-form-item label="有功调节上限点号:" prop="ygPmax">
+    <el-input v-model="formData.ygPmax" :clearable="true" placeholder="请输入有功调节上限点号" />
+</el-form-item>
+            <el-form-item label="有功调节下限点号:" prop="ygPMin">
+    <el-input v-model="formData.ygPMin" :clearable="true" placeholder="请输入有功调节下限点号" />
+</el-form-item>
+            <el-form-item label="无功调节上限点号:" prop="wgPmax">
+    <el-input v-model="formData.wgPmax" :clearable="true" placeholder="请输入无功调节上限点号" />
+</el-form-item>
+            <el-form-item label="无功调节下限点号:" prop="wgPMin">
+    <el-input v-model="formData.wgPMin" :clearable="true" placeholder="请输入无功调节下限点号" />
+</el-form-item>
+            <el-form-item label="功率因数点号:" prop="pf">
+    <el-input v-model="formData.pf" :clearable="true" placeholder="请输入功率因数点号" />
+</el-form-item>
+            <el-form-item label="有功调节模式点号:" prop="ygCmd">
+    <el-input v-model="formData.ygCmd" :clearable="true" placeholder="请输入有功调节模式点号" />
+</el-form-item>
+            <el-form-item label="有功调节模式点号:" prop="ygMode">
+    <el-input v-model="formData.ygMode" :clearable="true" placeholder="请输入有功调节模式点号" />
+</el-form-item>
+            <el-form-item label="有功功率变化梯度点号:" prop="ygRate">
+    <el-input v-model="formData.ygRate" :clearable="true" placeholder="请输入有功功率变化梯度点号" />
+</el-form-item>
+            <el-form-item label="有功固定值降额点号:" prop="ygFixW">
+    <el-input v-model="formData.ygFixW" :clearable="true" placeholder="请输入有功固定值降额点号" />
+</el-form-item>
+            <el-form-item label="有功百分比降额点号:" prop="ygFixPercent">
+    <el-input v-model="formData.ygFixPercent" :clearable="true" placeholder="请输入有功百分比降额点号" />
+</el-form-item>
+            <el-form-item label="电网电压点号:" prop="wgU">
+    <el-input v-model="formData.wgU" :clearable="true" placeholder="请输入电网电压点号" />
+</el-form-item>
+            <el-form-item label="Q-U特征曲线模式点号:" prop="quMode">
+    <el-input v-model="formData.quMode" :clearable="true" placeholder="请输入Q-U特征曲线模式点号" />
+</el-form-item>
           </el-form>
     </el-drawer>
 
@@ -152,16 +222,16 @@
                     <el-descriptions-item label="逆变器名称">
     {{ detailForm.name }}
 </el-descriptions-item>
-                    <el-descriptions-item label="额定有功(kW)">
+                    <el-descriptions-item label="额定有功功率">
     {{ detailForm.ratedActivePower }}
 </el-descriptions-item>
-                    <el-descriptions-item label="额定无功(kVar)">
+                    <el-descriptions-item label="额定无功功率">
     {{ detailForm.ratedReactivePower }}
 </el-descriptions-item>
-                    <el-descriptions-item label="抖动区间(kW)">
+                    <el-descriptions-item label="功率抖动区间">
     {{ detailForm.jitterRange }}
 </el-descriptions-item>
-                    <el-descriptions-item label="死区区间(kW)">
+                    <el-descriptions-item label="功率死区区间">
     {{ detailForm.deadbandRange }}
 </el-descriptions-item>
                     <el-descriptions-item label="升额优先级">
@@ -175,6 +245,48 @@
 </el-descriptions-item>
                     <el-descriptions-item label="标杆逆变器">
     {{ detailForm.isBenchmarkInverter }}
+</el-descriptions-item>
+                    <el-descriptions-item label="有功功率点号">
+    {{ detailForm.ygPreal }}
+</el-descriptions-item>
+                    <el-descriptions-item label="无功功率点号">
+    {{ detailForm.wgPreal }}
+</el-descriptions-item>
+                    <el-descriptions-item label="有功调节上限点号">
+    {{ detailForm.ygPmax }}
+</el-descriptions-item>
+                    <el-descriptions-item label="有功调节下限点号">
+    {{ detailForm.ygPMin }}
+</el-descriptions-item>
+                    <el-descriptions-item label="无功调节上限点号">
+    {{ detailForm.wgPmax }}
+</el-descriptions-item>
+                    <el-descriptions-item label="无功调节下限点号">
+    {{ detailForm.wgPMin }}
+</el-descriptions-item>
+                    <el-descriptions-item label="功率因数点号">
+    {{ detailForm.pf }}
+</el-descriptions-item>
+                    <el-descriptions-item label="有功调节模式点号">
+    {{ detailForm.ygCmd }}
+</el-descriptions-item>
+                    <el-descriptions-item label="有功调节模式点号">
+    {{ detailForm.ygMode }}
+</el-descriptions-item>
+                    <el-descriptions-item label="有功功率变化梯度点号">
+    {{ detailForm.ygRate }}
+</el-descriptions-item>
+                    <el-descriptions-item label="有功固定值降额点号">
+    {{ detailForm.ygFixW }}
+</el-descriptions-item>
+                    <el-descriptions-item label="有功百分比降额点号">
+    {{ detailForm.ygFixPercent }}
+</el-descriptions-item>
+                    <el-descriptions-item label="电网电压点号">
+    {{ detailForm.wgU }}
+</el-descriptions-item>
+                    <el-descriptions-item label="Q-U特征曲线模式点号">
+    {{ detailForm.quMode }}
 </el-descriptions-item>
             </el-descriptions>
         </el-drawer>
@@ -229,6 +341,20 @@ const formData = ref({
             downgradePriority: 0,
             isParticipateAdjust: false,
             isBenchmarkInverter: false,
+            ygPreal: '',
+            wgPreal: '',
+            ygPmax: '',
+            ygPMin: '',
+            wgPmax: '',
+            wgPMin: '',
+            pf: '',
+            ygCmd: '',
+            ygMode: '',
+            ygRate: '',
+            ygFixW: '',
+            ygFixPercent: '',
+            wgU: '',
+            quMode: '',
         })
 
 
@@ -428,6 +554,20 @@ const closeDialog = () => {
         downgradePriority: 0,
         isParticipateAdjust: false,
         isBenchmarkInverter: false,
+        ygPreal: '',
+        wgPreal: '',
+        ygPmax: '',
+        ygPMin: '',
+        wgPmax: '',
+        wgPMin: '',
+        pf: '',
+        ygCmd: '',
+        ygMode: '',
+        ygRate: '',
+        ygFixW: '',
+        ygFixPercent: '',
+        wgU: '',
+        quMode: '',
         }
 }
 // 弹窗确定

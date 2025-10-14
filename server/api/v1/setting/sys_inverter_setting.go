@@ -188,3 +188,26 @@ func (sysInverterSettingApi *SysInverterSettingApi) GetSysInverterSettingPublic(
        "info": "不需要鉴权的逆变器设置接口信息",
     }, "获取成功", c)
 }
+
+// FindSysInverterSettingByInverterNo 根据逆变器编号查询逆变器设置
+// @Tags SysInverterSetting
+// @Summary 根据逆变器编号查询逆变器设置
+// @Security ApiKeyAuth
+// @Accept application/json
+// @Produce application/json
+// @Param inverterNo query string true "逆变器编号"
+// @Success 200 {object} response.Response{data=setting.SysInverterSetting,msg=string} "查询成功"
+// @Router /sysInverterSetting/findSysInverterSettingByInverterNo [get]
+func (sysInverterSettingApi *SysInverterSettingApi) FindSysInverterSettingByInverterNo(c *gin.Context) {
+    // 创建业务用Context
+    ctx := c.Request.Context()
+
+	inverterNo := c.Query("inverterNo")
+	sysInverterSetting, err := sysInverterSettingService.GetSysInverterSettingByInverterNo(ctx, inverterNo)
+	if err != nil {
+        global.GVA_LOG.Error("查询失败!", zap.Error(err))
+		response.FailWithMessage("查询失败:"+err.Error(), c)
+		return
+	}
+	response.OkWithData(sysInverterSetting, c)
+}

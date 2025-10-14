@@ -20,6 +20,7 @@ func (s *SysInverterSettingRouter) InitSysInverterSettingRouter(Router *gin.Rout
 	}
 	{
 		sysInverterSettingRouterWithoutRecord.GET("findSysInverterSetting", sysInverterSettingApi.FindSysInverterSetting)        // 根据ID获取逆变器设置
+		sysInverterSettingRouterWithoutRecord.GET("findSysInverterSettingByInverterNo", sysInverterSettingApi.FindSysInverterSettingByInverterNo) // 根据逆变器编号获取逆变器设置
 		sysInverterSettingRouterWithoutRecord.GET("getSysInverterSettingList", sysInverterSettingApi.GetSysInverterSettingList)  // 获取逆变器设置列表
 	}
 	{

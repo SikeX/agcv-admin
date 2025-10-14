@@ -323,7 +323,7 @@
           <el-form-item label="图片高度">
             <el-input-number v-model.number="config.captcha['img-height']" />
           </el-form-item>
-        </el-tab-pane>
+        </el-form-item>
         <el-tab-pane label="数据库配置" name="9" class="mt-3.5">
           <template v-if="config.system['db-type'] === 'mysql'">
             <el-form-item label="">
@@ -855,13 +855,63 @@
             </el-form-item>
           </template>
         </el-tab-pane>
-        <el-tab-pane label="Excel上传配置" name="11" class="mt-3.5">
-          <el-form-item label="合成目标地址">
-            <el-input
-              v-model.trim="config.excel.dir"
-              placeholder="请输入合成目标地址"
-            />
-          </el-form-item>
+        <el-tab-pane label="Excel上传配置" name="11">
+          <el-form :model="config.excel" label-width="120px">
+            <el-form-item label="路径">
+              <el-input v-model="config.excel.dir" />
+            </el-form-item>
+          </el-form>
+        </el-tab-pane>
+        <el-tab-pane label="MQTT配置" name="mqtt">
+          <el-form :model="config.mqtt" label-width="120px">
+            <el-form-item label="Broker地址">
+              <el-input v-model="config.mqtt.broker" placeholder="例如: localhost" />
+            </el-form-item>
+            <el-form-item label="端口">
+              <el-input v-model="config.mqtt.port" placeholder="例如: 1883" />
+            </el-form-item>
+            <el-form-item label="用户名">
+              <el-input v-model="config.mqtt.username" placeholder="用户名（可选）" />
+            </el-form-item>
+            <el-form-item label="密码">
+              <el-input v-model="config.mqtt.password" placeholder="密码（可选）" show-password />
+            </el-form-item>
+            <el-form-item label="客户端ID">
+              <el-input v-model="config.mqtt['client-id']" placeholder="客户端ID（可选，留空则自动生成）" />
+            </el-form-item>
+            <el-form-item label="QoS级别">
+              <el-select v-model="config.mqtt.qos" style="width: 100%">
+                <el-option :value="0" label="0 - 最多一次" />
+                <el-option :value="1" label="1 - 至少一次" />
+                <el-option :value="2" label="2 - 恰好一次" />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="Keep Alive(秒)">
+              <el-input-number v-model="config.mqtt['keep-alive']" :min="1" />
+            </el-form-item>
+            <el-form-item label="Clean Session">
+              <el-switch v-model="config.mqtt['clean-session']" />
+            </el-form-item>
+            <el-form-item label="消息顺序">
+              <el-switch v-model="config.mqtt.order" />
+            </el-form-item>
+            <el-form-item label="遗嘱主题">
+              <el-input v-model="config.mqtt['will-topic']" placeholder="遗嘱消息主题（可选）" />
+            </el-form-item>
+            <el-form-item label="遗嘱内容">
+              <el-input v-model="config.mqtt['will-payload']" placeholder="遗嘱消息内容（可选）" />
+            </el-form-item>
+            <el-form-item label="遗嘱QoS">
+              <el-select v-model="config.mqtt['will-qos']" style="width: 100%">
+                <el-option :value="0" label="0 - 最多一次" />
+                <el-option :value="1" label="1 - 至少一次" />
+                <el-option :value="2" label="2 - 恰好一次" />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="遗嘱保留">
+              <el-switch v-model="config.mqtt['will-retained']" />
+            </el-form-item>
+          </el-form>
         </el-tab-pane>
         <el-tab-pane label="自动化代码配置" name="12" class="mt-3.5">
           <el-form-item label="是否自动重启(linux)">
@@ -1002,6 +1052,30 @@
     email: {},
     timer: {
       detail: {}
+    },
+    influxdb: {
+      host: '',
+      port: '',
+      token: '',
+      org: '',
+      bucket: '',
+      username: '',
+      password: ''
+    },
+    mqtt: {
+      broker: '',
+      port: '',
+      username: '',
+      password: '',
+      'client-id': '',
+      qos: 1,
+      'keep-alive': 30,
+      'clean-session': true,
+      order: true,
+      'will-topic': '',
+      'will-payload': '',
+      'will-qos': 0,
+      'will-retained': false
     }
   })
 

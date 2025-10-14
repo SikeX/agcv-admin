@@ -80,6 +80,22 @@ export const findSysInverterSetting = (params) => {
 }
 
 // @Tags SysInverterSetting
+// @Summary 根据逆变器编号查询逆变器设置
+// @Security ApiKeyAuth
+// @Accept application/json
+// @Produce application/json
+// @Param inverterNo query string true "逆变器编号"
+// @Success 200 {string} string "{"success":true,"data":{},"msg":"查询成功"}"
+// @Router /sysInverterSetting/findSysInverterSettingByInverterNo [get]
+export const findSysInverterSettingByInverterNo = (params) => {
+  return service({
+    url: '/sysInverterSetting/findSysInverterSettingByInverterNo',
+    method: 'get',
+    params
+  })
+}
+
+// @Tags SysInverterSetting
 // @Summary 分页获取逆变器设置列表
 // @Security ApiKeyAuth
 // @Accept application/json
