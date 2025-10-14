@@ -114,17 +114,29 @@ func (inverterMonitorService *InverterMonitorService) GetInverterHistory(ctx con
 		return nil, fmt.Errorf("获取逆变器设置失败: %v", err)
 	}
 
+	pointMap := make(map[string]string)
+
+	var codes []string
+
 	//有功功率点号
 	ygPrealPoints := strings.Split(*sysInverterSetting.YgPreal, ",")
+	for _, point := range ygPrealPoints {
+		code := inverterNo + point
+		codes = append(codes, code)
+		pointMap[code] = "ygPreal"
+	}
 	wgPrealPonts := strings.Split(*sysInverterSetting.WgPreal, ",")
-
-	inverterNos := []string{"00100010202326", "00100010202329"}
+	for _, point := range wgPrealPonts {
+		code := inverterNo + point
+		codes = append(codes, code)
+		pointMap[code] = "wgPreal"
+	}
 
 	// 获取查询API
 	queryAPI := global.GVA_INFLUXDB.QueryAPI(global.GVA_CONFIG.InfluxDB.Org)
 
 	queryStr := ""
-	for i, no := range inverterNos {
+	for i, no := range codes {
 		if i > 0 {
 			queryStr += " or "
 		}
@@ -160,8 +172,7 @@ func (inverterMonitorService *InverterMonitorService) GetInverterHistory(ctx con
 		record := result.Record()
 		//获取code
 		code := record.ValueByKey("code").(string)
-		if code == "00100010202326" {
-		}
+
 		// records = append(records, data)
 		//时间转换为时间戳
 		history.Time = record.Time()
