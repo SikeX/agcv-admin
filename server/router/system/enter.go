@@ -22,6 +22,7 @@ type RouterGroup struct {
 	SysVersionRouter
 	SysGridConnectionPointRouter
 	SysHisEventRouter
+	SysSvgSvcSettingRouter
 }
 
 var (
@@ -47,4 +48,5 @@ var (
 	sysVersionApi             = api.ApiGroupApp.SystemApiGroup.SysVersionApi
 	sysGridConnectionPointApi = api.ApiGroupApp.SystemApiGroup.SysGridConnectionPointApi
 	sysHisEventApi            = api.ApiGroupApp.SystemApiGroup.SysHisEventApi
+	sysSvgSvcSettingApi       = api.ApiGroupApp.SystemApiGroup.SysSvgSvcSettingApi
 )

@@ -24,4 +24,5 @@ type ServiceGroup struct {
 	AutoCodeTemplate autoCodeTemplate
 	SysGridConnectionPointService
 	SysHisEventService
+	SysSvgSvcSettingService
 }
