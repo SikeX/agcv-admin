@@ -32,6 +32,9 @@ func RunServer() {
 
 	initialize.InfluxDB() // 初始化InfluxDB
 
+	initialize.MQTT() // 初始化MQTT
+	initialize.SaveRealData("iot/real-data/iot-ViCgfkLkdPk8Ih2T9AT")
+
 	Router := initialize.Routers()
 
 	address := fmt.Sprintf(":%d", global.GVA_CONFIG.System.Addr)
