@@ -14,11 +14,6 @@ func initBizRouter(routers ...*gin.RouterGroup) {
 	publicGroup := routers[1]
 	holder(publicGroup, privateGroup)
 	{
-		systemRouter := router.RouterGroupApp.System
-		systemRouter.InitSysGridConnectionPointRouter(privateGroup, publicGroup)
-		systemRouter.InitSysHisEventRouter(privateGroup, publicGroup)
-	}
-	{
 		monitorRouter := router.RouterGroupApp.Monitor
 		monitorRouter.InitInverterMonitorRouter(privateGroup, publicGroup)
 	} // 占位方法，保证文件可以正确加载，避免go空变量检测报错，请勿删除。
