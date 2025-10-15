@@ -4,7 +4,7 @@
     <div class="gva-search-box">
       <el-form ref="elSearchFormRef" :inline="true" :model="searchInfo" class="demo-form-inline" @keyup.enter="onSubmit">
             <el-form-item label="逆变器编号" prop="inverter_no">
-  <el-input v-model.number="searchInfo.inverter_no" placeholder="搜索条件" />
+  <el-input v-model="searchInfo.inverter_no" placeholder="搜索条件" />
 </el-form-item>
             
             <el-form-item label="逆变器名称" prop="name">
@@ -60,15 +60,15 @@
 </el-table-column>
             <el-table-column align="left" label="额定功率(kW)" prop="ratedPower" width="120" />
 
-            <el-table-column align="left" label="有功功率" prop="activePower" width="120" />
+            <el-table-column align="left" label="有功功率" prop="ygPreal" width="120" />
 
             <el-table-column align="left" label="有功目标(kW)" prop="apTargetValue" width="120" />
 
-            <el-table-column align="left" label="无功功率(kVar)" prop="reactivePower" width="120" />
+            <el-table-column align="left" label="无功功率(kVar)" prop="wgPreal" width="120" />
 
             <el-table-column align="left" label="无功目标(kVar)" prop="rpTargetValue" width="120" />
 
-            <el-table-column align="left" label="功率因数" prop="powerFactor" width="120" />
+            <el-table-column align="left" label="功率因数" prop="pf" width="120" />
 
             <!-- 新增的历史数据列 -->
             <el-table-column align="left" label="历史数据" fixed="right" :min-width="appStore.operateMinWith">
@@ -136,11 +136,11 @@
               style="width: 100%; margin-bottom: 20px;"
             />
            <el-select v-model="selectedMetrics" multiple placeholder="请选择要显示的指标" style="width: 100%; margin-bottom: 20px;">
-              <el-option label="有功功率" value="activePower" />
+              <el-option label="有功功率" value="ygPreal" />
               <el-option label="有功目标(kW)" value="apTargetValue" />
-              <el-option label="无功功率(kVar)" value="reactivePower" />
+              <el-option label="无功功率(kVar)" value="wgPreal" />
               <el-option label="无功目标(kVar)" value="rpTargetValue" />
-              <el-option label="功率因数" value="powerFactor" />
+              <el-option label="功率因数" value="pf" />
             </el-select>
             <el-button type="primary" @click="loadHistoryData" style="width: 100%;">查询</el-button>
           </el-card>
@@ -206,7 +206,7 @@ const formData = ref({
 const historyDialogVisible = ref(false)
 const historyData = ref([])
 const historyDateRange = ref([])
-const selectedMetrics = ref(['activePower', 'apTargetValue'])
+const selectedMetrics = ref(['ygPreal'])
 const chartContainer = ref(null)
 const currentInverter = ref(null)
 
@@ -324,10 +324,13 @@ const loadHistoryData = async () => {
           timestamp: new Date(item._time),
           code: item.code,
           value: item.value,
-          activePower: item.activePower || 0,
-          powerFactor: item.powerFactor || 0
+          ygPreal: item.ygPreal || 0,
+          wgPreal: item.wgPreal || 0,
+          pf: item.pf || 0,
         }
       })
+      //按时间排序
+      historyData.value.sort((a, b) => a.timestamp - b.timestamp)
       
       // 更新图表
       updateChart()
@@ -368,11 +371,10 @@ const updateChart = () => {
   // 根据选中的指标准备y轴数据
   const series = []
   const metricLabels = {
-    activePower: '有功功率',
-    apTargetValue: '有功目标(kW)',
-    reactivePower: '无功功率(kVar)',
+    ygPreal: '有功功率',
+    wgPreal: '无功功率(kVar)',
     rpTargetValue: '无功目标(kVar)',
-    powerFactor: '功率因数'
+    pf: '功率因数'
   }
   
   selectedMetrics.value.forEach(metric => {

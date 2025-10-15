@@ -1,4 +1,3 @@
-
 package request
 
 import (
@@ -6,10 +5,10 @@ import (
 	"time"
 )
 
-type InverterMonitorSearch struct{
-    CreatedAtRange []time.Time `json:"createdAtRange" form:"createdAtRange[]"`
-      Inverter_no  *int `json:"inverter_no" form:"inverter_no"` 
-      Name  *string `json:"name" form:"name"` 
-      Status  *string `json:"status" form:"status"` 
-    request.PageInfo
+type InverterMonitorSearch struct {
+	CreatedAtRange []time.Time `json:"createdAtRange" form:"createdAtRange[]"`
+	Inverter_no    *string     `json:"inverter_no" form:"inverter_no"`
+	Name           *string     `json:"name" form:"name"`
+	Status         *string     `json:"status" form:"status"`
+	request.PageInfo
 }

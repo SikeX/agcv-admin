@@ -9,12 +9,13 @@ import (
 	"github.com/flipped-aurora/gin-vue-admin/server/global"
 	"github.com/flipped-aurora/gin-vue-admin/server/model/monitor"
 	monitorReq "github.com/flipped-aurora/gin-vue-admin/server/model/monitor/request"
-	"github.com/flipped-aurora/gin-vue-admin/server/service/setting"
+	"github.com/flipped-aurora/gin-vue-admin/server/model/setting"
+	serviceSetting "github.com/flipped-aurora/gin-vue-admin/server/service/setting"
 )
 
 type InverterMonitorService struct{}
 
-var sysInverterSettingService setting.SysInverterSettingService
+var sysInverterSettingService serviceSetting.SysInverterSettingService
 
 // CreateInverterMonitor 创建逆变器监控记录
 // Author [yourname](https://github.com/yourname)
@@ -65,7 +66,7 @@ func (inverterMonitorService *InverterMonitorService) GetInverterMonitorInfoList
 	}
 
 	if info.Inverter_no != nil {
-		db = db.Where("inverter_no = ?", *info.Inverter_no)
+		db = db.Where("inverter_no LIKE ?", "%"+*info.Inverter_no+"%")
 	}
 	if info.Name != nil && *info.Name != "" {
 		db = db.Where("name LIKE ?", "%"+*info.Name+"%")
@@ -90,13 +91,8 @@ func (inverterMonitorService *InverterMonitorService) GetInverterMonitorPublic(c
 	// 请自行实现
 }
 
-type InverterPointSet struct {
-	Time        time.Time
-	PowerFactor float64
-}
-
-// GetInverterHistory 从InfluxDB获取逆变器历史数据
-func (inverterMonitorService *InverterMonitorService) GetInverterHistory(ctx context.Context, inverterNo string, startTime, endTime string) ([]monitor.InverterHistory, error) {
+// 获取逆变器历史数据
+func (inverterMonitorService *InverterMonitorService) GetInverterHistory(ctx context.Context, inverterNo, startTime, endTime string) ([]monitor.InverterHistory, error) {
 	// 检查InfluxDB客户端是否已初始化
 	if global.GVA_INFLUXDB == nil {
 		return nil, fmt.Errorf("InfluxDB客户端未初始化")
@@ -114,23 +110,7 @@ func (inverterMonitorService *InverterMonitorService) GetInverterHistory(ctx con
 		return nil, fmt.Errorf("获取逆变器设置失败: %v", err)
 	}
 
-	pointMap := make(map[string]string)
-
-	var codes []string
-
-	//有功功率点号
-	ygPrealPoints := strings.Split(*sysInverterSetting.YgPreal, ",")
-	for _, point := range ygPrealPoints {
-		code := inverterNo + point
-		codes = append(codes, code)
-		pointMap[code] = "ygPreal"
-	}
-	wgPrealPonts := strings.Split(*sysInverterSetting.WgPreal, ",")
-	for _, point := range wgPrealPonts {
-		code := inverterNo + point
-		codes = append(codes, code)
-		pointMap[code] = "wgPreal"
-	}
+	pointMap, codes := inverterMonitorService.getPointMapAndCodes(sysInverterSetting, inverterNo)
 
 	// 获取查询API
 	queryAPI := global.GVA_INFLUXDB.QueryAPI(global.GVA_CONFIG.InfluxDB.Org)
@@ -142,7 +122,6 @@ func (inverterMonitorService *InverterMonitorService) GetInverterHistory(ctx con
 		}
 		queryStr += fmt.Sprintf(`r["code"] == "%s"`, no)
 	}
-
 	// 构建Flux查询语句
 	// 注意：这里假设数据存储在sensor_data measurement中，tag为code，field包含value等字段
 	flux := fmt.Sprintf(`
@@ -162,31 +141,84 @@ func (inverterMonitorService *InverterMonitorService) GetInverterHistory(ctx con
 	if !result.Next() {
 		return nil, nil
 	}
-	fmt.Println(result.Record())
 
 	// 解析结果
-	// var records []map[string]interface{}
-	var historys []monitor.InverterHistory
+	// 使用map来存储同一时间点的不同code值
+	// historyMap := make(map[time.Time]monitor.InverterHistory)
+	timeCodeValueMap := make(map[time.Time]map[string]float64)
+
 	for result.Next() {
-		history := monitor.InverterHistory{}
 		record := result.Record()
 		//获取code
 		code := record.ValueByKey("code").(string)
 
-		// records = append(records, data)
-		//时间转换为时间戳
-		history.Time = record.Time()
+		// 获取时间并作为map的key
+		timestamp := record.Time().Truncate(time.Minute) // 向下取整到秒，确保同一秒的数据能正确聚合
+
+		// 从map中获取已有的history，如果不存在则创建新的
+		codeValueMap, exists := timeCodeValueMap[timestamp]
+		if !exists {
+			codeValueMap = make(map[string]float64)
+			timeCodeValueMap[timestamp] = codeValueMap
+		}
+
+		// 根据pointMap中code对应的值设置history中的相应字段
+		// fieldName := pointMap[code]
+		var value float64
 		//判断record.Value()的类型
 		switch v := record.Value().(type) {
 		case int64:
-			history.PowerFactor = float64(v)
+			value = float64(v)
 		case float64:
-			history.PowerFactor = v
+			value = v
+		}
+
+		codeValueMap[code] = value
+
+		// // 根据字段名设置对应的值
+		// switch fieldName {
+		// case "ygPreal":
+		// 	history.ActivePower = value
+		// case "wgPreal":
+		// 	history.PowerFactor = value
+		// }
+
+		// 更新map中的值
+		// historyMap[timestamp] = history
+		timeCodeValueMap[timestamp] = codeValueMap
+	}
+
+	var historys []monitor.InverterHistory
+	//处理timeCodeValueMap
+	for time, codeValueMap := range timeCodeValueMap {
+		history := monitor.InverterHistory{
+			Time: time,
+		}
+		for code, value := range codeValueMap {
+			switch pointMap[code] {
+			case "ygPreal":
+				history.YgPreal += value
+			case "wgPreal":
+				history.WgPreal += value
+			case "ygPmax":
+				history.YgPmax += value
+			case "ygPMin":
+				history.YgPMin += value
+			case "wgPmax":
+				history.WgPmax += value
+			case "wgPMin":
+				history.WgPMin += value
+			case "pf":
+				history.Pf += value
+			}
 		}
 		historys = append(historys, history)
 	}
 
-	fmt.Println(historys)
+	// 按时间排序
+	// sort.Slice(historys, func(i, j int) bool {
+	// 	return historys[i].Time.Before(historys[j].Time)
+	// })
 
 	// 检查是否有错误
 	if result.Err() != nil {
@@ -194,4 +226,55 @@ func (inverterMonitorService *InverterMonitorService) GetInverterHistory(ctx con
 	}
 
 	return historys, nil
+}
+
+func (inverterMonitorService *InverterMonitorService) getPointMapAndCodes(sysInverterSetting setting.SysInverterSetting, inverterNo string) (map[string]string, []string) {
+	var codes []string
+	pointMap := make(map[string]string)
+	//有功功率点号
+	if sysInverterSetting.YgPreal != nil {
+		ygPrealPoints := strings.Split(*sysInverterSetting.YgPreal, ",")
+		for _, point := range ygPrealPoints {
+			code := inverterNo + point
+			codes = append(codes, code)
+			pointMap[code] = "ygPreal"
+		}
+	}
+	//无功功率点号
+	if sysInverterSetting.WgPreal != nil {
+		wgPrealPoints := strings.Split(*sysInverterSetting.WgPreal, ",")
+		for _, point := range wgPrealPoints {
+			code := inverterNo + point
+			codes = append(codes, code)
+			pointMap[code] = "wgPreal"
+		}
+	}
+	//有功功率最大值点号
+	if sysInverterSetting.YgPmax != nil {
+		ygPmaxPoints := strings.Split(*sysInverterSetting.YgPmax, ",")
+		for _, point := range ygPmaxPoints {
+			code := inverterNo + point
+			codes = append(codes, code)
+			pointMap[code] = "ygPmax"
+		}
+	}
+	//有功功率最小值点号
+	if sysInverterSetting.YgPMin != nil {
+		ygPMinPoints := strings.Split(*sysInverterSetting.YgPMin, ",")
+		for _, point := range ygPMinPoints {
+			code := inverterNo + point
+			codes = append(codes, code)
+			pointMap[code] = "ygPMin"
+		}
+	}
+	//无功功率最大值点号
+	if sysInverterSetting.WgPmax != nil {
+		wgPmaxPoints := strings.Split(*sysInverterSetting.WgPmax, ",")
+		for _, point := range wgPmaxPoints {
+			code := inverterNo + point
+			codes = append(codes, code)
+			pointMap[code] = "wgPmax"
+		}
+	}
+	return pointMap, codes
 }
