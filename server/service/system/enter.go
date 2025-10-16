@@ -25,4 +25,6 @@ type ServiceGroup struct {
 	SysGridConnectionPointService
 	SysHisEventService
 	SysSvgSvcSettingService
+	SysQixiangyiSettingService
+	SysTestPointService
 }

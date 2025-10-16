@@ -52,14 +52,14 @@ func (sysSvgSvcSettingService *SysSvgSvcSettingService)GetSysSvgSvcSettingInfoLi
 	db := global.GVA_DB.Model(&system.SysSvgSvcSetting{})
     var sysSvgSvcSettings []system.SysSvgSvcSetting
     // 如果有条件搜索 下方会自动创建搜索语句
-    if info.ID != nil {
-        db = db.Where("id = ?", *info.ID)
+    if info.ID != 0 {
+        db = db.Where("id = ?", info.ID)
     }
-    if info.WugongName != nil && *info.WugongName != "" {
-        db = db.Where("wugong_name LIKE ?", "%"+*info.WugongName+"%")
+    if info.WugongName != "" {
+        db = db.Where("wugong_name LIKE ?", "%"+info.WugongName+"%")
     }
-    if info.IsAdjustment != nil && *info.IsAdjustment != "" {
-        db = db.Where("is_adjustment = ?", *info.IsAdjustment)
+    if info.IsAdjustment != "" {
+        db = db.Where("is_adjustment = ?", info.IsAdjustment)
     }
     
 	err = db.Count(&total).Error

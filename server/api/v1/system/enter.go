@@ -26,6 +26,8 @@ type ApiGroup struct {
 	SysGridConnectionPointApi
 	SysHisEventApi
 	SysSvgSvcSettingApi
+	SysQixiangyiSettingApi
+	SysTestPointApi
 }
 
 var (
@@ -52,4 +54,6 @@ var (
 	sysGridConnectionPointService = service.ServiceGroupApp.SystemServiceGroup.SysGridConnectionPointService
 	sysHisEventService            = service.ServiceGroupApp.SystemServiceGroup.SysHisEventService
 	sysSvgSvcSettingService       = service.ServiceGroupApp.SystemServiceGroup.SysSvgSvcSettingService
+	sysQixiangyiSettingService    = service.ServiceGroupApp.SystemServiceGroup.SysQixiangyiSettingService
+	sysTestPointService           = service.ServiceGroupApp.SystemServiceGroup.SysTestPointService
 )

@@ -6,8 +6,8 @@ import (
 )
 
 type SysHisEventSearch struct{
-    IsRead  *string `json:"isRead" form:"isRead"`
-    DataType  *string `json:"dataType" form:"dataType"`
+    IsRead  string `json:"isRead" form:"isRead"`
+    DataType  string `json:"dataType" form:"dataType"`
     HappenTimeRange []time.Time `json:"happenTimeRange" form:"happenTimeRange[]"`
     request.PageInfo
 }

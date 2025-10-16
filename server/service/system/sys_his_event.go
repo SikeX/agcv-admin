@@ -54,11 +54,11 @@ func (sysHisEventService *SysHisEventService) GetSysHisEventInfoList(ctx context
 	db := global.GVA_DB.Model(&system.SysHisEvent{})
 	var sysHisEvents []system.SysHisEvent
 	// 如果有条件搜索 下方会自动创建搜索语句
-	if info.IsRead != nil && *info.IsRead != "" {
-		db = db.Where("is_read = ?", *info.IsRead)
+	if info.IsRead != "" {
+		db = db.Where("is_read = ?", info.IsRead)
 	}
-	if info.DataType != nil && *info.DataType != "" {
-		db = db.Where("data_type = ?", *info.DataType)
+	if info.DataType != "" {
+		db = db.Where("data_type = ?", info.DataType)
 	}
 	if len(info.HappenTimeRange) == 2 {
 		db = db.Where("happen_time BETWEEN ? AND ?", info.HappenTimeRange[0], info.HappenTimeRange[1])
