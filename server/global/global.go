@@ -2,8 +2,10 @@ package global
 
 import (
 	"fmt"
-	"github.com/mark3labs/mcp-go/server"
 	"sync"
+
+	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
+	"github.com/mark3labs/mcp-go/server"
 
 	"github.com/gin-gonic/gin"
 	"github.com/qiniu/qmgo"
@@ -38,7 +40,8 @@ var (
 	GVA_ACTIVE_DBNAME       *string
 	GVA_MCP_SERVER          *server.MCPServer
 	BlackCache              local_cache.Cache
-	GVA_INFLUXDB            interface{} // InfluxDB client
+	GVA_INFLUXDB            influxdb2.Client // InfluxDB client
+	GVA_MQTT                interface{}      // MQTT client
 	lock                    sync.RWMutex
 )
 

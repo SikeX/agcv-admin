@@ -247,10 +247,25 @@ zap:
   log-in-console: true
   retention-day: -1
 influxdb:
-  host: ""
+  host: "127.0.0.1"
   port: "8086"
-  token: ""
-  org: ""
-  bucket: ""
+  token: "6apSfZS7tRoH5vOeXm1XJbppD2lx2ffLnATIJDUr8nQ3iR6qwjdY59QJujv9Vp8L6c_rjySIB1DGBwf-HetbhQ=="
+  org: "test"
+  bucket: "test"
+  username: "admin"
+  password: "12345678"
+# MQTT configuration
+mqtt:
+  broker: "127.0.0.1"
+  port: "1883"
   username: ""
   password: ""
+  client-id: ""
+  qos: 1
+  keep-alive: 30
+  clean-session: true
+  order: true
+  will-topic: ""
+  will-payload: ""
+  will-qos: 0
+  will-retained: false

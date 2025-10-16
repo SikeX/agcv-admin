@@ -2,6 +2,7 @@ package v1
 
 import (
 	"github.com/flipped-aurora/gin-vue-admin/server/api/v1/example"
+	"github.com/flipped-aurora/gin-vue-admin/server/api/v1/monitor"
 	"github.com/flipped-aurora/gin-vue-admin/server/api/v1/setting"
 	"github.com/flipped-aurora/gin-vue-admin/server/api/v1/system"
 )
@@ -12,4 +13,5 @@ type ApiGroup struct {
 	SystemApiGroup  system.ApiGroup
 	ExampleApiGroup example.ApiGroup
 	SettingApiGroup setting.ApiGroup
+	MonitorApiGroup monitor.ApiGroup
 }

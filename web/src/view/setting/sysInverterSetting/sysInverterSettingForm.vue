@@ -3,6 +3,9 @@
   <div>
     <div class="gva-form-box">
       <el-form :model="formData" ref="elFormRef" label-position="right" :rules="rule" label-width="80px">
+        <el-form-item label="逆变器编号:" prop="inverterNo">
+    <el-input v-model="formData.inverterNo" :clearable="true" placeholder="请输入逆变器编号" />
+</el-form-item>
         <el-form-item label="逆变器名称:" prop="name">
     <el-input v-model="formData.name" :clearable="true" placeholder="请输入逆变器名称" />
 </el-form-item>
@@ -24,11 +27,53 @@
         <el-form-item label="降级优先级:" prop="downgradePriority">
     <el-input-number v-model="formData.downgradePriority" style="width:100%" :precision="2" :clearable="true" />
 </el-form-item>
-        <el-form-item label="是否参与调节:" prop="isParticipateAdjust">
+        <el-form-item label="参与调节:" prop="isParticipateAdjust">
     <el-switch v-model="formData.isParticipateAdjust" active-color="#13ce66" inactive-color="#ff4949" active-text="是" inactive-text="否" clearable ></el-switch>
 </el-form-item>
-        <el-form-item label="是否为标杆逆变器:" prop="isBenchmarkInverter">
+        <el-form-item label="标杆逆变器:" prop="isBenchmarkInverter">
     <el-switch v-model="formData.isBenchmarkInverter" active-color="#13ce66" inactive-color="#ff4949" active-text="是" inactive-text="否" clearable ></el-switch>
+</el-form-item>
+        <el-form-item label="有功功率点号:" prop="ygPreal">
+    <el-input v-model="formData.ygPreal" :clearable="true" placeholder="请输入有功功率点号" />
+</el-form-item>
+        <el-form-item label="无功功率点号:" prop="wgPreal">
+    <el-input v-model="formData.wgPreal" :clearable="true" placeholder="请输入无功功率点号" />
+</el-form-item>
+        <el-form-item label="有功调节上限点号:" prop="ygPmax">
+    <el-input v-model="formData.ygPmax" :clearable="true" placeholder="请输入有功调节上限点号" />
+</el-form-item>
+        <el-form-item label="有功调节下限点号:" prop="ygPMin">
+    <el-input v-model="formData.ygPMin" :clearable="true" placeholder="请输入有功调节下限点号" />
+</el-form-item>
+        <el-form-item label="无功调节上限点号:" prop="wgPmax">
+    <el-input v-model="formData.wgPmax" :clearable="true" placeholder="请输入无功调节上限点号" />
+</el-form-item>
+        <el-form-item label="无功调节下限点号:" prop="wgPMin">
+    <el-input v-model="formData.wgPMin" :clearable="true" placeholder="请输入无功调节下限点号" />
+</el-form-item>
+        <el-form-item label="功率因数点号:" prop="pf">
+    <el-input v-model="formData.pf" :clearable="true" placeholder="请输入功率因数点号" />
+</el-form-item>
+        <el-form-item label="有功调节模式点号:" prop="ygCmd">
+    <el-input v-model="formData.ygCmd" :clearable="true" placeholder="请输入有功调节模式点号" />
+</el-form-item>
+        <el-form-item label="有功调节模式点号:" prop="ygMode">
+    <el-input v-model="formData.ygMode" :clearable="true" placeholder="请输入有功调节模式点号" />
+</el-form-item>
+        <el-form-item label="有功功率变化梯度点号:" prop="ygRate">
+    <el-input v-model="formData.ygRate" :clearable="true" placeholder="请输入有功功率变化梯度点号" />
+</el-form-item>
+        <el-form-item label="有功固定值降额点号:" prop="ygFixW">
+    <el-input v-model="formData.ygFixW" :clearable="true" placeholder="请输入有功固定值降额点号" />
+</el-form-item>
+        <el-form-item label="有功百分比降额点号:" prop="ygFixPercent">
+    <el-input v-model="formData.ygFixPercent" :clearable="true" placeholder="请输入有功百分比降额点号" />
+</el-form-item>
+        <el-form-item label="电网电压点号:" prop="wgU">
+    <el-input v-model="formData.wgU" :clearable="true" placeholder="请输入电网电压点号" />
+</el-form-item>
+        <el-form-item label="Q-U特征曲线模式点号:" prop="quMode">
+    <el-input v-model="formData.quMode" :clearable="true" placeholder="请输入Q-U特征曲线模式点号" />
 </el-form-item>
         <el-form-item>
           <el-button :loading="btnLoading" type="primary" @click="save">保存</el-button>
@@ -65,6 +110,7 @@ const btnLoading = ref(false)
 
 const type = ref('')
 const formData = ref({
+            inverterNo: undefined,
             name: '',
             ratedActivePower: 0,
             ratedReactivePower: 0,
@@ -74,11 +120,28 @@ const formData = ref({
             downgradePriority: 0,
             isParticipateAdjust: false,
             isBenchmarkInverter: false,
-            createdAt: new Date(),
-            updatedAt: new Date(),
+            ygPreal: '',
+            wgPreal: '',
+            ygPmax: '',
+            ygPMin: '',
+            wgPmax: '',
+            wgPMin: '',
+            pf: '',
+            ygCmd: '',
+            ygMode: '',
+            ygRate: '',
+            ygFixW: '',
+            ygFixPercent: '',
+            wgU: '',
+            quMode: '',
         })
 // 验证规则
 const rule = reactive({
+               inverterNo : [{
+                   required: true,
+                   message: '',
+                   trigger: ['input','blur'],
+               }],
 })
 
 const elFormRef = ref()
