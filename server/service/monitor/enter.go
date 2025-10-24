@@ -1,3 +1,6 @@
 package monitor
 
-type ServiceGroup struct{ InverterMonitorService }
+type ServiceGroup struct {
+	InverterMonitorService
+	SysGridConnectionPointHistoryService
+}

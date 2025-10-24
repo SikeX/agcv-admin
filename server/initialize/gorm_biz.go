@@ -9,12 +9,7 @@ import (
 
 func bizModel() error {
 	db := global.GVA_DB
-	err := db.AutoMigrate(setting.SysInverterSetting{},
-		system.SysGridConnectionPoint{},
-		system.SysHisEvent{},
-		system.SysSvgSvcSetting{},
-		monitor.InverterMonitor{},
-	)
+	err := db.AutoMigrate(setting.SysInverterSetting{}, system.SysGridConnectionPoint{}, system.SysHisEvent{}, system.SysSvgSvcSetting{}, monitor.InverterMonitor{}, monitor.SysGridConnectionPointHistory{})
 	if err != nil {
 		return err
 	}

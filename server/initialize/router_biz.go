@@ -15,8 +15,10 @@ func initBizRouter(routers ...*gin.RouterGroup) {
 	holder(publicGroup, privateGroup)
 	{
 		monitorRouter := router.RouterGroupApp.Monitor
-		monitorRouter.InitInverterMonitorRouter(privateGroup, publicGroup)
-	} // 占位方法，保证文件可以正确加载，避免go空变量检测报错，请勿删除。
+		monitorRouter.InitInverterMonitorRouter(privateGroup, publicGroup) // 占位方法，保证文件可以正确加载，避免go空变量检测报错，请勿删除。
+		// 占位方法，保证文件可以正确加载，避免go空变量检测报错，请勿删除。
+		monitorRouter.InitSysGridConnectionPointHistoryRouter(privateGroup, publicGroup)
+	}
 	{
 		settingRouter := router.RouterGroupApp.Setting
 		settingRouter.InitSysInverterSettingRouter(privateGroup, publicGroup)
@@ -26,7 +28,7 @@ func initBizRouter(routers ...*gin.RouterGroup) {
 		systemRouter.InitSysGridConnectionPointRouter(privateGroup, publicGroup)
 		systemRouter.InitSysHisEventRouter(privateGroup, publicGroup)
 		systemRouter.InitSysSvgSvcSettingRouter(privateGroup, publicGroup)
-		systemRouter.InitSysQixiangyiSettingRouter(privateGroup, publicGroup) // 占位方法，保证文件可以正确加载，避免go空变量检测报错，请勿删除。
+		systemRouter.InitSysQixiangyiSettingRouter(privateGroup, publicGroup)
 		systemRouter.InitSysTestPointRouter(privateGroup, publicGroup)
 	}
 }
