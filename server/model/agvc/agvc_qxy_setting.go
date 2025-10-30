@@ -1,13 +1,13 @@
-
-// 自动生成模板SysQixiangyiSetting
-package system
+// 自动生成模板AgvcQxySetting
+package agvc
 import (
 	"github.com/flipped-aurora/gin-vue-admin/server/global"
 )
 
-// 气象仪配置 结构体  SysQixiangyiSetting
-type SysQixiangyiSetting struct {
+// 气象仪配置 结构体  AgvcQxySetting
+type AgvcQxySetting struct {
     global.GVA_MODEL
+  Number  *string `json:"number" form:"number" gorm:"column:number;"`  //设备编号
   DeviceName  *string `json:"deviceName" form:"deviceName" gorm:"column:device_name;"`  //设备名称
   DeviceType  *string `json:"deviceType" form:"deviceType" gorm:"column:device_type;"`  //设备类型
   DevicePosition  *string `json:"devicePosition" form:"devicePosition" gorm:"column:device_position;"`  //设备位置
@@ -19,12 +19,7 @@ type SysQixiangyiSetting struct {
 }
 
 
-// TableName 气象仪配置 SysQixiangyiSetting自定义表名 sys_qixiangyi_setting
-func (SysQixiangyiSetting) TableName() string {
-    return "sys_qixiangyi_setting"
+// TableName 气象仪配置 AgvcQxySetting自定义表名 agvc_qxy_setting
+func (AgvcQxySetting) TableName() string {
+    return "agvc_qxy_setting"
 }
-
-
-
-
-

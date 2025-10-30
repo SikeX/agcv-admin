@@ -8,20 +8,20 @@ import (
 	
 	"github.com/flipped-aurora/gin-vue-admin/server/global"
 	"github.com/flipped-aurora/gin-vue-admin/server/model/monitor"
-	systemReq "github.com/flipped-aurora/gin-vue-admin/server/model/system/request"
-	serviceSystem "github.com/flipped-aurora/gin-vue-admin/server/service/system"
+	agvcReq "github.com/flipped-aurora/gin-vue-admin/server/model/agvc/request"
+	serviceAgvc "github.com/flipped-aurora/gin-vue-admin/server/service/agvc"
 	"go.uber.org/zap"
 )
 
 type SysGridConnectionPointHistoryService struct{}
 
-var sysGridConnectionPointService serviceSystem.SysGridConnectionPointService
+var agvcBwdSettingService serviceAgvc.AgvcBwdSettingService
 
 // GetSysGridConnectionPointHistoryList 获取并网点配置列表（只返回ID和名称）
 // Author [yourname](https://github.com/yourname)
 func (sysGridConnectionPointHistoryService *SysGridConnectionPointHistoryService) GetSysGridConnectionPointHistoryList(ctx context.Context) ([]monitor.SysGridConnectionPointHistory, error) {
 	// 获取并网点配置列表
-	list, _, err := sysGridConnectionPointService.GetSysGridConnectionPointInfoList(ctx, systemReq.SysGridConnectionPointSearch{})
+	list, _, err := agvcBwdSettingService.GetAgvcBwdSettingInfoList(ctx, agvcReq.AgvcBwdSettingSearch{})
 	if err != nil {
 		return nil, err
 	}

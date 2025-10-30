@@ -20,10 +20,8 @@ type RouterGroup struct {
 	SysExportTemplateRouter
 	SysParamsRouter
 	SysVersionRouter
-	SysGridConnectionPointRouter
 	SysHisEventRouter
 	SysSvgSvcSettingRouter
-	SysQixiangyiSettingRouter
 	SysTestPointRouter
 }
 
@@ -48,9 +46,7 @@ var (
 	autoCodeTemplateApi       = api.ApiGroupApp.SystemApiGroup.AutoCodeTemplateApi
 	exportTemplateApi         = api.ApiGroupApp.SystemApiGroup.SysExportTemplateApi
 	sysVersionApi             = api.ApiGroupApp.SystemApiGroup.SysVersionApi
-	sysGridConnectionPointApi = api.ApiGroupApp.SystemApiGroup.SysGridConnectionPointApi
 	sysHisEventApi            = api.ApiGroupApp.SystemApiGroup.SysHisEventApi
 	sysSvgSvcSettingApi       = api.ApiGroupApp.SystemApiGroup.SysSvgSvcSettingApi
-	sysQixiangyiSettingApi    = api.ApiGroupApp.SystemApiGroup.SysQixiangyiSettingApi
 	sysTestPointApi           = api.ApiGroupApp.SystemApiGroup.SysTestPointApi
 )

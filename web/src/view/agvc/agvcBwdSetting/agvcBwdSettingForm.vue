@@ -6,6 +6,9 @@
         <el-form-item label="并网点名称:" prop="name">
     <el-input v-model="formData.name" :clearable="true" placeholder="请输入并网点名称" />
 </el-form-item>
+        <el-form-item label="设备编号:" prop="number">
+    <el-input v-model="formData.number" :clearable="true" placeholder="请输入设备编号" />
+</el-form-item>
         <el-form-item label="电压等级(kV):" prop="voltageLevel">
     <el-input-number v-model="formData.voltageLevel" style="width:100%" :precision="2" :clearable="true" />
 </el-form-item>
@@ -59,13 +62,13 @@
 
 <script setup>
 import {
-  createSysGridConnectionPoint,
-  updateSysGridConnectionPoint,
-  findSysGridConnectionPoint
-} from '@/api/system/sysGridConnectionPoint'
+  createAgvcBwdSetting,
+  updateAgvcBwdSetting,
+  findAgvcBwdSetting
+} from '@/api/agvc/agvcBwdSetting'
 
 defineOptions({
-    name: 'SysGridConnectionPointForm'
+    name: 'AgvcBwdSettingForm'
 })
 
 // 自动获取字典
@@ -84,6 +87,7 @@ const btnLoading = ref(false)
 const type = ref('')
 const formData = ref({
             name: '',
+            number: '',
             voltageLevel: 0,
             agcFunctionExit: undefined,
             agcStepSize: 0,
@@ -109,7 +113,7 @@ const elFormRef = ref()
 const init = async () => {
  // 建议通过url传参获取目标数据ID 调用 find方法进行查询数据操作 从而决定本页面是create还是update 以下为id作为url参数示例
     if (route.query.id) {
-      const res = await findSysGridConnectionPoint({ ID: route.query.id })
+      const res = await findAgvcBwdSetting({ ID: route.query.id })
       if (res.code === 0) {
         formData.value = res.data
         type.value = 'update'
@@ -128,13 +132,13 @@ const save = async() => {
             let res
            switch (type.value) {
              case 'create':
-               res = await createSysGridConnectionPoint(formData.value)
+               res = await createAgvcBwdSetting(formData.value)
                break
              case 'update':
-               res = await updateSysGridConnectionPoint(formData.value)
+               res = await updateAgvcBwdSetting(formData.value)
                break
              default:
-               res = await createSysGridConnectionPoint(formData.value)
+               res = await createAgvcBwdSetting(formData.value)
                break
            }
            btnLoading.value = false

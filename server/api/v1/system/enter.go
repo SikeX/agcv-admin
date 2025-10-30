@@ -23,10 +23,8 @@ type ApiGroup struct {
 	AutoCodeTemplateApi
 	SysParamsApi
 	SysVersionApi
-	SysGridConnectionPointApi
 	SysHisEventApi
 	SysSvgSvcSettingApi
-	SysQixiangyiSettingApi
 	SysTestPointApi
 }
 
@@ -51,9 +49,7 @@ var (
 	autoCodeHistoryService        = service.ServiceGroupApp.SystemServiceGroup.AutoCodeHistory
 	autoCodeTemplateService       = service.ServiceGroupApp.SystemServiceGroup.AutoCodeTemplate
 	sysVersionService             = service.ServiceGroupApp.SystemServiceGroup.SysVersionService
-	sysGridConnectionPointService = service.ServiceGroupApp.SystemServiceGroup.SysGridConnectionPointService
 	sysHisEventService            = service.ServiceGroupApp.SystemServiceGroup.SysHisEventService
 	sysSvgSvcSettingService       = service.ServiceGroupApp.SystemServiceGroup.SysSvgSvcSettingService
-	sysQixiangyiSettingService    = service.ServiceGroupApp.SystemServiceGroup.SysQixiangyiSettingService
 	sysTestPointService           = service.ServiceGroupApp.SystemServiceGroup.SysTestPointService
 )

@@ -1,14 +1,15 @@
 
-// 自动生成模板SysGridConnectionPoint
-package system
+// 自动生成模板AgvcBwdSetting
+package agvc
 import (
 	"github.com/flipped-aurora/gin-vue-admin/server/global"
 )
 
-// 并网点配置 结构体  SysGridConnectionPoint
-type SysGridConnectionPoint struct {
+// 并网点配置 结构体  AgvcBwdSetting
+type AgvcBwdSetting struct {
     global.GVA_MODEL
   Name  *string `json:"name" form:"name" gorm:"column:name;"`  //并网点名称
+  Number  *string `json:"number" form:"number" gorm:"column:number;"`  //设备编号
   VoltageLevel  *float64 `json:"voltageLevel" form:"voltageLevel" gorm:"column:voltage_level;"`  //电压等级(kV)
   AgcFunctionExit  *int64 `json:"agcFunctionExit" form:"agcFunctionExit" gorm:"column:agc_function_exit;"`  //AGC功能退出模式
   AgcStepSize  *float64 `json:"agcStepSize" form:"agcStepSize" gorm:"column:agc_step_size;"`  //AGC调节步长(kW)
@@ -26,9 +27,9 @@ type SysGridConnectionPoint struct {
 }
 
 
-// TableName 并网点配置 SysGridConnectionPoint自定义表名 sys_grid_connection_point
-func (SysGridConnectionPoint) TableName() string {
-    return "sys_grid_connection_point"
+// TableName 并网点配置 AgvcBwdSetting自定义表名 agvc_bwd_setting
+func (AgvcBwdSetting) TableName() string {
+    return "agvc_bwd_setting"
 }
 
 

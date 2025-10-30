@@ -1,3 +1,4 @@
+
 <template>
   <div>
     <div class="gva-search-box">
@@ -5,6 +6,10 @@
       <el-form-item label="并网点名称" prop="name">
         <el-input v-model="searchInfo.name" placeholder="请输入并网点名称" />
       </el-form-item>
+      <el-form-item label="设备编号" prop="number">
+        <el-input v-model="searchInfo.number" placeholder="请输入设备编号" />
+      </el-form-item>
+      
 
         <template v-if="showAllQuery">
           <!-- 将需要控制显示状态的查询条件添加到此范围内 -->
@@ -34,11 +39,9 @@
         >
         <el-table-column type="selection" width="55" />
         
-<!--        <el-table-column sortable align="left" label="日期" prop="CreatedAt" width="180">-->
-<!--            <template #default="scope">{{ formatDate(scope.row.CreatedAt) }}</template>-->
-<!--        </el-table-column>-->
-        
             <el-table-column align="left" label="并网点名称" prop="name" width="120" />
+
+            <el-table-column align="left" label="设备编号" prop="number" width="120" />
 
             <el-table-column align="left" label="电压等级(kV)" prop="voltageLevel" width="120" />
 
@@ -71,7 +74,7 @@
         <el-table-column align="left" label="操作" fixed="right" :min-width="appStore.operateMinWith">
             <template #default="scope">
             <el-button  type="primary" link class="table-button" @click="getDetails(scope.row)"><el-icon style="margin-right: 5px"><InfoFilled /></el-icon>查看</el-button>
-            <el-button  type="primary" link icon="edit" class="table-button" @click="updateSysGridConnectionPointFunc(scope.row)">编辑</el-button>
+            <el-button  type="primary" link icon="edit" class="table-button" @click="updateAgvcBwdSettingFunc(scope.row)">编辑</el-button>
             <el-button   type="primary" link icon="delete" @click="deleteRow(scope.row)">删除</el-button>
             </template>
         </el-table-column>
@@ -102,6 +105,9 @@
           <el-form :model="formData" label-position="top" ref="elFormRef" :rules="rule" label-width="80px">
             <el-form-item label="并网点名称:" prop="name">
     <el-input v-model="formData.name" :clearable="true" placeholder="请输入并网点名称" />
+</el-form-item>
+            <el-form-item label="设备编号:" prop="number">
+    <el-input v-model="formData.number" :clearable="true" placeholder="请输入设备编号" />
 </el-form-item>
             <el-form-item label="电压等级(kV):" prop="voltageLevel">
     <el-input-number v-model="formData.voltageLevel" style="width:100%" :precision="2" :clearable="true" />
@@ -153,6 +159,9 @@
                     <el-descriptions-item label="并网点名称">
     {{ detailForm.name }}
 </el-descriptions-item>
+                    <el-descriptions-item label="设备编号">
+    {{ detailForm.number }}
+</el-descriptions-item>
                     <el-descriptions-item label="电压等级(kV)">
     {{ detailForm.voltageLevel }}
 </el-descriptions-item>
@@ -203,13 +212,13 @@
 
 <script setup>
 import {
-  createSysGridConnectionPoint,
-  deleteSysGridConnectionPoint,
-  deleteSysGridConnectionPointByIds,
-  updateSysGridConnectionPoint,
-  findSysGridConnectionPoint,
-  getSysGridConnectionPointList
-} from '@/api/system/sysGridConnectionPoint'
+  createAgvcBwdSetting,
+  deleteAgvcBwdSetting,
+  deleteAgvcBwdSettingByIds,
+  updateAgvcBwdSetting,
+  findAgvcBwdSetting,
+  getAgvcBwdSettingList
+} from '@/api/agvc/agvcBwdSetting'
 
 // 全量引入格式化工具 请按需保留
 import { getDictFunc, formatDate, formatBoolean, filterDict ,filterDataSource, returnArrImg, onDownloadFile } from '@/utils/format'
@@ -221,7 +230,7 @@ import { useAppStore } from "@/pinia"
 
 
 defineOptions({
-    name: 'SysGridConnectionPoint'
+    name: 'AgvcBwdSetting'
 })
 
 // 提交按钮loading
@@ -234,6 +243,7 @@ const showAllQuery = ref(false)
 // 自动化生成的字典（可能为空）以及字段
 const formData = ref({
             name: '',
+            number: '',
             voltageLevel: 0,
             agcFunctionExit: undefined,
             agcStepSize: 0,
@@ -265,12 +275,14 @@ const total = ref(0)
 const pageSize = ref(10)
 const tableData = ref([])
 const searchInfo = ref({
-  name: ''
+  name: '',
+  number: ''
 })
 // 重置
 const onReset = () => {
   searchInfo.value = {
-    name: ''
+    name: '',
+    number: ''
   }
   getTableData()
 }
@@ -298,11 +310,7 @@ const handleCurrentChange = (val) => {
 
 // 查询
 const getTableData = async() => {
-  const table = await getSysGridConnectionPointList({ 
-    page: page.value, 
-    pageSize: pageSize.value, 
-    name: searchInfo.value.name 
-  })
+  const table = await getAgvcBwdSettingList({ page: page.value, pageSize: pageSize.value, ...searchInfo.value })
   if (table.code === 0) {
     tableData.value = table.data.list
     total.value = table.data.total
@@ -337,7 +345,7 @@ const deleteRow = (row) => {
         cancelButtonText: '取消',
         type: 'warning'
     }).then(() => {
-            deleteSysGridConnectionPointFunc(row)
+            deleteAgvcBwdSettingFunc(row)
         })
     }
 
@@ -360,7 +368,7 @@ const onDelete = async() => {
         multipleSelection.value.map(item => {
           IDs.push(item.ID)
         })
-      const res = await deleteSysGridConnectionPointByIds({ IDs })
+      const res = await deleteAgvcBwdSettingByIds({ IDs })
       if (res.code === 0) {
         ElMessage({
           type: 'success',
@@ -378,8 +386,8 @@ const onDelete = async() => {
 const type = ref('')
 
 // 更新行
-const updateSysGridConnectionPointFunc = async(row) => {
-    const res = await findSysGridConnectionPoint({ ID: row.ID })
+const updateAgvcBwdSettingFunc = async(row) => {
+    const res = await findAgvcBwdSetting({ ID: row.ID })
     type.value = 'update'
     if (res.code === 0) {
         formData.value = res.data
@@ -389,8 +397,8 @@ const updateSysGridConnectionPointFunc = async(row) => {
 
 
 // 删除行
-const deleteSysGridConnectionPointFunc = async (row) => {
-    const res = await deleteSysGridConnectionPoint({ ID: row.ID })
+const deleteAgvcBwdSettingFunc = async (row) => {
+    const res = await deleteAgvcBwdSetting({ ID: row.ID })
     if (res.code === 0) {
         ElMessage({
                 type: 'success',
@@ -417,6 +425,7 @@ const closeDialog = () => {
     dialogFormVisible.value = false
     formData.value = {
         name: '',
+        number: '',
         voltageLevel: 0,
         agcFunctionExit: undefined,
         agcStepSize: 0,
@@ -441,13 +450,13 @@ const enterDialog = async () => {
               let res
               switch (type.value) {
                 case 'create':
-                  res = await createSysGridConnectionPoint(formData.value)
+                  res = await createAgvcBwdSetting(formData.value)
                   break
                 case 'update':
-                  res = await updateSysGridConnectionPoint(formData.value)
+                  res = await updateAgvcBwdSetting(formData.value)
                   break
                 default:
-                  res = await createSysGridConnectionPoint(formData.value)
+                  res = await createAgvcBwdSetting(formData.value)
                   break
               }
               btnLoading.value = false
@@ -477,7 +486,7 @@ const openDetailShow = () => {
 // 打开详情
 const getDetails = async (row) => {
   // 打开弹窗
-  const res = await findSysGridConnectionPoint({ ID: row.ID })
+  const res = await findAgvcBwdSetting({ ID: row.ID })
   if (res.code === 0) {
     detailForm.value = res.data
     openDetailShow()

@@ -1,6 +1,7 @@
 package service
 
 import (
+	"github.com/flipped-aurora/gin-vue-admin/server/service/agvc"
 	"github.com/flipped-aurora/gin-vue-admin/server/service/example"
 	"github.com/flipped-aurora/gin-vue-admin/server/service/monitor"
 	"github.com/flipped-aurora/gin-vue-admin/server/service/setting"
@@ -14,4 +15,5 @@ type ServiceGroup struct {
 	ExampleServiceGroup example.ServiceGroup
 	SettingServiceGroup setting.ServiceGroup
 	MonitorServiceGroup monitor.ServiceGroup
+	AgvcServiceGroup    agvc.ServiceGroup
 }

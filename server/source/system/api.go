@@ -197,6 +197,10 @@ func (i *initApi) InitializeData(ctx context.Context) (context.Context, error) {
 		{ApiGroup: "版本控制", Method: "POST", Path: "/sysVersion/importVersion", Description: "同步版本"},
 		{ApiGroup: "版本控制", Method: "DELETE", Path: "/sysVersion/deleteSysVersion", Description: "删除版本"},
 		{ApiGroup: "版本控制", Method: "DELETE", Path: "/sysVersion/deleteSysVersionByIds", Description: "批量删除版本"},
+
+		{ApiGroup: "气象仪监控", Method: "GET", Path: "/sysQixiangyiHistory/getSysQixiangyiHistoryList", Description: "获取气象仪监控列表"},
+		{ApiGroup: "气象仪监控", Method: "GET", Path: "/sysQixiangyiHistory/getQixiangyiHistoryData", Description: "获取气象仪历史数据"},
+		{ApiGroup: "气象仪监控", Method: "POST", Path: "/sysQixiangyiHistory/generateTestData", Description: "生成气象仪测试数据"},
 	}
 	if err := db.Create(&entities).Error; err != nil {
 		return ctx, errors.Wrap(err, sysModel.SysApi{}.TableName()+"表数据初始化失败!")

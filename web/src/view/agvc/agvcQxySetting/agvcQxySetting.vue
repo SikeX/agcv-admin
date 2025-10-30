@@ -3,12 +3,13 @@
   <div>
     <div class="gva-search-box">
       <el-form ref="elSearchFormRef" :inline="true" :model="searchInfo" class="demo-form-inline" @keyup.enter="onSubmit">
-      <el-form-item label="ID" prop="ID">
-        <el-input-number v-model="searchInfo.ID" placeholder="请输入ID" min="1" />
+      <el-form-item label="设备编号" prop="number">
+        <el-input v-model="searchInfo.number" placeholder="请输入设备编号" />
       </el-form-item>
       <el-form-item label="设备名称" prop="deviceName">
         <el-input v-model="searchInfo.deviceName" placeholder="请输入设备名称" />
       </el-form-item>
+      
 
         <template v-if="showAllQuery">
           <!-- 将需要控制显示状态的查询条件添加到此范围内 -->
@@ -37,8 +38,9 @@
         @selection-change="handleSelectionChange"
         >
         <el-table-column type="selection" width="55" />
-        <el-table-column align="left" label="ID" prop="ID" width="60" />
         
+            <el-table-column align="left" label="设备编号" prop="number" width="120" />
+
             <el-table-column align="left" label="设备名称" prop="deviceName" width="120" />
 
             <el-table-column align="left" label="设备类型" prop="deviceType" width="120" />
@@ -58,7 +60,7 @@
         <el-table-column align="left" label="操作" fixed="right" :min-width="appStore.operateMinWith">
             <template #default="scope">
             <el-button  type="primary" link class="table-button" @click="getDetails(scope.row)"><el-icon style="margin-right: 5px"><InfoFilled /></el-icon>查看</el-button>
-            <el-button  type="primary" link icon="edit" class="table-button" @click="updateSysQixiangyiSettingFunc(scope.row)">编辑</el-button>
+            <el-button  type="primary" link icon="edit" class="table-button" @click="updateAgvcQxySettingFunc(scope.row)">编辑</el-button>
             <el-button   type="primary" link icon="delete" @click="deleteRow(scope.row)">删除</el-button>
             </template>
         </el-table-column>
@@ -87,6 +89,9 @@
             </template>
 
           <el-form :model="formData" label-position="top" ref="elFormRef" :rules="rule" label-width="80px">
+            <el-form-item label="设备编号:" prop="number">
+    <el-input v-model="formData.number" :clearable="true" placeholder="请输入设备编号" />
+</el-form-item>
             <el-form-item label="设备名称:" prop="deviceName">
     <el-input v-model="formData.deviceName" :clearable="true" placeholder="请输入设备名称" />
 </el-form-item>
@@ -103,7 +108,7 @@
     <el-input v-model.number="formData.deviceModel" :clearable="true" placeholder="请输入设备型号" />
 </el-form-item>
             <el-form-item label="并网点:" prop="gcpName">
-    <el-select v-model="formData.gcpName" placeholder="请选择并网点" clearable>
+    <el-select v-model="formData.gcpName" placeholder="请选择并网点" style="width:100%" :clearable="true">
       <el-option
         v-for="item in gridConnectionPoints"
         :key="item.ID"
@@ -112,20 +117,23 @@
       />
     </el-select>
 </el-form-item>
+            <el-form-item label="安装角度:" prop="installAngle">
+    <el-input-number v-model="formData.installAngle" style="width:100%" :precision="2" :clearable="true" />
+</el-form-item>
             <el-form-item label="是否主气象仪:" prop="isMaster">
-    <el-select v-model="formData.isMaster" placeholder="请选择是否主气象仪" clearable>
+    <el-select v-model="formData.isMaster" placeholder="请选择是否主气象仪" style="width:100%" :clearable="true">
       <el-option label="是" value="是" />
       <el-option label="否" value="否" />
     </el-select>
-</el-form-item>
-            <el-form-item label="安装角度:" prop="installAngle">
-    <el-input-number v-model="formData.installAngle" style="width:100%" :precision="2" :clearable="true" />
 </el-form-item>
           </el-form>
     </el-drawer>
 
     <el-drawer destroy-on-close :size="appStore.drawerSize" v-model="detailShow" :show-close="true" :before-close="closeDetailShow" title="查看">
             <el-descriptions :column="1" border>
+                    <el-descriptions-item label="设备编号">
+    {{ detailForm.number }}
+</el-descriptions-item>
                     <el-descriptions-item label="设备名称">
     {{ detailForm.deviceName }}
 </el-descriptions-item>
@@ -158,47 +166,28 @@
 
 <script setup>
 import {
-  createSysQixiangyiSetting,
-  deleteSysQixiangyiSetting,
-  deleteSysQixiangyiSettingByIds,
-  updateSysQixiangyiSetting,
-  findSysQixiangyiSetting,
-  getSysQixiangyiSettingList
-} from '@/api/system/sysQixiangyiSetting'
+  createAgvcQxySetting,
+  deleteAgvcQxySetting,
+  deleteAgvcQxySettingByIds,
+  updateAgvcQxySetting,
+  findAgvcQxySetting,
+  getAgvcQxySettingList
+} from '@/api/agvc/agvcQxySetting'
 
 // 导入并网点相关的API方法
-import { getSysGridConnectionPointList } from '@/api/system/sysGridConnectionPoint'
-
-// 导入Vue Router的onActivated钩子
-import { onActivated } from 'vue'
+import { getAgvcBwdSettingList } from '@/api/agvc/agvcBwdSetting'
 
 // 全量引入格式化工具 请按需保留
 import { getDictFunc, formatDate, formatBoolean, filterDict ,filterDataSource, returnArrImg, onDownloadFile } from '@/utils/format'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ref, reactive } from 'vue'
-import { useAppStore } from '@/pinia'
+import { useAppStore } from "@/pinia"
 
-// 定义并网点列表变量
-const gridConnectionPoints = ref([])
 
-// 获取并网点列表
-const getGridConnectionPoints = async () => {
-  const res = await getSysGridConnectionPointList({ page: 1, pageSize: 9999 })
-  if (res.code === 0) {
-    gridConnectionPoints.value = res.data.list
-  }
-}
 
-// 在组件初始化时获取并网点列表
-getGridConnectionPoints()
-
-// 当组件被激活时重新获取并网点列表
-onActivated(() => {
-  getGridConnectionPoints()
-})
 
 defineOptions({
-    name: 'SysQixiangyiSetting'
+    name: 'AgvcQxySetting'
 })
 
 // 提交按钮loading
@@ -210,6 +199,7 @@ const showAllQuery = ref(false)
 
 // 自动化生成的字典（可能为空）以及字段
 const formData = ref({
+            number: '',
             deviceName: '',
             deviceType: '',
             devicePosition: '',
@@ -234,10 +224,16 @@ const page = ref(1)
 const total = ref(0)
 const pageSize = ref(10)
 const tableData = ref([])
-const searchInfo = ref({})
+const searchInfo = ref({
+  number: '',
+  deviceName: ''
+})
 // 重置
 const onReset = () => {
-  searchInfo.value = {}
+  searchInfo.value = {
+    number: '',
+    deviceName: ''
+  }
   getTableData()
 }
 
@@ -264,7 +260,7 @@ const handleCurrentChange = (val) => {
 
 // 查询
 const getTableData = async() => {
-  const table = await getSysQixiangyiSettingList({ page: page.value, pageSize: pageSize.value, ...searchInfo.value })
+  const table = await getAgvcQxySettingList({ page: page.value, pageSize: pageSize.value, ...searchInfo.value })
   if (table.code === 0) {
     tableData.value = table.data.list
     total.value = table.data.total
@@ -277,8 +273,20 @@ getTableData()
 
 // ============== 表格控制部分结束 ===============
 
+// 并网点数据
+const gridConnectionPoints = ref([])
+
+// 获取并网点列表
+const getGridConnectionPoints = async () => {
+  const res = await getAgvcBwdSettingList({ page: 1, pageSize: 9999 })
+  if (res.code === 0) {
+    gridConnectionPoints.value = res.data.list
+  }
+}
+
 // 获取需要的字典 可能为空 按需保留
 const setOptions = async () =>{
+  await getGridConnectionPoints()
 }
 
 // 获取需要的字典 可能为空 按需保留
@@ -299,7 +307,7 @@ const deleteRow = (row) => {
         cancelButtonText: '取消',
         type: 'warning'
     }).then(() => {
-            deleteSysQixiangyiSettingFunc(row)
+            deleteAgvcQxySettingFunc(row)
         })
     }
 
@@ -322,7 +330,7 @@ const onDelete = async() => {
         multipleSelection.value.map(item => {
           IDs.push(item.ID)
         })
-      const res = await deleteSysQixiangyiSettingByIds({ IDs })
+      const res = await deleteAgvcQxySettingByIds({ IDs })
       if (res.code === 0) {
         ElMessage({
           type: 'success',
@@ -340,8 +348,8 @@ const onDelete = async() => {
 const type = ref('')
 
 // 更新行
-const updateSysQixiangyiSettingFunc = async(row) => {
-    const res = await findSysQixiangyiSetting({ ID: row.ID })
+const updateAgvcQxySettingFunc = async(row) => {
+    const res = await findAgvcQxySetting({ ID: row.ID })
     type.value = 'update'
     if (res.code === 0) {
         formData.value = res.data
@@ -351,8 +359,8 @@ const updateSysQixiangyiSettingFunc = async(row) => {
 
 
 // 删除行
-const deleteSysQixiangyiSettingFunc = async (row) => {
-    const res = await deleteSysQixiangyiSetting({ ID: row.ID })
+const deleteAgvcQxySettingFunc = async (row) => {
+    const res = await deleteAgvcQxySetting({ ID: row.ID })
     if (res.code === 0) {
         ElMessage({
                 type: 'success',
@@ -378,46 +386,51 @@ const openDialog = () => {
 const closeDialog = () => {
     dialogFormVisible.value = false
     formData.value = {
-        deviceName: '',
-        deviceType: '',
-        devicePosition: '',
-        deviceFactory: '',
-        deviceModel: undefined,
-        gcpName: '',
-        installAngle: 0,
-        isMaster: '',
+            number: '',
+            deviceName: '',
+            deviceType: '',
+            devicePosition: '',
+            deviceFactory: '',
+            deviceModel: undefined,
+            gcpName: '',
+            installAngle: 0,
+            isMaster: '',
         }
 }
 // 弹窗确定
 const enterDialog = async () => {
      btnLoading.value = true
      elFormRef.value?.validate( async (valid) => {
-             if (!valid) return btnLoading.value = false
-              let res
-              switch (type.value) {
-                case 'create':
-                  res = await createSysQixiangyiSetting(formData.value)
-                  break
-                case 'update':
-                  res = await updateSysQixiangyiSetting(formData.value)
-                  break
-                default:
-                  res = await createSysQixiangyiSetting(formData.value)
-                  break
-              }
-              btnLoading.value = false
-              if (res.code === 0) {
-                ElMessage({
-                  type: 'success',
-                  message: '创建/更改成功'
-                })
-                closeDialog()
-                getTableData()
-              }
-      })
+         if (!valid) {
+             btnLoading.value = false
+             return
+         }
+         let res
+         switch (type.value) {
+           case 'create':
+             res = await createAgvcQxySetting(formData.value)
+             break
+           case 'update':
+             res = await updateAgvcQxySetting(formData.value)
+             break
+           default:
+             res = await createAgvcQxySetting(formData.value)
+             break
+         }
+         if (res.code === 0) {
+           ElMessage({
+             type: 'success',
+             message: '创建/更改成功'
+           })
+           closeDialog()
+           getTableData()
+         }
+         btnLoading.value = false
+     })
 }
 
-const detailForm = ref({})
+
+const detailFrom = ref({})
 
 // 查看详情控制标记
 const detailShow = ref(false)
@@ -432,10 +445,10 @@ const openDetailShow = () => {
 // 打开详情
 const getDetails = async (row) => {
   // 打开弹窗
-  const res = await findSysQixiangyiSetting({ ID: row.ID })
+  const res = await findAgvcQxySetting({ ID: row.ID })
   if (res.code === 0) {
-    detailForm.value = res.data
-    openDetailShow()
+    detailFrom.value = res.data
+    detailShow.value = true
   }
 }
 
@@ -443,13 +456,11 @@ const getDetails = async (row) => {
 // 关闭详情弹窗
 const closeDetailShow = () => {
   detailShow.value = false
-  detailForm.value = {}
+  detailFrom.value = {}
 }
 
 
 </script>
 
 <style>
-
 </style>
-
