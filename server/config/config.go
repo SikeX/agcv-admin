@@ -31,7 +31,10 @@ type Server struct {
 
 	// InfluxDB 配置
 	InfluxDB InfluxDB `mapstructure:"influxdb" json:"influxdb" yaml:"influxdb"`
-	
+
 	// MQTT 配置
 	MQTT MQTT `mapstructure:"mqtt" json:"mqtt" yaml:"mqtt"`
+
+	// CoAP 配置
+	Coap Coap `mapstructure:"coap" json:"coap" yaml:"coap"`
 }
