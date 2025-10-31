@@ -98,9 +98,6 @@ func (i *initMenu) InitializeData(ctx context.Context) (next context.Context, er
 		{MenuLevel: 1, Hidden: false, ParentId: menuNameMap["systemTools"], Path: "autoPkg", Name: "autoPkg", Component: "view/systemTools/autoPkg/autoPkg.vue", Sort: 0, Meta: Meta{Title: "模板配置", Icon: "folder"}},
 		{MenuLevel: 1, Hidden: false, ParentId: menuNameMap["systemTools"], Path: "exportTemplate", Name: "exportTemplate", Component: "view/systemTools/exportTemplate/exportTemplate.vue", Sort: 5, Meta: Meta{Title: "导出模板", Icon: "reading"}},
 		{MenuLevel: 1, Hidden: false, ParentId: menuNameMap["systemTools"], Path: "sysVersion", Name: "sysVersion", Component: "view/systemTools/version/version.vue", Sort: 8, Meta: Meta{Title: "版本管理", Icon: "server"}},
-
-		// systemCtl子菜单
-		{MenuLevel: 1, Hidden: false, ParentId: menuNameMap["systemCtl"], Path: "sysInverterSetting", Name: "sysInverterSetting", Component: "view/setting/sysInverterSetting/sysInverterSetting.vue", Sort: 1, Meta: Meta{Title: "逆变器设置", Icon: ""}},
 	}
 
 	// 创建子菜单

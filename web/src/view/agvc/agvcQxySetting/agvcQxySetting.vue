@@ -39,25 +39,25 @@
         >
         <el-table-column type="selection" width="55" />
         
-            <el-table-column align="left" label="设备编号" prop="number" width="120" />
+            <el-table-column align="left" label="设备编号" prop="number" min-width="100" />
 
-            <el-table-column align="left" label="设备名称" prop="deviceName" width="120" />
+            <el-table-column align="left" label="设备名称" prop="deviceName" min-width="120" />
 
-            <el-table-column align="left" label="设备类型" prop="deviceType" width="120" />
+            <el-table-column align="left" label="设备类型" prop="deviceType" min-width="100" />
 
-            <el-table-column align="left" label="设备位置" prop="devicePosition" width="120" />
+            <el-table-column align="left" label="设备位置" prop="devicePosition" min-width="120" />
 
-            <el-table-column align="left" label="设备厂家" prop="deviceFactory" width="120" />
+            <el-table-column align="left" label="设备厂家" prop="deviceFactory" min-width="120" />
 
-            <el-table-column align="left" label="设备型号" prop="deviceModel" width="120" />
+            <el-table-column align="left" label="设备型号" prop="deviceModel" min-width="100" />
 
-            <el-table-column align="left" label="并网点" prop="gcpName" width="120" />
+            <el-table-column align="left" label="并网点" prop="gcpName" min-width="100" />
 
-            <el-table-column align="left" label="安装角度" prop="installAngle" width="120" />
+            <el-table-column align="left" label="安装角度" prop="installAngle" min-width="100" />
 
-            <el-table-column align="left" label="是否主气象仪" prop="isMaster" width="120" />
+            <el-table-column align="left" label="是否主气象仪" prop="isMaster" min-width="120" />
 
-        <el-table-column align="left" label="操作" fixed="right" :min-width="appStore.operateMinWith">
+        <el-table-column align="left" label="操作" fixed="right" min-width="220">
             <template #default="scope">
             <el-button  type="primary" link class="table-button" @click="getDetails(scope.row)"><el-icon style="margin-right: 5px"><InfoFilled /></el-icon>查看</el-button>
             <el-button  type="primary" link icon="edit" class="table-button" @click="updateAgvcQxySettingFunc(scope.row)">编辑</el-button>

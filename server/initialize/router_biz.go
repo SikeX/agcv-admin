@@ -14,26 +14,13 @@ func initBizRouter(routers ...*gin.RouterGroup) {
 	publicGroup := routers[1]
 	holder(publicGroup, privateGroup)
 	{
-		monitorRouter := router.RouterGroupApp.Monitor
-		monitorRouter.InitInverterMonitorRouter(privateGroup, publicGroup)
-		monitorRouter.InitSysGridConnectionPointHistoryRouter(privateGroup, publicGroup)
-		monitorRouter.InitSysQixiangyiHistoryRouter(privateGroup, publicGroup)
-	}
-	{
-		settingRouter := router.RouterGroupApp.Setting
-		settingRouter.InitSysInverterSettingRouter(privateGroup, publicGroup)
-	}
-	{
-		systemRouter := router.RouterGroupApp.System
-		systemRouter.InitSysHisEventRouter(privateGroup, publicGroup)
-		systemRouter.InitSysSvgSvcSettingRouter(privateGroup, publicGroup)
-		systemRouter.InitSysTestPointRouter(privateGroup, publicGroup)
-	}
-	{
 		agvcRouter := router.RouterGroupApp.Agvc
 		agvcRouter.InitAgvcBwdSettingRouter(privateGroup, publicGroup)
-		agvcRouter.InitAgvcQxySettingRouter(privateGroup, publicGroup) // 占位方法，保证文件可以正确加载，避免go空变量检测报错，请勿删除。
-		// 占位方法，保证文件可以正确加载，避免go空变量检测报错，请勿删除。
-	
+		agvcRouter.InitAgvcQxySettingRouter(privateGroup, publicGroup)
+		agvcRouter.InitAgvcNbqSettingRouter(privateGroup, publicGroup)
+		agvcRouter.InitAgvcEventHisRouter(privateGroup, publicGroup)
+		agvcRouter.InitAgvcNbqHisRouter(privateGroup, publicGroup)
+		agvcRouter.InitAgvcBwdHisRouter(privateGroup, publicGroup)
+		agvcRouter.InitAgvcQxyHisRouter(privateGroup, publicGroup)
 	}
 }

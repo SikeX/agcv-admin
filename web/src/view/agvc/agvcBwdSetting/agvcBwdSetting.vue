@@ -39,37 +39,37 @@
         >
         <el-table-column type="selection" width="55" />
         
-            <el-table-column align="left" label="并网点名称" prop="name" width="120" />
+            <el-table-column align="left" label="名称" prop="name" width="120" />
 
-            <el-table-column align="left" label="设备编号" prop="number" width="120" />
+            <el-table-column align="left" label="编号" prop="number" width="100" />
 
-            <el-table-column align="left" label="电压等级(kV)" prop="voltageLevel" width="120" />
+            <el-table-column align="left" label="电压(kV)" prop="voltageLevel" width="100" />
 
-            <el-table-column align="left" label="AGC功能退出模式" prop="agcFunctionExit" width="120" />
+            <el-table-column align="left" label="AGC退出模式" prop="agcFunctionExit" width="130" />
 
-            <el-table-column align="left" label="AGC调节步长(kW)" prop="agcStepSize" width="120" />
+            <el-table-column align="left" label="AGC步长(kW)" prop="agcStepSize" width="130" />
 
-            <el-table-column align="left" label="AGC步长周期(秒)" prop="agcStepPeriod" width="120" />
+            <el-table-column align="left" label="AGC周期(秒)" prop="agcStepPeriod" width="130" />
 
-            <el-table-column align="left" label="AGC抖动区间(kW)" prop="agcVibrationRange" width="120" />
+            <el-table-column align="left" label="AGC抖动(kW)" prop="agcVibrationRange" width="130" />
 
-            <el-table-column align="left" label="AGC调控周期(秒)" prop="agcControlPeriod" width="120" />
+            <el-table-column align="left" label="AGC调控周期(秒)" prop="agcControlPeriod" width="140" />
 
-            <el-table-column align="left" label="AGC微调系数" prop="agcMicroAdjustmentCoefficient" width="120" />
+            <el-table-column align="left" label="AGC微调系数" prop="agcMicroAdjustmentCoefficient" width="130" />
 
-            <el-table-column align="left" label="AVC调节步长(kV)" prop="avcStepSize" width="120" />
+            <el-table-column align="left" label="AVC步长(kV)" prop="avcStepSize" width="130" />
 
-            <el-table-column align="left" label="AVC步长周期(秒)" prop="avcStepPeriod" width="120" />
+            <el-table-column align="left" label="AVC周期(秒)" prop="avcStepPeriod" width="130" />
 
-            <el-table-column align="left" label="AVC抖动区间(kV)" prop="avcVibrationRange" width="120" />
+            <el-table-column align="left" label="AVC抖动(kV)" prop="avcVibrationRange" width="130" />
 
-            <el-table-column align="left" label="AVC调控周期(秒)" prop="avcControlPeriod" width="120" />
+            <el-table-column align="left" label="AVC调控周期(秒)" prop="avcControlPeriod" width="140" />
 
-            <el-table-column align="left" label="AVC系统阻抗" prop="avcSystemImpedance" width="120" />
+            <el-table-column align="left" label="AVC系统阻抗" prop="avcSystemImpedance" width="130" />
 
-            <el-table-column align="left" label="AVC调节范围最小值(kV)" prop="avcAdjustmentRangeMin" width="120" />
+            <el-table-column align="left" label="AVC最小值(kV)" prop="avcAdjustmentRangeMin" width="130" />
 
-            <el-table-column align="left" label="AVC调节范围最大值(kV)" prop="avcAdjustmentRangeMax" width="120" />
+            <el-table-column align="left" label="AVC最大值(kV)" prop="avcAdjustmentRangeMax" width="130" />
 
         <el-table-column align="left" label="操作" fixed="right" :min-width="appStore.operateMinWith">
             <template #default="scope">
