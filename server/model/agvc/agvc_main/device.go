@@ -36,6 +36,16 @@ type RealtimeData struct {
 	Timestamp int64       `json:"timestamp"` // 数据时间戳
 }
 
+// AgvcDataItem AGVC数据项（从CoAP接收的数据格式）
+type AgvcDataItem struct {
+	Psid     int     `json:"psid"`     // 电站ID
+	Eqid     int     `json:"eqid"`     // 设备ID
+	EqType   int     `json:"eqType"`   // 设备类型
+	DataType int     `json:"dataType"` // 数据类型
+	Point    string  `json:"point"`    // 数据点
+	Value    float64 `json:"value"`    // 数值
+}
+
 // DeviceDataKey 设备数据键（用于Map索引）
 type DeviceDataKey struct {
 	PSID     string

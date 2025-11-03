@@ -6,7 +6,8 @@ import (
 
 	"github.com/flipped-aurora/gin-vue-admin/server/global"
 	"github.com/flipped-aurora/gin-vue-admin/server/model/agvc"
-	"github.com/flipped-aurora/gin-vue-admin/server/service"
+	"github.com/flipped-aurora/gin-vue-admin/server/model/agvc/agvc_main"
+	agvcMainService "github.com/flipped-aurora/gin-vue-admin/server/service/agvc/agcv_main"
 	"go.uber.org/zap"
 )
 
@@ -44,14 +45,23 @@ func handleAgvcData(ctx context.Context, msg coapMessage) (code byte, payload []
 		return coapCodeBadRequest, []byte(`{"error":"empty data"}`)
 	}
 
-	// 调用服务层保存数据
-	agvcDataService := service.ServiceGroupApp.AgvcServiceGroup.AgvcDataService
-	if err := agvcDataService.SaveAgvcData(ctx, dataBatch); err != nil {
-		global.GVA_LOG.Error("Failed to save AGVC data to InfluxDB", zap.Error(err))
-		return coapCodeInternalServerError, []byte(`{"error":"save failed"}`)
+	// 转换数据格式并存储到DataStorage
+	convertedData := make([]agvc_main.AgvcDataItem, len(dataBatch))
+	for i, item := range dataBatch {
+		convertedData[i] = agvc_main.AgvcDataItem{
+			Psid:     item.Psid,
+			Eqid:     item.Eqid,
+			EqType:   item.EqType,
+			DataType: item.DataType,
+			Point:    item.Point,
+			Value:    item.Value,
+		}
 	}
 
-	//global.GVA_LOG.Info("AGVC data saved successfully", zap.Int("count", len(dataBatch)))
+	// 存储到内存，由DataStorage每5分钟定时保存到InfluxDB
+	agvcMainService.DataStorage.StoreAgvcDataBatch(convertedData)
+
+	global.GVA_LOG.Debug("AGVC data stored to memory", zap.Int("count", len(dataBatch)))
 	return coapCodeCreated, []byte(`{"success":true}`)
 }
 
