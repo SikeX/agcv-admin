@@ -1,9 +1,10 @@
-package api
+package agcv_main
 
 import (
 	"github.com/flipped-aurora/gin-vue-admin/server/global"
+	"github.com/flipped-aurora/gin-vue-admin/server/model/agvc/agvc_main/request"
 	"github.com/flipped-aurora/gin-vue-admin/server/model/common/response"
-	"github.com/flipped-aurora/gin-vue-admin/server/plugin/agvc/model/request"
+
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )

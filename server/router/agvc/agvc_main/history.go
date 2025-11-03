@@ -1,14 +1,14 @@
-package router
+package agvc_main
 
 import (
 	"github.com/gin-gonic/gin"
 )
 
-type history struct{}
+type History struct{}
 
-var History = new(history)
+// var History = new(history)
 
-func (r *history) InitHistoryRouter(public, private *gin.RouterGroup) {
+func (r *History) InitHistoryRouter(public, private *gin.RouterGroup) {
 	historyPublic := public.Group("history")
 	historyPrivate := private.Group("history")
 	{

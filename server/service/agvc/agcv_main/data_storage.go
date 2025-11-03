@@ -1,4 +1,4 @@
-package service
+package agcv_main
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/flipped-aurora/gin-vue-admin/server/global"
-	"github.com/flipped-aurora/gin-vue-admin/server/plugin/agvc/model"
+	"github.com/flipped-aurora/gin-vue-admin/server/model/agvc/agvc_main"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/influxdata/influxdb-client-go/v2/api/write"
 	"go.uber.org/zap"
@@ -16,7 +16,7 @@ import (
 
 type dataStorage struct {
 	mu           sync.RWMutex
-	realtimeData map[string]*model.RealtimeData // key: psid_eqid_eqType_dataType_point
+	realtimeData map[string]*agvc_main.RealtimeData // key: psid_eqid_eqType_dataType_point
 	saveTimer    *time.Ticker
 	stopChan     chan struct{}
 }
@@ -25,7 +25,7 @@ var DataStorage = new(dataStorage)
 
 // Initialize 初始化数据存储服务
 func (s *dataStorage) Initialize() {
-	s.realtimeData = make(map[string]*model.RealtimeData)
+	s.realtimeData = make(map[string]*agvc_main.RealtimeData)
 	s.stopChan = make(chan struct{})
 
 	// 启动5分钟定时保存到InfluxDB
@@ -45,7 +45,7 @@ func (s *dataStorage) Stop() {
 }
 
 // StoreData 存储实时数据到内存
-func (s *dataStorage) StoreData(data *model.RealtimeData) {
+func (s *dataStorage) StoreData(data *agvc_main.RealtimeData) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -55,7 +55,7 @@ func (s *dataStorage) StoreData(data *model.RealtimeData) {
 }
 
 // StoreBatch 批量存储数据
-func (s *dataStorage) StoreBatch(dataList []*model.RealtimeData) {
+func (s *dataStorage) StoreBatch(dataList []*agvc_main.RealtimeData) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -68,7 +68,7 @@ func (s *dataStorage) StoreBatch(dataList []*model.RealtimeData) {
 }
 
 // GetData 从内存获取实时数据
-func (s *dataStorage) GetData(psid, eqid, eqType, dataType, point string) (*model.RealtimeData, bool) {
+func (s *dataStorage) GetData(psid, eqid, eqType, dataType, point string) (*agvc_main.RealtimeData, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -78,11 +78,11 @@ func (s *dataStorage) GetData(psid, eqid, eqType, dataType, point string) (*mode
 }
 
 // GetDeviceData 获取设备的所有实时数据
-func (s *dataStorage) GetDeviceData(psid, eqid, eqType string, dataType string) map[string]*model.RealtimeData {
+func (s *dataStorage) GetDeviceData(psid, eqid, eqType string, dataType string) map[string]*agvc_main.RealtimeData {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	result := make(map[string]*model.RealtimeData)
+	result := make(map[string]*agvc_main.RealtimeData)
 	prefix := fmt.Sprintf("%s_%s_%s_%s_", psid, eqid, eqType, dataType)
 
 	for key, data := range s.realtimeData {
@@ -95,11 +95,11 @@ func (s *dataStorage) GetDeviceData(psid, eqid, eqType string, dataType string) 
 }
 
 // GetDeviceAllData 获取设备所有数据类型的实时数据
-func (s *dataStorage) GetDeviceAllData(psid, eqid, eqType string) map[string]*model.RealtimeData {
+func (s *dataStorage) GetDeviceAllData(psid, eqid, eqType string) map[string]*agvc_main.RealtimeData {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	result := make(map[string]*model.RealtimeData)
+	result := make(map[string]*agvc_main.RealtimeData)
 	prefix := fmt.Sprintf("%s_%s_%s_", psid, eqid, eqType)
 
 	for key, data := range s.realtimeData {

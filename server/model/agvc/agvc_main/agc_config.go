@@ -1,4 +1,4 @@
-package model
+package agvc_main
 
 import (
 	"github.com/flipped-aurora/gin-vue-admin/server/global"
@@ -8,17 +8,17 @@ import (
 type AGCConfig struct {
 	global.GVA_MODEL
 	PSID              string  `json:"psid" form:"psid" gorm:"column:psid;comment:电站ID;uniqueIndex"`
-	IsActive          *int    `json:"isActive" form:"isActive" gorm:"column:is_active;comment:是否投入;default:0"`            // 0:未投入 1:投入
-	ControlAuth       *int    `json:"controlAuth" form:"controlAuth" gorm:"column:control_auth;comment:控制权限;default:1"`    // 1:调度 2:站内
-	RunMode           *int    `json:"runMode" form:"runMode" gorm:"column:run_mode;comment:运行模式;default:2"`                // 1:开环 2:闭环
+	IsActive          *int    `json:"isActive" form:"isActive" gorm:"column:is_active;comment:是否投入;default:0"`          // 0:未投入 1:投入
+	ControlAuth       *int    `json:"controlAuth" form:"controlAuth" gorm:"column:control_auth;comment:控制权限;default:1"` // 1:调度 2:站内
+	RunMode           *int    `json:"runMode" form:"runMode" gorm:"column:run_mode;comment:运行模式;default:2"`             // 1:开环 2:闭环
 	JitterRange       float64 `json:"jitterRange" form:"jitterRange" gorm:"column:jitter_range;comment:抖动区间(MW);default:0.5"`
 	RegPeriod         int     `json:"regPeriod" form:"regPeriod" gorm:"column:reg_period;comment:调节周期(秒);default:30"`
 	RegStep           float64 `json:"regStep" form:"regStep" gorm:"column:reg_step;comment:调节步长(MW);default:0.1"`
 	PowerUpperLimit   float64 `json:"powerUpperLimit" form:"powerUpperLimit" gorm:"column:power_upper_limit;comment:有功调节上限(MW)"`
 	PowerLowerLimit   float64 `json:"powerLowerLimit" form:"powerLowerLimit" gorm:"column:power_lower_limit;comment:有功调节下限(MW)"`
 	PowerExecValue    float64 `json:"powerExecValue" form:"powerExecValue" gorm:"column:power_exec_value;comment:有功执行值(MW)"`
-	UpRegLock         *int    `json:"upRegLock" form:"upRegLock" gorm:"column:up_reg_lock;comment:上调节闭锁;default:0"`         // 0:未闭锁 1:闭锁
-	DownRegLock       *int    `json:"downRegLock" form:"downRegLock" gorm:"column:down_reg_lock;comment:下调节闭锁;default:0"`   // 0:未闭锁 1:闭锁
+	UpRegLock         *int    `json:"upRegLock" form:"upRegLock" gorm:"column:up_reg_lock;comment:上调节闭锁;default:0"`       // 0:未闭锁 1:闭锁
+	DownRegLock       *int    `json:"downRegLock" form:"downRegLock" gorm:"column:down_reg_lock;comment:下调节闭锁;default:0"` // 0:未闭锁 1:闭锁
 	DispatchExecValue float64 `json:"dispatchExecValue" form:"dispatchExecValue" gorm:"column:dispatch_exec_value;comment:调度执行值(MW)"`
 	StationExecValue  float64 `json:"stationExecValue" form:"stationExecValue" gorm:"column:station_exec_value;comment:站内执行值(MW)"`
 }

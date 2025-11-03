@@ -1,4 +1,4 @@
-package service
+package agcv_main
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/flipped-aurora/gin-vue-admin/server/global"
-	"github.com/flipped-aurora/gin-vue-admin/server/plugin/agvc/model/request"
+	"github.com/flipped-aurora/gin-vue-admin/server/model/agvc/agvc_main/request"
 	"go.uber.org/zap"
 )
 

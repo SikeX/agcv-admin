@@ -1,4 +1,4 @@
-package service
+package agcv_main
 
 import (
 	"bytes"
@@ -7,7 +7,7 @@ import (
 	"io"
 
 	"github.com/flipped-aurora/gin-vue-admin/server/global"
-	"github.com/flipped-aurora/gin-vue-admin/server/plugin/agvc/model"
+	"github.com/flipped-aurora/gin-vue-admin/server/model/agvc/agvc_main"
 	"github.com/plgd-dev/go-coap/v3/message"
 	"github.com/plgd-dev/go-coap/v3/message/codes"
 	"github.com/plgd-dev/go-coap/v3/mux"
@@ -36,7 +36,7 @@ func (s *coapReceiver) handleDataReceive(w mux.ResponseWriter, r *mux.Message) {
 	}
 
 	// 解析JSON数据
-	var dataMessages []model.RealtimeData
+	var dataMessages []agvc_main.RealtimeData
 	if err := json.Unmarshal(body, &dataMessages); err != nil {
 		global.GVA_LOG.Error("解析CoAP数据失败", zap.Error(err), zap.String("body", string(body)))
 		s.sendErrorResponse(w, r, codes.BadRequest, "数据格式错误")
@@ -44,7 +44,7 @@ func (s *coapReceiver) handleDataReceive(w mux.ResponseWriter, r *mux.Message) {
 	}
 
 	// 验证并存储数据
-	validData := make([]*model.RealtimeData, 0)
+	validData := make([]*agvc_main.RealtimeData, 0)
 	for _, data := range dataMessages {
 		if err := s.validateData(&data); err != nil {
 			global.GVA_LOG.Warn("数据验证失败",
@@ -70,7 +70,7 @@ func (s *coapReceiver) handleDataReceive(w mux.ResponseWriter, r *mux.Message) {
 }
 
 // validateData 验证数据完整性
-func (s *coapReceiver) validateData(data *model.RealtimeData) error {
+func (s *coapReceiver) validateData(data *agvc_main.RealtimeData) error {
 	if data.PSID == "" {
 		return fmt.Errorf("PSID不能为空")
 	}

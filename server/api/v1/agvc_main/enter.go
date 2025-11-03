@@ -1,16 +1,16 @@
-package api
+package agcv_main
 
 import (
 	"github.com/flipped-aurora/gin-vue-admin/server/model/common/request"
-	"github.com/flipped-aurora/gin-vue-admin/server/plugin/agvc/service"
+	"github.com/flipped-aurora/gin-vue-admin/server/service/agvc/agcv_main"
 )
 
 var (
 	Api            = new(api)
-	serviceDevice  = service.Service.Device
-	serviceHistory = service.Service.History
-	serviceAGC     = service.Service.AGC
-	serviceAVC     = service.Service.AVC
+	serviceDevice  = agcv_main.Service.Device
+	serviceHistory = agcv_main.Service.History
+	serviceAGC     = agcv_main.Service.AGC
+	serviceAVC     = agcv_main.Service.AVC
 )
 
 type api struct {

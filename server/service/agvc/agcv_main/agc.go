@@ -1,4 +1,4 @@
-package service
+package agcv_main
 
 import (
 	"fmt"
@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/flipped-aurora/gin-vue-admin/server/global"
-	"github.com/flipped-aurora/gin-vue-admin/server/plugin/agvc/model"
-	"github.com/flipped-aurora/gin-vue-admin/server/plugin/agvc/model/request"
+	"github.com/flipped-aurora/gin-vue-admin/server/model/agvc/agvc_main"
+	"github.com/flipped-aurora/gin-vue-admin/server/model/agvc/agvc_main/request"
 	"go.uber.org/zap"
 )
 
@@ -64,7 +64,7 @@ func (s *agc) StopAGC(psid string) error {
 }
 
 // agcControlLoop AGC控制主循环
-func (s *agc) agcControlLoop(psid string, config model.AGCConfig, stopChan chan struct{}) {
+func (s *agc) agcControlLoop(psid string, config agvc_main.AGCConfig, stopChan chan struct{}) {
 	ticker := time.NewTicker(time.Duration(config.RegPeriod) * time.Second)
 	defer ticker.Stop()
 
@@ -160,7 +160,7 @@ func (s *agc) executeAGCCycle(psid string) error {
 
 	// 步骤10：平均分配调节量
 	perInvDeviation := outputDeviation / float64(len(inverters))
-	regulationDetails := make([]model.InverterRegulation, 0, len(inverters))
+	regulationDetails := make([]agvc_main.InverterRegulation, 0, len(inverters))
 
 	for _, inv := range inverters {
 		// 限制调节量不超过逆变器最大调节能力
@@ -176,13 +176,13 @@ func (s *agc) executeAGCCycle(psid string) error {
 		// 获取逆变器当前功率
 		currentPower, err := DataStorage.GetDataAsFloat64(psid, inv.EQID, "01", "02", "401")
 		if err != nil {
-			global.GVA_LOG.Warn("获取逆变器当前功率失败", 
+			global.GVA_LOG.Warn("获取逆变器当前功率失败",
 				zap.String("eqid", inv.EQID),
 				zap.Error(err))
 			currentPower = 0
 		}
 
-		regulationDetails = append(regulationDetails, model.InverterRegulation{
+		regulationDetails = append(regulationDetails, agvc_main.InverterRegulation{
 			PSID:            psid,
 			EQID:            inv.EQID,
 			RegulationPower: actualReg,
@@ -192,7 +192,7 @@ func (s *agc) executeAGCCycle(psid string) error {
 	}
 
 	// 步骤11：记录调节开始
-	record := model.AGCRegulationRecord{
+	record := agvc_main.AGCRegulationRecord{
 		PSID:            psid,
 		TargetPower:     targetOutput,
 		ActualPower:     actualOutput,
@@ -317,8 +317,8 @@ func (s *agc) collectAGCData(psid string) (map[string]interface{}, error) {
 }
 
 // GetAGCConfig 获取AGC配置
-func (s *agc) GetAGCConfig(psid string) (model.AGCConfig, error) {
-	var config model.AGCConfig
+func (s *agc) GetAGCConfig(psid string) (agvc_main.AGCConfig, error) {
+	var config agvc_main.AGCConfig
 	err := global.GVA_DB.Where("psid = ?", psid).First(&config).Error
 	return config, err
 }
@@ -357,17 +357,17 @@ func (s *agc) UpdateAGCConfig(req request.AGCConfigUpdate) error {
 	updates["dispatch_exec_value"] = req.DispatchExecValue
 	updates["station_exec_value"] = req.StationExecValue
 
-	return global.GVA_DB.Model(&model.AGCConfig{}).
+	return global.GVA_DB.Model(&agvc_main.AGCConfig{}).
 		Where("psid = ?", req.PSID).
 		Updates(updates).Error
 }
 
 // GetAGCRecords 获取AGC调节记录
-func (s *agc) GetAGCRecords(req request.AGCRegulationRecordSearch) ([]model.AGCRegulationRecord, int64, error) {
-	var records []model.AGCRegulationRecord
+func (s *agc) GetAGCRecords(req request.AGCRegulationRecordSearch) ([]agvc_main.AGCRegulationRecord, int64, error) {
+	var records []agvc_main.AGCRegulationRecord
 	var total int64
 
-	db := global.GVA_DB.Model(&model.AGCRegulationRecord{})
+	db := global.GVA_DB.Model(&agvc_main.AGCRegulationRecord{})
 
 	if req.PSID != "" {
 		db = db.Where("psid = ?", req.PSID)
@@ -396,15 +396,15 @@ func (s *agc) GetAGCRecords(req request.AGCRegulationRecordSearch) ([]model.AGCR
 }
 
 // CreateOrUpdateConfig 创建或更新配置
-func (s *agc) CreateOrUpdateConfig(config *model.AGCConfig) error {
-	var existing model.AGCConfig
+func (s *agc) CreateOrUpdateConfig(config *agvc_main.AGCConfig) error {
+	var existing agvc_main.AGCConfig
 	err := global.GVA_DB.Where("psid = ?", config.PSID).First(&existing).Error
-	
+
 	if err != nil {
 		// 不存在，创建新配置
 		return global.GVA_DB.Create(config).Error
 	}
-	
+
 	// 存在，更新配置
 	return global.GVA_DB.Model(&existing).Updates(config).Error
 }

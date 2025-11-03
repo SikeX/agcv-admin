@@ -1,14 +1,14 @@
-package router
+package agvc_main
 
 import (
 	"github.com/gin-gonic/gin"
 )
 
-type device struct{}
+type Device struct{}
 
-var Device = new(device)
+// var Device = new(device)
 
-func (r *device) InitDeviceRouter(public, private *gin.RouterGroup) {
+func (r *Device) InitDeviceRouter(public, private *gin.RouterGroup) {
 	devicePublic := public.Group("device")
 	devicePrivate := private.Group("device")
 	{

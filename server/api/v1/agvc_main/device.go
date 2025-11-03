@@ -1,10 +1,10 @@
-package api
+package agcv_main
 
 import (
 	"github.com/flipped-aurora/gin-vue-admin/server/global"
+	"github.com/flipped-aurora/gin-vue-admin/server/model/agvc/agvc_main"
+	"github.com/flipped-aurora/gin-vue-admin/server/model/agvc/agvc_main/request"
 	"github.com/flipped-aurora/gin-vue-admin/server/model/common/response"
-	"github.com/flipped-aurora/gin-vue-admin/server/plugin/agvc/model"
-	"github.com/flipped-aurora/gin-vue-admin/server/plugin/agvc/model/request"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
@@ -23,7 +23,7 @@ var Device = new(device)
 // @Success  200  {object} response.Response{msg=string} "创建成功"
 // @Router   /agvc/device/create [post]
 func (a *device) CreateDevice(c *gin.Context) {
-	var dev model.Device
+	var dev agvc_main.Device
 	err := c.ShouldBindJSON(&dev)
 	if err != nil {
 		response.FailWithMessage(err.Error(), c)
@@ -77,7 +77,7 @@ func (a *device) CreateDevice(c *gin.Context) {
 // @Success  200  {object} response.Response{msg=string} "更新成功"
 // @Router   /agvc/device/update [put]
 func (a *device) UpdateDevice(c *gin.Context) {
-	var dev model.Device
+	var dev agvc_main.Device
 	err := c.ShouldBindJSON(&dev)
 	if err != nil {
 		response.FailWithMessage(err.Error(), c)

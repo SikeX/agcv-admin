@@ -1,14 +1,14 @@
-package service
+package agcv_main
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/flipped-aurora/gin-vue-admin/server/model/agvc/agvc_main/request"
 	"time"
 
 	"github.com/flipped-aurora/gin-vue-admin/server/global"
-	"github.com/flipped-aurora/gin-vue-admin/server/plugin/agvc/model/request"
 	"github.com/plgd-dev/go-coap/v3/message"
 	"github.com/plgd-dev/go-coap/v3/message/codes"
 	"github.com/plgd-dev/go-coap/v3/udp"
@@ -49,7 +49,7 @@ func (s *coapSender) SendData(host string, port int, messages []request.CoAPData
 	defer cancel()
 
 	// 发送POST请求
-	resp, err := coapClient.Post(ctx, "/agvc/data", message.AppJSON, bytes.NewReader(jsonData))
+	resp, err := conn.Post(ctx, "/agvc/data", message.AppJSON, bytes.NewReader(jsonData))
 	if err != nil {
 		global.GVA_LOG.Error("发送CoAP数据失败",
 			zap.String("host", host),

@@ -1,4 +1,4 @@
-package service
+package agcv_main
 
 import (
 	"fmt"
@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/flipped-aurora/gin-vue-admin/server/global"
-	"github.com/flipped-aurora/gin-vue-admin/server/plugin/agvc/model"
-	"github.com/flipped-aurora/gin-vue-admin/server/plugin/agvc/model/request"
+	"github.com/flipped-aurora/gin-vue-admin/server/model/agvc/agvc_main"
+	"github.com/flipped-aurora/gin-vue-admin/server/model/agvc/agvc_main/request"
 	"go.uber.org/zap"
 )
 
@@ -62,7 +62,7 @@ func (s *avc) StopAVC(psid string) error {
 }
 
 // avcControlLoop AVC控制主循环
-func (s *avc) avcControlLoop(psid string, config model.AVCConfig, stopChan chan struct{}) {
+func (s *avc) avcControlLoop(psid string, config agvc_main.AVCConfig, stopChan chan struct{}) {
 	ticker := time.NewTicker(time.Duration(config.RegPeriod) * time.Second)
 	defer ticker.Stop()
 
@@ -173,7 +173,7 @@ func (s *avc) executeAVCCycle(psid string) error {
 	regulationDetails := s.assignReactiveToDevices(psid, requiredDeltaQ, availableDevices)
 
 	// 步骤11：记录调节开始
-	record := model.AVCRegulationRecord{
+	record := agvc_main.AVCRegulationRecord{
 		PSID:               psid,
 		TargetVoltage:      targetVoltage,
 		ActualVoltage:      pointVoltage,
@@ -261,14 +261,14 @@ func (s *avc) calcRequiredReactive(deltaV, voltage, sensitivity float64) float64
 }
 
 // filterAvailableDevices 筛选可用设备
-func (s *avc) filterAvailableDevices(psid string, requiredQ float64) ([]model.Device, error) {
+func (s *avc) filterAvailableDevices(psid string, requiredQ float64) ([]agvc_main.Device, error) {
 	// 获取所有在线逆变器
 	inverters, err := Device.GetOnlineInvertersByPSID(psid)
 	if err != nil {
 		return nil, err
 	}
 
-	available := make([]model.Device, 0)
+	available := make([]agvc_main.Device, 0)
 	for _, inv := range inverters {
 		// 检查设备是否有无功能力
 		if inv.MaxReact <= 0 {
@@ -286,8 +286,8 @@ func (s *avc) filterAvailableDevices(psid string, requiredQ float64) ([]model.De
 }
 
 // assignReactiveToDevices 分配无功调节量到设备
-func (s *avc) assignReactiveToDevices(psid string, requiredQ float64, devices []model.Device) []model.DeviceReactiveRegulation {
-	details := make([]model.DeviceReactiveRegulation, 0, len(devices))
+func (s *avc) assignReactiveToDevices(psid string, requiredQ float64, devices []agvc_main.Device) []agvc_main.DeviceReactiveRegulation {
+	details := make([]agvc_main.DeviceReactiveRegulation, 0, len(devices))
 
 	// 平均分配策略
 	perDeviceQ := requiredQ / float64(len(devices))
@@ -309,7 +309,7 @@ func (s *avc) assignReactiveToDevices(psid string, requiredQ float64, devices []
 			currentReactive = 0
 		}
 
-		details = append(details, model.DeviceReactiveRegulation{
+		details = append(details, agvc_main.DeviceReactiveRegulation{
 			PSID:               psid,
 			EQID:               dev.EQID,
 			EQType:             dev.EQType,
@@ -323,7 +323,7 @@ func (s *avc) assignReactiveToDevices(psid string, requiredQ float64, devices []
 }
 
 // sendReactiveCommands 下发无功调节指令
-func (s *avc) sendReactiveCommands(psid string, recordID uint, details []model.DeviceReactiveRegulation) int {
+func (s *avc) sendReactiveCommands(psid string, recordID uint, details []agvc_main.DeviceReactiveRegulation) int {
 	successCount := 0
 	host := CoapSender.GetDefaultCoapHost()
 	port := CoapSender.GetDefaultCoapPort()
@@ -361,8 +361,8 @@ func (s *avc) sendReactiveCommands(psid string, recordID uint, details []model.D
 }
 
 // GetAVCConfig 获取AVC配置
-func (s *avc) GetAVCConfig(psid string) (model.AVCConfig, error) {
-	var config model.AVCConfig
+func (s *avc) GetAVCConfig(psid string) (agvc_main.AVCConfig, error) {
+	var config agvc_main.AVCConfig
 	err := global.GVA_DB.Where("psid = ?", psid).First(&config).Error
 	return config, err
 }
@@ -409,17 +409,17 @@ func (s *avc) UpdateAVCConfig(req request.AVCConfigUpdate) error {
 		updates["reactive_sensitivity"] = req.ReactiveSensitivity
 	}
 
-	return global.GVA_DB.Model(&model.AVCConfig{}).
+	return global.GVA_DB.Model(&agvc_main.AVCConfig{}).
 		Where("psid = ?", req.PSID).
 		Updates(updates).Error
 }
 
 // GetAVCRecords 获取AVC调节记录
-func (s *avc) GetAVCRecords(req request.AVCRegulationRecordSearch) ([]model.AVCRegulationRecord, int64, error) {
-	var records []model.AVCRegulationRecord
+func (s *avc) GetAVCRecords(req request.AVCRegulationRecordSearch) ([]agvc_main.AVCRegulationRecord, int64, error) {
+	var records []agvc_main.AVCRegulationRecord
 	var total int64
 
-	db := global.GVA_DB.Model(&model.AVCRegulationRecord{})
+	db := global.GVA_DB.Model(&agvc_main.AVCRegulationRecord{})
 
 	if req.PSID != "" {
 		db = db.Where("psid = ?", req.PSID)
@@ -448,15 +448,15 @@ func (s *avc) GetAVCRecords(req request.AVCRegulationRecordSearch) ([]model.AVCR
 }
 
 // CreateOrUpdateConfig 创建或更新配置
-func (s *avc) CreateOrUpdateConfig(config *model.AVCConfig) error {
-	var existing model.AVCConfig
+func (s *avc) CreateOrUpdateConfig(config *agvc_main.AVCConfig) error {
+	var existing agvc_main.AVCConfig
 	err := global.GVA_DB.Where("psid = ?", config.PSID).First(&existing).Error
-	
+
 	if err != nil {
 		// 不存在，创建新配置
 		return global.GVA_DB.Create(config).Error
 	}
-	
+
 	// 存在，更新配置
 	return global.GVA_DB.Model(&existing).Updates(config).Error
 }

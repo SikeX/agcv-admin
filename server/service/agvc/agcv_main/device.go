@@ -1,11 +1,11 @@
-package service
+package agcv_main
 
 import (
 	"fmt"
 
 	"github.com/flipped-aurora/gin-vue-admin/server/global"
-	"github.com/flipped-aurora/gin-vue-admin/server/plugin/agvc/model"
-	"github.com/flipped-aurora/gin-vue-admin/server/plugin/agvc/model/request"
+	"github.com/flipped-aurora/gin-vue-admin/server/model/agvc/agvc_main"
+	"github.com/flipped-aurora/gin-vue-admin/server/model/agvc/agvc_main/request"
 )
 
 type device struct{}
@@ -13,7 +13,7 @@ type device struct{}
 var Device = new(device)
 
 // CreateDevice 创建设备
-func (s *device) CreateDevice(dev *model.Device) error {
+func (s *device) CreateDevice(dev *agvc_main.Device) error {
 	// 生成设备编号
 	dev.DeviceCode = fmt.Sprintf("%s%s%s%s", dev.PSID, dev.EQID, dev.DataType, dev.EQType)
 	return global.GVA_DB.Create(dev).Error
@@ -21,43 +21,43 @@ func (s *device) CreateDevice(dev *model.Device) error {
 
 // DeleteDevice 删除设备
 func (s *device) DeleteDevice(id uint) error {
-	return global.GVA_DB.Delete(&model.Device{}, id).Error
+	return global.GVA_DB.Delete(&agvc_main.Device{}, id).Error
 }
 
 // UpdateDevice 更新设备
-func (s *device) UpdateDevice(dev *model.Device) error {
+func (s *device) UpdateDevice(dev *agvc_main.Device) error {
 	// 更新设备编号
 	dev.DeviceCode = fmt.Sprintf("%s%s%s%s", dev.PSID, dev.EQID, dev.DataType, dev.EQType)
-	return global.GVA_DB.Model(&model.Device{}).Where("id = ?", dev.ID).Updates(dev).Error
+	return global.GVA_DB.Model(&agvc_main.Device{}).Where("id = ?", dev.ID).Updates(dev).Error
 }
 
 // GetDevice 获取设备详情
-func (s *device) GetDevice(id uint) (model.Device, error) {
-	var dev model.Device
+func (s *device) GetDevice(id uint) (agvc_main.Device, error) {
+	var dev agvc_main.Device
 	err := global.GVA_DB.Where("id = ?", id).First(&dev).Error
 	return dev, err
 }
 
 // GetDeviceByCode 根据设备编号获取设备
-func (s *device) GetDeviceByCode(deviceCode string) (model.Device, error) {
-	var dev model.Device
+func (s *device) GetDeviceByCode(deviceCode string) (agvc_main.Device, error) {
+	var dev agvc_main.Device
 	err := global.GVA_DB.Where("device_code = ?", deviceCode).First(&dev).Error
 	return dev, err
 }
 
 // GetDeviceByPSIDAndEQID 根据PSID和EQID获取设备
-func (s *device) GetDeviceByPSIDAndEQID(psid, eqid, eqType string) (model.Device, error) {
-	var dev model.Device
+func (s *device) GetDeviceByPSIDAndEQID(psid, eqid, eqType string) (agvc_main.Device, error) {
+	var dev agvc_main.Device
 	err := global.GVA_DB.Where("psid = ? AND eqid = ? AND eq_type = ?", psid, eqid, eqType).First(&dev).Error
 	return dev, err
 }
 
 // GetDeviceList 获取设备列表
-func (s *device) GetDeviceList(req request.DeviceSearch) ([]model.Device, int64, error) {
-	var devices []model.Device
+func (s *device) GetDeviceList(req request.DeviceSearch) ([]agvc_main.Device, int64, error) {
+	var devices []agvc_main.Device
 	var total int64
 
-	db := global.GVA_DB.Model(&model.Device{})
+	db := global.GVA_DB.Model(&agvc_main.Device{})
 
 	// 条件过滤
 	if req.PSID != "" {
@@ -94,15 +94,15 @@ func (s *device) GetDeviceList(req request.DeviceSearch) ([]model.Device, int64,
 }
 
 // GetInvertersByPSID 获取电站的所有逆变器
-func (s *device) GetInvertersByPSID(psid string) ([]model.Device, error) {
-	var devices []model.Device
+func (s *device) GetInvertersByPSID(psid string) ([]agvc_main.Device, error) {
+	var devices []agvc_main.Device
 	err := global.GVA_DB.Where("psid = ? AND eq_type = ?", psid, "01").Find(&devices).Error
 	return devices, err
 }
 
 // GetOnlineInvertersByPSID 获取电站的所有在线逆变器
-func (s *device) GetOnlineInvertersByPSID(psid string) ([]model.Device, error) {
-	var devices []model.Device
+func (s *device) GetOnlineInvertersByPSID(psid string) ([]agvc_main.Device, error) {
+	var devices []agvc_main.Device
 	status := 1
 	err := global.GVA_DB.Where("psid = ? AND eq_type = ? AND status = ?", psid, "01", status).Find(&devices).Error
 	return devices, err
@@ -110,40 +110,40 @@ func (s *device) GetOnlineInvertersByPSID(psid string) ([]model.Device, error) {
 
 // UpdateDeviceStatus 更新设备状态
 func (s *device) UpdateDeviceStatus(psid, eqid, eqType string, status int) error {
-	return global.GVA_DB.Model(&model.Device{}).
+	return global.GVA_DB.Model(&agvc_main.Device{}).
 		Where("psid = ? AND eqid = ? AND eq_type = ?", psid, eqid, eqType).
 		Update("status", status).Error
 }
 
 // GetPointMapping 获取测点映射
-func (s *device) GetPointMapping(eqType, dataType, point string) (model.PointMapping, error) {
-	var mapping model.PointMapping
+func (s *device) GetPointMapping(eqType, dataType, point string) (agvc_main.PointMapping, error) {
+	var mapping agvc_main.PointMapping
 	err := global.GVA_DB.Where("eq_type = ? AND data_type = ? AND point = ?", eqType, dataType, point).
 		First(&mapping).Error
 	return mapping, err
 }
 
 // GetPointMappingsByCategory 根据分类获取测点映射
-func (s *device) GetPointMappingsByCategory(category string) ([]model.PointMapping, error) {
-	var mappings []model.PointMapping
+func (s *device) GetPointMappingsByCategory(category string) ([]agvc_main.PointMapping, error) {
+	var mappings []agvc_main.PointMapping
 	err := global.GVA_DB.Where("category = ?", category).Find(&mappings).Error
 	return mappings, err
 }
 
 // GetPointMappingsByDevice 获取设备的所有测点映射
-func (s *device) GetPointMappingsByDevice(eqType, dataType string) ([]model.PointMapping, error) {
-	var mappings []model.PointMapping
+func (s *device) GetPointMappingsByDevice(eqType, dataType string) ([]agvc_main.PointMapping, error) {
+	var mappings []agvc_main.PointMapping
 	err := global.GVA_DB.Where("eq_type = ? AND data_type = ?", eqType, dataType).Find(&mappings).Error
 	return mappings, err
 }
 
 // CreatePointMapping 创建测点映射
-func (s *device) CreatePointMapping(mapping *model.PointMapping) error {
+func (s *device) CreatePointMapping(mapping *agvc_main.PointMapping) error {
 	return global.GVA_DB.Create(mapping).Error
 }
 
 // BatchCreatePointMappings 批量创建测点映射
-func (s *device) BatchCreatePointMappings(mappings []model.PointMapping) error {
+func (s *device) BatchCreatePointMappings(mappings []agvc_main.PointMapping) error {
 	return global.GVA_DB.CreateInBatches(mappings, 100).Error
 }
 
