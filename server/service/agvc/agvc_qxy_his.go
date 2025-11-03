@@ -1,4 +1,3 @@
-
 package agvc
 
 import (
@@ -14,7 +13,8 @@ import (
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 )
 
-type AgvcQxyHisService struct {}
+type AgvcQxyHisService struct{}
+
 // CreateAgvcQxyHis 创建气象仪监控记录
 // Author [yourname](https://github.com/yourname)
 func (agvcQxyHisService *AgvcQxyHisService) CreateAgvcQxyHis(ctx context.Context, agvcQxyHis *agvc.AgvcQxyHis) (err error) {
@@ -24,34 +24,35 @@ func (agvcQxyHisService *AgvcQxyHisService) CreateAgvcQxyHis(ctx context.Context
 
 // DeleteAgvcQxyHis 删除气象仪监控记录
 // Author [yourname](https://github.com/yourname)
-func (agvcQxyHisService *AgvcQxyHisService)DeleteAgvcQxyHis(ctx context.Context, ID string) (err error) {
-	err = global.GVA_DB.Delete(&agvc.AgvcQxyHis{},"id = ?",ID).Error
+func (agvcQxyHisService *AgvcQxyHisService) DeleteAgvcQxyHis(ctx context.Context, ID string) (err error) {
+	err = global.GVA_DB.Delete(&agvc.AgvcQxyHis{}, "id = ?", ID).Error
 	return err
 }
 
 // DeleteAgvcQxyHisByIds 批量删除气象仪监控记录
 // Author [yourname](https://github.com/yourname)
-func (agvcQxyHisService *AgvcQxyHisService)DeleteAgvcQxyHisByIds(ctx context.Context, IDs []string) (err error) {
-	err = global.GVA_DB.Delete(&[]agvc.AgvcQxyHis{},"id in ?",IDs).Error
+func (agvcQxyHisService *AgvcQxyHisService) DeleteAgvcQxyHisByIds(ctx context.Context, IDs []string) (err error) {
+	err = global.GVA_DB.Delete(&[]agvc.AgvcQxyHis{}, "id in ?", IDs).Error
 	return err
 }
 
 // UpdateAgvcQxyHis 更新气象仪监控记录
 // Author [yourname](https://github.com/yourname)
-func (agvcQxyHisService *AgvcQxyHisService)UpdateAgvcQxyHis(ctx context.Context, agvcQxyHis agvc.AgvcQxyHis) (err error) {
-	err = global.GVA_DB.Model(&agvc.AgvcQxyHis{}).Where("id = ?",agvcQxyHis.ID).Updates(&agvcQxyHis).Error
+func (agvcQxyHisService *AgvcQxyHisService) UpdateAgvcQxyHis(ctx context.Context, agvcQxyHis agvc.AgvcQxyHis) (err error) {
+	err = global.GVA_DB.Model(&agvc.AgvcQxyHis{}).Where("id = ?", agvcQxyHis.ID).Updates(&agvcQxyHis).Error
 	return err
 }
 
 // GetAgvcQxyHis 根据ID获取气象仪监控记录
 // Author [yourname](https://github.com/yourname)
-func (agvcQxyHisService *AgvcQxyHisService)GetAgvcQxyHis(ctx context.Context, ID string) (agvcQxyHis agvc.AgvcQxyHis, err error) {
+func (agvcQxyHisService *AgvcQxyHisService) GetAgvcQxyHis(ctx context.Context, ID string) (agvcQxyHis agvc.AgvcQxyHis, err error) {
 	err = global.GVA_DB.Where("id = ?", ID).First(&agvcQxyHis).Error
 	return
 }
+
 // GetAgvcQxyHisInfoList 分页获取气象仪监控列表
 // 从 InfluxDB中查询设备列表及其最新数据
-func (agvcQxyHisService *AgvcQxyHisService)GetAgvcQxyHisInfoList(ctx context.Context, info agvcReq.AgvcQxyHisSearch) (list []agvc.AgvcQxyHis, total int64, err error) {
+func (agvcQxyHisService *AgvcQxyHisService) GetAgvcQxyHisInfoList(ctx context.Context, info agvcReq.AgvcQxyHisSearch) (list []agvc.AgvcQxyHis, total int64, err error) {
 	// 检查InfluxDB客户端是否已初始化
 	if global.GVA_INFLUXDB == nil {
 		return nil, 0, fmt.Errorf("InfluxDB客户端未初始化")
@@ -108,7 +109,7 @@ func (agvcQxyHisService *AgvcQxyHisService)GetAgvcQxyHisInfoList(ctx context.Con
 	for eqid := range deviceSet {
 		number := eqid
 		name := eqid // 默认使用设备编号
-		
+
 		// 如果在配置表中找到名称,则使用配置的名称
 		if deviceName, ok := numberToNameMap[eqid]; ok {
 			name = deviceName
@@ -143,9 +144,9 @@ func (agvcQxyHisService *AgvcQxyHisService)GetAgvcQxyHisInfoList(ctx context.Con
 
 	return agvcQxyHisList, total, nil
 }
-func (agvcQxyHisService *AgvcQxyHisService)GetAgvcQxyHisPublic(ctx context.Context) {
-    // 此方法为获取数据源定义的数据
-    // 请自行实现
+func (agvcQxyHisService *AgvcQxyHisService) GetAgvcQxyHisPublic(ctx context.Context) {
+	// 此方法为获取数据源定义的数据
+	// 请自行实现
 }
 
 // GetAgvcQxyHistory 获取气象仪历史数据

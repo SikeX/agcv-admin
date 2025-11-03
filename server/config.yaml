@@ -136,12 +136,12 @@ mssql:
   log-zap: false
 mysql:
   prefix: ""
-  port: ""
-  config: ""
-  db-name: ""
-  username: ""
-  password: ""
-  path: ""
+  port: "3306"
+  config: "charset=utf8mb4&parseTime=True&loc=Local"
+  db-name: "agvc"
+  username: "root"
+  password: "root"
+  path: "192.168.1.250"
   engine: ""
   log-mode: ""
   max-idle-conns: 10
@@ -219,7 +219,7 @@ sqlite:
   singular: false
   log-zap: false
 system:
-  db-type: sqlite
+  db-type: mysql
   oss-type: local
   router-prefix: ""
   addr: 8888
@@ -249,7 +249,7 @@ zap:
 influxdb:
   host: "192.168.1.64"
   port: "8086"
-  token: "MoBOgU1omnCya-aPYEhAHYNGpM6I1SANpjcF5pJnEu7AdUxV1O9KwYXtpp3sCN6aaa4syMpFIDWidxhvQWGDdg=="
+  token: "yZe5ObSHattxNgK5Ul_pAgyUu2Z5TiUz2FHCBRIk72RArzsjGpuM7uaRP9N0sAZjOcbL6djYFMYyuZfFYKLDNA=="
   org: "test"
   bucket: "test"
   username: "admin"

@@ -13,9 +13,9 @@ import (
 
 func Gorm() *gorm.DB {
 	switch global.GVA_CONFIG.System.DbType {
-	// case "mysql":
-	// 	global.GVA_ACTIVE_DBNAME = &global.GVA_CONFIG.Mysql.Dbname
-	// 	return GormMysql()
+	case "mysql":
+		global.GVA_ACTIVE_DBNAME = &global.GVA_CONFIG.Mysql.Dbname
+		return GormMysql()
 	// case "pgsql":
 	// 	global.GVA_ACTIVE_DBNAME = &global.GVA_CONFIG.Pgsql.Dbname
 	// 	return GormPgSql()

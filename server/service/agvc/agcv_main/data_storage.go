@@ -29,7 +29,7 @@ func (s *dataStorage) Initialize() {
 	s.stopChan = make(chan struct{})
 
 	// 启动5分钟定时保存到InfluxDB
-	s.saveTimer = time.NewTicker(5 * time.Minute)
+	s.saveTimer = time.NewTicker(5 * time.Second)
 	go s.periodicSave()
 
 	global.GVA_LOG.Info("数据存储服务初始化成功")

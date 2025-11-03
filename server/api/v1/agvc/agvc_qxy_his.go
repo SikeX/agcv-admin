@@ -1,18 +1,15 @@
 package agvc
 
 import (
-	
 	"github.com/flipped-aurora/gin-vue-admin/server/global"
-    "github.com/flipped-aurora/gin-vue-admin/server/model/common/response"
-    "github.com/flipped-aurora/gin-vue-admin/server/model/agvc"
-    agvcReq "github.com/flipped-aurora/gin-vue-admin/server/model/agvc/request"
-    "github.com/gin-gonic/gin"
-    "go.uber.org/zap"
+	"github.com/flipped-aurora/gin-vue-admin/server/model/agvc"
+	agvcReq "github.com/flipped-aurora/gin-vue-admin/server/model/agvc/request"
+	"github.com/flipped-aurora/gin-vue-admin/server/model/common/response"
+	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
-type AgvcQxyHisApi struct {}
-
-
+type AgvcQxyHisApi struct{}
 
 // CreateAgvcQxyHis 创建气象仪监控
 // @Tags AgvcQxyHis
@@ -24,8 +21,8 @@ type AgvcQxyHisApi struct {}
 // @Success 200 {object} response.Response{msg=string} "创建成功"
 // @Router /agvcQxyHis/createAgvcQxyHis [post]
 func (agvcQxyHisApi *AgvcQxyHisApi) CreateAgvcQxyHis(c *gin.Context) {
-    // 创建业务用Context
-    ctx := c.Request.Context()
+	// 创建业务用Context
+	ctx := c.Request.Context()
 
 	var agvcQxyHis agvc.AgvcQxyHis
 	err := c.ShouldBindJSON(&agvcQxyHis)
@@ -33,13 +30,13 @@ func (agvcQxyHisApi *AgvcQxyHisApi) CreateAgvcQxyHis(c *gin.Context) {
 		response.FailWithMessage(err.Error(), c)
 		return
 	}
-	err = agvcQxyHisService.CreateAgvcQxyHis(ctx,&agvcQxyHis)
+	err = agvcQxyHisService.CreateAgvcQxyHis(ctx, &agvcQxyHis)
 	if err != nil {
-        global.GVA_LOG.Error("创建失败!", zap.Error(err))
-		response.FailWithMessage("创建失败:" + err.Error(), c)
+		global.GVA_LOG.Error("创建失败!", zap.Error(err))
+		response.FailWithMessage("创建失败:"+err.Error(), c)
 		return
 	}
-    response.OkWithMessage("创建成功", c)
+	response.OkWithMessage("创建成功", c)
 }
 
 // DeleteAgvcQxyHis 删除气象仪监控
@@ -52,14 +49,14 @@ func (agvcQxyHisApi *AgvcQxyHisApi) CreateAgvcQxyHis(c *gin.Context) {
 // @Success 200 {object} response.Response{msg=string} "删除成功"
 // @Router /agvcQxyHis/deleteAgvcQxyHis [delete]
 func (agvcQxyHisApi *AgvcQxyHisApi) DeleteAgvcQxyHis(c *gin.Context) {
-    // 创建业务用Context
-    ctx := c.Request.Context()
+	// 创建业务用Context
+	ctx := c.Request.Context()
 
 	ID := c.Query("ID")
-	err := agvcQxyHisService.DeleteAgvcQxyHis(ctx,ID)
+	err := agvcQxyHisService.DeleteAgvcQxyHis(ctx, ID)
 	if err != nil {
-        global.GVA_LOG.Error("删除失败!", zap.Error(err))
-		response.FailWithMessage("删除失败:" + err.Error(), c)
+		global.GVA_LOG.Error("删除失败!", zap.Error(err))
+		response.FailWithMessage("删除失败:"+err.Error(), c)
 		return
 	}
 	response.OkWithMessage("删除成功", c)
@@ -74,14 +71,14 @@ func (agvcQxyHisApi *AgvcQxyHisApi) DeleteAgvcQxyHis(c *gin.Context) {
 // @Success 200 {object} response.Response{msg=string} "批量删除成功"
 // @Router /agvcQxyHis/deleteAgvcQxyHisByIds [delete]
 func (agvcQxyHisApi *AgvcQxyHisApi) DeleteAgvcQxyHisByIds(c *gin.Context) {
-    // 创建业务用Context
-    ctx := c.Request.Context()
+	// 创建业务用Context
+	ctx := c.Request.Context()
 
 	IDs := c.QueryArray("IDs[]")
-	err := agvcQxyHisService.DeleteAgvcQxyHisByIds(ctx,IDs)
+	err := agvcQxyHisService.DeleteAgvcQxyHisByIds(ctx, IDs)
 	if err != nil {
-        global.GVA_LOG.Error("批量删除失败!", zap.Error(err))
-		response.FailWithMessage("批量删除失败:" + err.Error(), c)
+		global.GVA_LOG.Error("批量删除失败!", zap.Error(err))
+		response.FailWithMessage("批量删除失败:"+err.Error(), c)
 		return
 	}
 	response.OkWithMessage("批量删除成功", c)
@@ -97,8 +94,8 @@ func (agvcQxyHisApi *AgvcQxyHisApi) DeleteAgvcQxyHisByIds(c *gin.Context) {
 // @Success 200 {object} response.Response{msg=string} "更新成功"
 // @Router /agvcQxyHis/updateAgvcQxyHis [put]
 func (agvcQxyHisApi *AgvcQxyHisApi) UpdateAgvcQxyHis(c *gin.Context) {
-    // 从ctx获取标准context进行业务行为
-    ctx := c.Request.Context()
+	// 从ctx获取标准context进行业务行为
+	ctx := c.Request.Context()
 
 	var agvcQxyHis agvc.AgvcQxyHis
 	err := c.ShouldBindJSON(&agvcQxyHis)
@@ -106,10 +103,10 @@ func (agvcQxyHisApi *AgvcQxyHisApi) UpdateAgvcQxyHis(c *gin.Context) {
 		response.FailWithMessage(err.Error(), c)
 		return
 	}
-	err = agvcQxyHisService.UpdateAgvcQxyHis(ctx,agvcQxyHis)
+	err = agvcQxyHisService.UpdateAgvcQxyHis(ctx, agvcQxyHis)
 	if err != nil {
-        global.GVA_LOG.Error("更新失败!", zap.Error(err))
-		response.FailWithMessage("更新失败:" + err.Error(), c)
+		global.GVA_LOG.Error("更新失败!", zap.Error(err))
+		response.FailWithMessage("更新失败:"+err.Error(), c)
 		return
 	}
 	response.OkWithMessage("更新成功", c)
@@ -125,18 +122,19 @@ func (agvcQxyHisApi *AgvcQxyHisApi) UpdateAgvcQxyHis(c *gin.Context) {
 // @Success 200 {object} response.Response{data=agvc.AgvcQxyHis,msg=string} "查询成功"
 // @Router /agvcQxyHis/findAgvcQxyHis [get]
 func (agvcQxyHisApi *AgvcQxyHisApi) FindAgvcQxyHis(c *gin.Context) {
-    // 创建业务用Context
-    ctx := c.Request.Context()
+	// 创建业务用Context
+	ctx := c.Request.Context()
 
 	ID := c.Query("ID")
-	reagvcQxyHis, err := agvcQxyHisService.GetAgvcQxyHis(ctx,ID)
+	reagvcQxyHis, err := agvcQxyHisService.GetAgvcQxyHis(ctx, ID)
 	if err != nil {
-        global.GVA_LOG.Error("查询失败!", zap.Error(err))
-		response.FailWithMessage("查询失败:" + err.Error(), c)
+		global.GVA_LOG.Error("查询失败!", zap.Error(err))
+		response.FailWithMessage("查询失败:"+err.Error(), c)
 		return
 	}
 	response.OkWithData(reagvcQxyHis, c)
 }
+
 // GetAgvcQxyHisList 分页获取气象仪监控列表
 // @Tags AgvcQxyHis
 // @Summary 分页获取气象仪监控列表
@@ -147,8 +145,8 @@ func (agvcQxyHisApi *AgvcQxyHisApi) FindAgvcQxyHis(c *gin.Context) {
 // @Success 200 {object} response.Response{data=response.PageResult,msg=string} "获取成功"
 // @Router /agvcQxyHis/getAgvcQxyHisList [get]
 func (agvcQxyHisApi *AgvcQxyHisApi) GetAgvcQxyHisList(c *gin.Context) {
-    // 创建业务用Context
-    ctx := c.Request.Context()
+	// 创建业务用Context
+	ctx := c.Request.Context()
 
 	var pageInfo agvcReq.AgvcQxyHisSearch
 	err := c.ShouldBindQuery(&pageInfo)
@@ -156,18 +154,18 @@ func (agvcQxyHisApi *AgvcQxyHisApi) GetAgvcQxyHisList(c *gin.Context) {
 		response.FailWithMessage(err.Error(), c)
 		return
 	}
-	list, total, err := agvcQxyHisService.GetAgvcQxyHisInfoList(ctx,pageInfo)
+	list, total, err := agvcQxyHisService.GetAgvcQxyHisInfoList(ctx, pageInfo)
 	if err != nil {
-	    global.GVA_LOG.Error("获取失败!", zap.Error(err))
-        response.FailWithMessage("获取失败:" + err.Error(), c)
-        return
-    }
-    response.OkWithDetailed(response.PageResult{
-        List:     list,
-        Total:    total,
-        Page:     pageInfo.Page,
-        PageSize: pageInfo.PageSize,
-    }, "获取成功", c)
+		global.GVA_LOG.Error("获取失败!", zap.Error(err))
+		response.FailWithMessage("获取失败:"+err.Error(), c)
+		return
+	}
+	response.OkWithDetailed(response.PageResult{
+		List:     list,
+		Total:    total,
+		Page:     pageInfo.Page,
+		PageSize: pageInfo.PageSize,
+	}, "获取成功", c)
 }
 
 // GetAgvcQxyHisPublic 不需要鉴权的气象仪监控接口
@@ -178,15 +176,15 @@ func (agvcQxyHisApi *AgvcQxyHisApi) GetAgvcQxyHisList(c *gin.Context) {
 // @Success 200 {object} response.Response{data=object,msg=string} "获取成功"
 // @Router /agvcQxyHis/getAgvcQxyHisPublic [get]
 func (agvcQxyHisApi *AgvcQxyHisApi) GetAgvcQxyHisPublic(c *gin.Context) {
-    // 创建业务用Context
-    ctx := c.Request.Context()
+	// 创建业务用Context
+	ctx := c.Request.Context()
 
-    // 此接口不需要鉴权
-    // 示例为返回了一个固定的消息接口，一般本接口用于C端服务，需要自己实现业务逻辑
-    agvcQxyHisService.GetAgvcQxyHisPublic(ctx)
-    response.OkWithDetailed(gin.H{
-       "info": "不需要鉴权的气象仪监控接口信息",
-    }, "获取成功", c)
+	// 此接口不需要鉴权
+	// 示例为返回了一个固定的消息接口，一般本接口用于C端服务，需要自己实现业务逻辑
+	agvcQxyHisService.GetAgvcQxyHisPublic(ctx)
+	response.OkWithDetailed(gin.H{
+		"info": "不需要鉴权的气象仪监控接口信息",
+	}, "获取成功", c)
 }
 
 // GetAgvcQxyHistory 获取气象仪历史数据
@@ -210,7 +208,7 @@ func (agvcQxyHisApi *AgvcQxyHisApi) GetAgvcQxyHistory(c *gin.Context) {
 	historyData, err := agvcQxyHisService.GetAgvcQxyHistory(ctx, eqid, startTime, endTime)
 	if err != nil {
 		global.GVA_LOG.Error("获取历史数据失败!", zap.Error(err))
-		response.FailWithMessage("获取失败:" + err.Error(), c)
+		response.FailWithMessage("获取失败:"+err.Error(), c)
 		return
 	}
 	response.OkWithData(historyData, c)
@@ -246,7 +244,7 @@ func (agvcQxyHisApi *AgvcQxyHisApi) GenerateAgvcQxyTestData(c *gin.Context) {
 	err := agvcQxyHisService.GenerateAgvcQxyTestData(ctx, req.Eqid, req.Count)
 	if err != nil {
 		global.GVA_LOG.Error("生成测试数据失败!", zap.Error(err))
-		response.FailWithMessage("生成失败:" + err.Error(), c)
+		response.FailWithMessage("生成失败:"+err.Error(), c)
 		return
 	}
 	response.OkWithMessage("测试数据生成成功", c)
