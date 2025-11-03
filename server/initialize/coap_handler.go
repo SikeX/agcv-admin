@@ -51,7 +51,7 @@ func handleAgvcData(ctx context.Context, msg coapMessage) (code byte, payload []
 		return coapCodeInternalServerError, []byte(`{"error":"save failed"}`)
 	}
 
-	global.GVA_LOG.Info("AGVC data saved successfully", zap.Int("count", len(dataBatch)))
+	//global.GVA_LOG.Info("AGVC data saved successfully", zap.Int("count", len(dataBatch)))
 	return coapCodeCreated, []byte(`{"success":true}`)
 }
 

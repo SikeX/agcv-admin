@@ -15,7 +15,6 @@ import (
 type AgvcDataService struct{}
 
 // SaveAgvcData 保存AGVC数据到InfluxDB
-// Author [yourname](https://github.com/yourname)
 func (agvcDataService *AgvcDataService) SaveAgvcData(ctx context.Context, dataBatch agvc.AgvcDataBatch) error {
 	if global.GVA_INFLUXDB == nil {
 		return fmt.Errorf("InfluxDB client not initialized")
@@ -41,8 +40,8 @@ func (agvcDataService *AgvcDataService) SaveAgvcData(ctx context.Context, dataBa
 	for _, dataItem := range dataBatch {
 		// 创建数据点
 		point := write.NewPoint(
-			"agvc_data",                                                // measurement名称
-			map[string]string{                                         // tags
+			"agvc_data", // measurement名称
+			map[string]string{ // tags
 				"psid":     fmt.Sprintf("%d", dataItem.Psid),
 				"eqid":     fmt.Sprintf("%d", dataItem.Eqid),
 				"eqType":   fmt.Sprintf("%d", dataItem.EqType),
@@ -58,14 +57,14 @@ func (agvcDataService *AgvcDataService) SaveAgvcData(ctx context.Context, dataBa
 		// 写入数据点
 		writeAPI.WritePoint(point)
 
-		global.GVA_LOG.Info("AGVC data written to InfluxDB",
-			zap.Int("psid", dataItem.Psid),
-			zap.Int("eqid", dataItem.Eqid),
-			zap.Int("eqType", dataItem.EqType),
-			zap.Int("dataType", dataItem.DataType),
-			zap.String("point", dataItem.Point),
-			zap.Float64("value", dataItem.Value),
-		)
+		//global.GVA_LOG.Info("AGVC data written to InfluxDB",
+		//	zap.Int("psid", dataItem.Psid),
+		//	zap.Int("eqid", dataItem.Eqid),
+		//	zap.Int("eqType", dataItem.EqType),
+		//	zap.Int("dataType", dataItem.DataType),
+		//	zap.String("point", dataItem.Point),
+		//	zap.Float64("value", dataItem.Value),
+		//)
 	}
 
 	// 强制刷新缓冲区
