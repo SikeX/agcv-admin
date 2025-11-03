@@ -37,9 +37,25 @@ func (s *dataStorage) Initialize() {
 
 // Stop 停止数据存储服务
 func (s *dataStorage) Stop() {
+	// 停止定时器
 	if s.saveTimer != nil {
 		s.saveTimer.Stop()
 	}
+
+	// 关闭前强制保存一次数据
+	s.mu.RLock()
+	dataCount := len(s.realtimeData)
+	s.mu.RUnlock()
+
+	if dataCount > 0 {
+		global.GVA_LOG.Info("服务关闭前保存数据到InfluxDB", zap.Int("数据量", dataCount))
+		if err := s.saveToInfluxDB(); err != nil {
+			global.GVA_LOG.Error("服务关闭前保存数据失败", zap.Error(err))
+		} else {
+			global.GVA_LOG.Info("服务关闭前数据保存成功")
+		}
+	}
+
 	close(s.stopChan)
 	global.GVA_LOG.Info("数据存储服务已停止")
 }
@@ -63,6 +79,28 @@ func (s *dataStorage) StoreBatch(dataList []*agvc_main.RealtimeData) {
 	for _, data := range dataList {
 		key := s.makeKey(data.PSID, data.EQID, data.EQType, data.DataType, data.Point)
 		data.Timestamp = now
+		s.realtimeData[key] = data
+	}
+}
+
+// StoreAgvcDataBatch 批量存储AGVC数据（从CoAP接收的数据格式）
+func (s *dataStorage) StoreAgvcDataBatch(dataBatch []agvc_main.AgvcDataItem) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	now := time.Now().Unix()
+	for _, item := range dataBatch {
+		// 转换为内部RealtimeData格式
+		data := &agvc_main.RealtimeData{
+			PSID:      fmt.Sprintf("%03d", item.Psid),
+			EQID:      fmt.Sprintf("%04d", item.Eqid),
+			EQType:    fmt.Sprintf("%02d", item.EqType),
+			DataType:  fmt.Sprintf("%02d", item.DataType),
+			Point:     item.Point,
+			Value:     item.Value,
+			Timestamp: now,
+		}
+		key := s.makeKey(data.PSID, data.EQID, data.EQType, data.DataType, data.Point)
 		s.realtimeData[key] = data
 	}
 }
@@ -117,10 +155,19 @@ func (s *dataStorage) periodicSave() {
 	for {
 		select {
 		case <-s.saveTimer.C:
+			s.mu.RLock()
+			dataCount := len(s.realtimeData)
+			s.mu.RUnlock()
+
+			if dataCount == 0 {
+				global.GVA_LOG.Debug("无数据需要保存到InfluxDB")
+				continue
+			}
+
 			if err := s.saveToInfluxDB(); err != nil {
 				global.GVA_LOG.Error("保存数据到InfluxDB失败", zap.Error(err))
 			} else {
-				global.GVA_LOG.Info("数据已保存到InfluxDB", zap.Int("数据量", len(s.realtimeData)))
+				global.GVA_LOG.Info("数据已保存到InfluxDB", zap.Int("数据量", dataCount))
 			}
 		case <-s.stopChan:
 			return
@@ -145,7 +192,7 @@ func (s *dataStorage) saveToInfluxDB() error {
 	for _, data := range s.realtimeData {
 		// 创建InfluxDB点
 		point := influxdb2.NewPoint(
-			"device_data",
+			"agvc_data",
 			map[string]string{
 				"psid":     data.PSID,
 				"eqid":     data.EQID,
