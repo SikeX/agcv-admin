@@ -49,23 +49,23 @@ func (a *device) CreateDevice(c *gin.Context) {
 // @Param    id query uint true "设备ID"
 // @Success  200  {object} response.Response{msg=string} "删除成功"
 // @Router   /agvc/device/delete [delete]
-func (a *device) DeleteDevice(c *gin.Context) {
-	var id request.GetById
-	err := c.ShouldBindQuery(&id)
-	if err != nil {
-		response.FailWithMessage(err.Error(), c)
-		return
-	}
+// func (a *device) DeleteDevice(c *gin.Context) {
+// 	var id request.GetById
+// 	err := c.ShouldBindQuery(&id)
+// 	if err != nil {
+// 		response.FailWithMessage(err.Error(), c)
+// 		return
+// 	}
 
-	err = serviceDevice.DeleteDevice(id.Uint())
-	if err != nil {
-		global.GVA_LOG.Error("删除设备失败", zap.Error(err))
-		response.FailWithMessage("删除设备失败", c)
-		return
-	}
+// 	err = serviceDevice.DeleteDevice(id.Uint())
+// 	if err != nil {
+// 		global.GVA_LOG.Error("删除设备失败", zap.Error(err))
+// 		response.FailWithMessage("删除设备失败", c)
+// 		return
+// 	}
 
-	response.OkWithMessage("删除成功", c)
-}
+// 	response.OkWithMessage("删除成功", c)
+// }
 
 // UpdateDevice 更新设备
 // @Tags     AGVC_Device
@@ -103,23 +103,23 @@ func (a *device) UpdateDevice(c *gin.Context) {
 // @Param    id query uint true "设备ID"
 // @Success  200  {object} response.Response{data=model.Device,msg=string} "获取成功"
 // @Router   /agvc/device/find [get]
-func (a *device) GetDevice(c *gin.Context) {
-	var id request.GetById
-	err := c.ShouldBindQuery(&id)
-	if err != nil {
-		response.FailWithMessage(err.Error(), c)
-		return
-	}
+// func (a *device) GetDevice(c *gin.Context) {
+// 	var id request.GetById
+// 	err := c.ShouldBindQuery(&id)
+// 	if err != nil {
+// 		response.FailWithMessage(err.Error(), c)
+// 		return
+// 	}
 
-	dev, err := serviceDevice.GetDevice(id.Uint())
-	if err != nil {
-		global.GVA_LOG.Error("获取设备失败", zap.Error(err))
-		response.FailWithMessage("获取设备失败", c)
-		return
-	}
+// 	dev, err := serviceDevice.GetDevice(id.Uint())
+// 	if err != nil {
+// 		global.GVA_LOG.Error("获取设备失败", zap.Error(err))
+// 		response.FailWithMessage("获取设备失败", c)
+// 		return
+// 	}
 
-	response.OkWithData(dev, c)
-}
+// 	response.OkWithData(dev, c)
+// }
 
 // GetDeviceList 获取设备列表
 // @Tags     AGVC_Device

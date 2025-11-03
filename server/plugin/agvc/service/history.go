@@ -22,11 +22,11 @@ func (s *history) QueryHistoryData(req request.HistoryDataRequest) ([]map[string
 
 	// 构建查询语句
 	query := s.buildFluxQuery(req)
-	
+
 	global.GVA_LOG.Debug("执行InfluxDB查询", zap.String("query", query))
 
 	// 执行查询
-	queryAPI := global.GVA_INFLUXDB.QueryAPI(global.GVA_CONFIG.Influxdb.Org)
+	queryAPI := global.GVA_INFLUXDB.QueryAPI(global.GVA_CONFIG.InfluxDB.Org)
 	result, err := queryAPI.Query(context.Background(), query)
 	if err != nil {
 		global.GVA_LOG.Error("InfluxDB查询失败", zap.Error(err))
@@ -60,10 +60,10 @@ func (s *history) QueryHistoryData(req request.HistoryDataRequest) ([]map[string
 
 // buildFluxQuery 构建Flux查询语句
 func (s *history) buildFluxQuery(req request.HistoryDataRequest) string {
-	bucket := global.GVA_CONFIG.Influxdb.Bucket
+	bucket := global.GVA_CONFIG.InfluxDB.Bucket
 	startTime := time.Unix(req.StartTime, 0).Format(time.RFC3339)
 	endTime := time.Unix(req.EndTime, 0).Format(time.RFC3339)
-	
+
 	// 基础查询
 	query := fmt.Sprintf(`from(bucket: "%s")
   |> range(start: %s, stop: %s)
@@ -112,7 +112,7 @@ func (s *history) QueryLatestData(psid, eqid, eqType, dataType, point string, du
 		return 0, fmt.Errorf("InfluxDB客户端未初始化")
 	}
 
-	bucket := global.GVA_CONFIG.Influxdb.Bucket
+	bucket := global.GVA_CONFIG.InfluxDB.Bucket
 	startTime := time.Now().Add(-duration).Format(time.RFC3339)
 
 	query := fmt.Sprintf(`from(bucket: "%s")
@@ -126,7 +126,7 @@ func (s *history) QueryLatestData(psid, eqid, eqType, dataType, point string, du
   |> last()`,
 		bucket, startTime, psid, eqid, eqType, dataType, point)
 
-	queryAPI := global.GVA_INFLUXDB.QueryAPI(global.GVA_CONFIG.Influxdb.Org)
+	queryAPI := global.GVA_INFLUXDB.QueryAPI(global.GVA_CONFIG.InfluxDB.Org)
 	result, err := queryAPI.Query(context.Background(), query)
 	if err != nil {
 		return 0, fmt.Errorf("查询失败: %v", err)
@@ -162,7 +162,7 @@ func (s *history) QueryAggregateData(psid, eqid, eqType, dataType, point string,
 		return 0, fmt.Errorf("不支持的聚合函数: %s", aggregateFunc)
 	}
 
-	bucket := global.GVA_CONFIG.Influxdb.Bucket
+	bucket := global.GVA_CONFIG.InfluxDB.Bucket
 	start := time.Unix(startTime, 0).Format(time.RFC3339)
 	end := time.Unix(endTime, 0).Format(time.RFC3339)
 
@@ -177,7 +177,7 @@ func (s *history) QueryAggregateData(psid, eqid, eqType, dataType, point string,
   |> %s()`,
 		bucket, start, end, psid, eqid, eqType, dataType, point, aggregateFunc)
 
-	queryAPI := global.GVA_INFLUXDB.QueryAPI(global.GVA_CONFIG.Influxdb.Org)
+	queryAPI := global.GVA_INFLUXDB.QueryAPI(global.GVA_CONFIG.InfluxDB.Org)
 	result, err := queryAPI.Query(context.Background(), query)
 	if err != nil {
 		return 0, fmt.Errorf("查询失败: %v", err)

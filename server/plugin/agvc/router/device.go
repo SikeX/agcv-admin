@@ -18,9 +18,9 @@ func (r *device) InitDeviceRouter(public, private *gin.RouterGroup) {
 	{
 		// 私有路由（需要鉴权）
 		devicePrivate.POST("create", apiDevice.CreateDevice)
-		devicePrivate.DELETE("delete", apiDevice.DeleteDevice)
+		// devicePrivate.DELETE("delete", apiDevice.DeleteDevice)
 		devicePrivate.PUT("update", apiDevice.UpdateDevice)
-		devicePrivate.GET("find", apiDevice.GetDevice)
+		// devicePrivate.GET("find", apiDevice.GetDevice)
 		devicePrivate.GET("list", apiDevice.GetDeviceList)
 		devicePrivate.GET("realtimeData", apiDevice.GetDeviceRealtimeData)
 		devicePrivate.GET("inverters", apiDevice.GetInverters)

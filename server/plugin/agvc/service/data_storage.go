@@ -15,10 +15,10 @@ import (
 )
 
 type dataStorage struct {
-	mu             sync.RWMutex
-	realtimeData   map[string]*model.RealtimeData // key: psid_eqid_eqType_dataType_point
-	saveTimer      *time.Ticker
-	stopChan       chan struct{}
+	mu           sync.RWMutex
+	realtimeData map[string]*model.RealtimeData // key: psid_eqid_eqType_dataType_point
+	saveTimer    *time.Ticker
+	stopChan     chan struct{}
 }
 
 var DataStorage = new(dataStorage)
@@ -27,11 +27,11 @@ var DataStorage = new(dataStorage)
 func (s *dataStorage) Initialize() {
 	s.realtimeData = make(map[string]*model.RealtimeData)
 	s.stopChan = make(chan struct{})
-	
+
 	// 启动5分钟定时保存到InfluxDB
 	s.saveTimer = time.NewTicker(5 * time.Minute)
 	go s.periodicSave()
-	
+
 	global.GVA_LOG.Info("数据存储服务初始化成功")
 }
 
@@ -48,7 +48,7 @@ func (s *dataStorage) Stop() {
 func (s *dataStorage) StoreData(data *model.RealtimeData) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	
+
 	key := s.makeKey(data.PSID, data.EQID, data.EQType, data.DataType, data.Point)
 	data.Timestamp = time.Now().Unix()
 	s.realtimeData[key] = data
@@ -58,7 +58,7 @@ func (s *dataStorage) StoreData(data *model.RealtimeData) {
 func (s *dataStorage) StoreBatch(dataList []*model.RealtimeData) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	
+
 	now := time.Now().Unix()
 	for _, data := range dataList {
 		key := s.makeKey(data.PSID, data.EQID, data.EQType, data.DataType, data.Point)
@@ -71,7 +71,7 @@ func (s *dataStorage) StoreBatch(dataList []*model.RealtimeData) {
 func (s *dataStorage) GetData(psid, eqid, eqType, dataType, point string) (*model.RealtimeData, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	
+
 	key := s.makeKey(psid, eqid, eqType, dataType, point)
 	data, exists := s.realtimeData[key]
 	return data, exists
@@ -81,16 +81,16 @@ func (s *dataStorage) GetData(psid, eqid, eqType, dataType, point string) (*mode
 func (s *dataStorage) GetDeviceData(psid, eqid, eqType string, dataType string) map[string]*model.RealtimeData {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	
+
 	result := make(map[string]*model.RealtimeData)
 	prefix := fmt.Sprintf("%s_%s_%s_%s_", psid, eqid, eqType, dataType)
-	
+
 	for key, data := range s.realtimeData {
 		if len(key) >= len(prefix) && key[:len(prefix)] == prefix {
 			result[data.Point] = data
 		}
 	}
-	
+
 	return result
 }
 
@@ -98,17 +98,17 @@ func (s *dataStorage) GetDeviceData(psid, eqid, eqType string, dataType string) 
 func (s *dataStorage) GetDeviceAllData(psid, eqid, eqType string) map[string]*model.RealtimeData {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	
+
 	result := make(map[string]*model.RealtimeData)
 	prefix := fmt.Sprintf("%s_%s_%s_", psid, eqid, eqType)
-	
+
 	for key, data := range s.realtimeData {
 		if len(key) >= len(prefix) && key[:len(prefix)] == prefix {
 			fullKey := fmt.Sprintf("%s_%s", data.DataType, data.Point)
 			result[fullKey] = data
 		}
 	}
-	
+
 	return result
 }
 
@@ -133,15 +133,15 @@ func (s *dataStorage) saveToInfluxDB() error {
 	if global.GVA_INFLUXDB == nil {
 		return fmt.Errorf("InfluxDB客户端未初始化")
 	}
-	
+
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	
-	writeAPI := global.GVA_INFLUXDB.WriteAPIBlocking(global.GVA_CONFIG.Influxdb.Org, global.GVA_CONFIG.Influxdb.Bucket)
-	
+
+	writeAPI := global.GVA_INFLUXDB.WriteAPIBlocking(global.GVA_CONFIG.InfluxDB.Org, global.GVA_CONFIG.InfluxDB.Bucket)
+
 	var points []*write.Point
 	now := time.Now()
-	
+
 	for _, data := range s.realtimeData {
 		// 创建InfluxDB点
 		point := influxdb2.NewPoint(
@@ -160,11 +160,11 @@ func (s *dataStorage) saveToInfluxDB() error {
 		)
 		points = append(points, point)
 	}
-	
+
 	if len(points) > 0 {
 		return writeAPI.WritePoint(context.Background(), points...)
 	}
-	
+
 	return nil
 }
 
@@ -179,7 +179,7 @@ func (s *dataStorage) GetDataAsFloat64(psid, eqid, eqType, dataType, point strin
 	if !exists {
 		return 0, fmt.Errorf("数据不存在")
 	}
-	
+
 	switch v := data.Value.(type) {
 	case float64:
 		return v, nil
@@ -206,7 +206,7 @@ func (s *dataStorage) GetDataAsInt(psid, eqid, eqType, dataType, point string) (
 	if !exists {
 		return 0, fmt.Errorf("数据不存在")
 	}
-	
+
 	switch v := data.Value.(type) {
 	case int:
 		return v, nil
@@ -230,7 +230,7 @@ func (s *dataStorage) GetDataAsInt(psid, eqid, eqType, dataType, point string) (
 func (s *dataStorage) ExportSnapshot() string {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	
+
 	data, _ := json.MarshalIndent(s.realtimeData, "", "  ")
 	return string(data)
 }
