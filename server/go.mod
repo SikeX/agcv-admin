@@ -45,6 +45,7 @@ require (
 	golang.org/x/sync v0.11.0
 	golang.org/x/text v0.22.0
 	gorm.io/datatypes v1.2.5
+	gorm.io/driver/mysql v1.5.7
 	gorm.io/gen v0.3.26
 	gorm.io/gorm v1.25.12
 )
@@ -170,7 +171,6 @@ require (
 	google.golang.org/protobuf v1.36.3 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	gorm.io/driver/mysql v1.5.7 // indirect
 	gorm.io/driver/postgres v1.5.11 // indirect
 	gorm.io/driver/sqlserver v1.5.4 // indirect
 	gorm.io/hints v1.1.2 // indirect

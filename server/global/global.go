@@ -42,7 +42,8 @@ var (
     BlackCache              local_cache.Cache
     GVA_INFLUXDB            influxdb2.Client // InfluxDB client
     GVA_MQTT                interface{}      // MQTT client
-    GVA_COAP_SERVER         interface{}      // CoAP server instance
+    GVA_COAP_SERVER         interface{}      // CoAP server instance (5683 port)
+    GVA_COAP_DISPATCH_SERVER interface{}     // CoAP dispatch server instance (1187 port)
     lock                    sync.RWMutex
 )
 
