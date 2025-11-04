@@ -134,5 +134,5 @@ func handleDispatchData(ctx context.Context, msg coapMessage) (code byte, payloa
 		zap.Int("count", len(dataBatch)),
 		zap.Int("总数", agvcMainService.DispatchStorage.GetDataCount()))
 
-	return coapCodeCreated, []byte(`{"success":true}`)
+	return coapCodeCreated, []byte("ok")
 }

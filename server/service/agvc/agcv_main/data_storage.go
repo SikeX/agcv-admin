@@ -198,7 +198,7 @@ func (s *dataStorage) saveToInfluxDB() error {
 				"eqid":     fmt.Sprintf("%d", data.EQID),
 				"eqType":   fmt.Sprintf("%d", data.EQType),
 				"dataType": fmt.Sprintf("%d", data.DataType),
-				"point":    fmt.Sprintf("%d", data.Point),
+				"point":    data.Point,
 			},
 			map[string]interface{}{
 				"value": data.Value,
