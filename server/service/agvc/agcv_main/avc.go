@@ -357,6 +357,13 @@ func (s *avc) executeAVCCycle(bwdNo int) error {
         zap.Int("成功数", successCount),
         zap.Int("总数", len(regulationDetails)))
 
+    // 步骤14：发送AVC计算结果到调度（1189端口）
+    if err := s.sendAVCResultToDispatch(bwdNo, config, pointVoltage, totalReactive); err != nil {
+        global.GVA_LOG.Error("发送AVC结果到调度失败",
+            zap.Int("bwdNo", bwdNo),
+            zap.Error(err))
+    }
+
     return nil
 }
 
@@ -606,4 +613,73 @@ func (s *avc) CreateOrUpdateConfig(config *agvc_main.AVCConfig) error {
 
     // 存在，更新配置
     return global.GVA_DB.Model(&existing).Updates(config).Error
+}
+
+// sendAVCResultToDispatch 发送AVC计算结果到调度
+func (s *avc) sendAVCResultToDispatch(bwdNo int, config agvc_main.AVCConfig, actualVoltage, actualReactive float64) error {
+    results := make(map[string]interface{})
+
+    // AVC遥信标准点
+    // 401: AVC功能投退信号
+    if config.IsActive != nil {
+        results["avcSignal"] = float64(*config.IsActive)
+    } else {
+        results["avcSignal"] = float64(0)
+    }
+
+    // 402: AVC功能就地远方控制模式 (0=本地, 1=远程)
+    if config.ControlAuth != nil {
+        results["avcControlMode"] = float64(*config.ControlAuth)
+    } else {
+        results["avcControlMode"] = float64(0)
+    }
+
+    // 403: AVC功能当前指令状态（0=无指令, 1=有指令）
+    results["avcCmdStatus"] = float64(1)
+
+    // 404: AVC功能开闭环状态 (0=闭环, 1=开环)
+    if config.RunMode != nil {
+        results["avcLoopStatus"] = float64(*config.RunMode)
+    } else {
+        results["avcLoopStatus"] = float64(0)
+    }
+
+    // 405: AVC功能上调节闭锁
+    if config.UpRegLock != nil {
+        results["avcUpRegLock"] = float64(*config.UpRegLock)
+    } else {
+        results["avcUpRegLock"] = float64(0)
+    }
+
+    // 406: AVC功能下调节闭锁
+    if config.DownRegLock != nil {
+        results["avcDownRegLock"] = float64(*config.DownRegLock)
+    } else {
+        results["avcDownRegLock"] = float64(0)
+    }
+
+    // AVC遥测标准点
+    // 401: 无功可增容量
+    totalCapacity := float64(0)
+    inverters, err := Device.GetOnlineInvertersByBwdNo(bwdNo)
+    if err == nil {
+        for _, inv := range inverters {
+            if inv.RatedReactivePower != nil {
+                totalCapacity += *inv.RatedReactivePower
+            }
+        }
+    }
+    results["reactiveIncreaseCap"] = totalCapacity
+
+    // 402: 无功可减容量
+    results["reactiveDecreaseCap"] = totalCapacity
+
+    // 403: 电压执行值（当前并网点电压）
+    results["voltageExecValue"] = actualVoltage
+
+    // 404: 无功执行值（当前总无功）
+    results["reactiveExecValue"] = actualReactive
+
+    // 发送到调度
+    return CoapSender.SendAVCResultToDispatch(bwdNo, results)
 }

@@ -425,11 +425,24 @@ func (s *agc) executeAGCCycle(bwdNo int) error {
         zap.Int("成功数", successCount),
         zap.Int("总数", len(regulationDetails)))
 
+    // 步骤14：发送AGC计算结果到调度（1189端口）
+    if err := s.sendAGCResultToDispatch(bwdNo, config, actualOutput, targetOutput); err != nil {
+        global.GVA_LOG.Error("发送AGC结果到调度失败",
+            zap.Int("bwdNo", bwdNo),
+            zap.Error(err))
+    }
+
     return nil
 }
 
 // executeOpenLoopControl 执行开环控制
 func (s *agc) executeOpenLoopControl(bwdNo int, execVal float64) error {
+    // 获取并网点配置
+    config, err := s.GetAGCConfig(bwdNo)
+    if err != nil {
+        return fmt.Errorf("获取并网点配置失败: %v", err)
+    }
+
     // 获取可用逆变器
     inverters, err := Device.GetOnlineInvertersByBwdNo(bwdNo)
     if err != nil || len(inverters) == 0 {
@@ -449,6 +462,16 @@ func (s *agc) executeOpenLoopControl(bwdNo int, execVal float64) error {
         // bwdNo := *inv.BwdNo
         psid := 1
         CoapSender.SendInverterCommand(host, port, psid, *inv.InverterNo, commands)
+    }
+
+    // 采集实际出力
+    actualOutput, _ := PowerAggregator.GetBwgActivePower(bwdNo)
+
+    // 发送AGC计算结果到调度
+    if err := s.sendAGCResultToDispatch(bwdNo, config, actualOutput, execVal); err != nil {
+        global.GVA_LOG.Error("发送AGC结果到调度失败（开环）",
+            zap.Int("bwdNo", bwdNo),
+            zap.Error(err))
     }
 
     return nil
@@ -572,4 +595,82 @@ func (s *agc) CreateOrUpdateConfig(config *agvc_main.AGCConfig) error {
 
     // 存在，更新配置
     return global.GVA_DB.Model(&existing).Updates(config).Error
+}
+
+// sendAGCResultToDispatch 发送AGC计算结果到调度
+func (s *agc) sendAGCResultToDispatch(bwdNo int, config agvc.AgvcBwdSetting, actualOutput, targetOutput float64) error {
+    results := make(map[string]interface{})
+
+    // AGC遥信标准点
+    // 401: AGC投退信号
+    if config.AgcIsEnabled != nil {
+        results["agcSignal"] = float64(*config.AgcIsEnabled)
+    } else {
+        results["agcSignal"] = float64(0)
+    }
+
+    // 402: AGC就地远方控制模式 (0=本地, 1=远程)
+    if config.ControlAuth != nil {
+        results["agcControlMode"] = float64(*config.ControlAuth)
+    } else {
+        results["agcControlMode"] = float64(0)
+    }
+
+    // 404: AGC开/闭环状态 (0=闭环, 1=开环)
+    if config.RunMode != nil {
+        results["agcLoopStatus"] = float64(*config.RunMode)
+    } else {
+        results["agcLoopStatus"] = float64(0)
+    }
+
+    // 405: AGC有功上调节闭锁（从调度存储读取）
+    pointID, _ := PointMapper.GetPointID(cons.TYPE_BWG, cons.AGC_YX_UP_REG_LOCK)
+    if pointID == "" {
+        pointID = "405"
+    }
+    upRegLock, err := DispatchStorage.GetDataAsFloat64(1, bwdNo, cons.TYPE_BWG, cons.YX, pointID)
+    if err != nil {
+        upRegLock = 0
+    }
+    results["agcUpRegLock"] = upRegLock
+
+    // 406: AGC有功下调节闭锁（从调度存储读取）
+    pointID, _ = PointMapper.GetPointID(cons.TYPE_BWG, cons.AGC_YX_DOWN_REG_LOCK)
+    if pointID == "" {
+        pointID = "406"
+    }
+    downRegLock, err := DispatchStorage.GetDataAsFloat64(1, bwdNo, cons.TYPE_BWG, cons.YX, pointID)
+    if err != nil {
+        downRegLock = 0
+    }
+    results["agcDownRegLock"] = downRegLock
+
+    // AGC遥测标准点
+    // 401: 有功调节上限（从调度存储读取）
+    pointID, _ = PointMapper.GetPointID(cons.TYPE_BWG, cons.AGC_YC_POWER_UPPER_LIMIT)
+    if pointID == "" {
+        pointID = "401"
+    }
+    powerUpperLimit, err := DispatchStorage.GetDataAsFloat64(1, bwdNo, cons.TYPE_BWG, cons.YC, pointID)
+    if err != nil {
+        powerUpperLimit = 0
+    }
+    results["powerUpperLimit"] = powerUpperLimit
+
+    // 402: 有功调节下限（从调度存储读取）
+    pointID, _ = PointMapper.GetPointID(cons.TYPE_BWG, cons.AGC_YC_POWER_LOWER_LIMIT)
+    if pointID == "" {
+        pointID = "402"
+    }
+    powerLowerLimit, err := DispatchStorage.GetDataAsFloat64(1, bwdNo, cons.TYPE_BWG, cons.YC, pointID)
+    if err != nil {
+        powerLowerLimit = 0
+    }
+    results["powerLowerLimit"] = powerLowerLimit
+
+    // 403: 有功执行值（当前实际输出功率）
+    results["powerExecValue"] = actualOutput
+
+    // 发送到调度
+    return CoapSender.SendAGCResultToDispatch(bwdNo, results)
 }
