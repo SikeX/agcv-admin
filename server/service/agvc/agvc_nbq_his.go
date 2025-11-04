@@ -10,6 +10,8 @@ import (
 	"github.com/flipped-aurora/gin-vue-admin/server/global"
 	"github.com/flipped-aurora/gin-vue-admin/server/model/agvc"
 	agvcReq "github.com/flipped-aurora/gin-vue-admin/server/model/agvc/request"
+	"github.com/flipped-aurora/gin-vue-admin/server/service/agvc/agcv_main"
+	"github.com/flipped-aurora/gin-vue-admin/server/service/agvc/cons"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 )
 
@@ -50,118 +52,103 @@ func (agvcNbqHisService *AgvcNbqHisService) GetAgvcNbqHis(ctx context.Context, I
 	return
 }
 
+type codePointKey struct {
+	Code int
+	Attr string
+}
+
 // GetAgvcNbqHisInfoList 分页获取逆变器历史数据列表
 // 从InfluxDB中查询设备列表及其最新数据
 func (agvcNbqHisService *AgvcNbqHisService) GetAgvcNbqHisInfoList(ctx context.Context, info agvcReq.AgvcNbqHisSearch) (list []agvc.AgvcNbqHis, total int64, err error) {
-	// 检查InfluxDB客户端是否已初始化
-	if global.GVA_INFLUXDB == nil {
-		return nil, 0, fmt.Errorf("InfluxDB客户端未初始化")
+	limit := info.PageSize
+	offset := info.PageSize * (info.Page - 1)
+
+	// 创建db
+	db := global.GVA_DB.Model(&agvc.AgvcNbqSetting{})
+	var inverterSettings []agvc.AgvcNbqSetting
+	// 如果有条件搜索 下方会自动创建搜索语句
+	if len(info.CreatedAtRange) == 2 {
+		db = db.Where("created_at BETWEEN ? AND ?", info.CreatedAtRange[0], info.CreatedAtRange[1])
 	}
 
-	// 获取查询API
-	queryAPI := global.GVA_INFLUXDB.QueryAPI(global.GVA_CONFIG.InfluxDB.Org)
-
-	// 构建Flux查询语句 - 获取所有逆变器设备的最新数据
-	// 使用group by eqid来获取每个设备的最新记录
-	flux := fmt.Sprintf(`
-	from(bucket: "%s")
-		|> range(start: -30d)
-		|> filter(fn: (r) => r["_measurement"] == "agvc")
-		|> filter(fn: (r) => r["eqType"] == "2")
-		|> group(columns: ["eqid"])
-		|> last()
-	`, global.GVA_CONFIG.InfluxDB.Bucket)
-
-	// 执行查询
-	result, err := queryAPI.Query(ctx, flux)
+	if info.Inverter_no != nil {
+		db = db.Where("inverter_no LIKE ?", "%"+*info.Inverter_no+"%")
+	}
+	if info.Name != nil && *info.Name != "" {
+		db = db.Where("name LIKE ?", "%"+*info.Name+"%")
+	}
+	err = db.Count(&total).Error
 	if err != nil {
-		return nil, 0, fmt.Errorf("查询InfluxDB失败: %v", err)
+		return
+	}
+	err = db.Find(&inverterSettings).Error
+
+	//逆变器监控要查询的属性
+	attrs := []string{
+		"apparentPower", //有功功率
+		"reactivePower", //无功功率
+		"powerFactor",   // 功率因数
 	}
 
-	// 按设备ID分组收集数据
-	deviceDataMap := make(map[string]map[string]interface{})
-
-	for result.Next() {
-		record := result.Record()
-		eqid := fmt.Sprintf("%v", record.ValueByKey("eqid"))
-		point := fmt.Sprintf("%v", record.ValueByKey("point"))
-		value := record.Value()
-
-		if _, exists := deviceDataMap[eqid]; !exists {
-			deviceDataMap[eqid] = make(map[string]interface{})
-			deviceDataMap[eqid]["eqid"] = eqid
-		}
-
-		// 根据点位映射存储数据
-		switch point {
-		case "10": // 交流功率(有功功率)
-			if v, ok := value.(float64); ok {
-				deviceDataMap[eqid]["activePower"] = v
+	//提取出inverterSettings的inverterNo
+	//code: 逆变器编号
+	//attr: 逆变器属性
+	codeAttrValueMap := make(map[int]map[string]float64)
+	nbqPoints := make([]codePointKey, 0)
+	for _, setting := range inverterSettings {
+		for _, attr := range attrs {
+			key := codePointKey{
+				Code: *setting.InverterNo,
+				Attr: attr,
 			}
-		case "27": // 无功功率
-			if v, ok := value.(float64); ok {
-				deviceDataMap[eqid]["reactivePower"] = v
-			}
-		case "21": // 功率因数
-			if v, ok := value.(float64); ok {
-				deviceDataMap[eqid]["powerFactor"] = v
-			}
-		case "202": // 直流功率(额定功率)
-			if v, ok := value.(float64); ok {
-				deviceDataMap[eqid]["ratedPower"] = v
-			}
+			nbqPoints = append(nbqPoints, key)
+			// inverterNos = append(inverterNos, *setting.InverterNo+cons.NBLabelPointMap[attr])
+			// codeAttrValueMap[*setting.InverterNo][attr] = 0
+			codeAttrValueMap[*setting.InverterNo] = map[string]float64{}
 		}
 	}
 
-	// 检查查询错误
-	if result.Err() != nil {
-		return nil, 0, fmt.Errorf("解析InfluxDB结果失败: %v", result.Err())
+	for _, codePoint := range nbqPoints {
+		//从内存中获取数据
+		if value, err := agcv_main.DataStorage.GetDataAsFloat64(codePoint.Code, cons.TYPE_NBQ, cons.YC, cons.NBLabelPointMap[codePoint.Attr]); err == nil {
+			codeAttrValueMap[codePoint.Code][codePoint.Attr] = value
+		}
 	}
 
-	// 转换为AgvcNbqHis结构体列表
-	var agvcNbqHisList []agvc.AgvcNbqHis
-	for eqid, data := range deviceDataMap {
-		inverterNo, _ := data["eqid"].(string)
-		var inverterNoInt int64
-		fmt.Sscanf(inverterNo, "%d", &inverterNoInt)
-
-		activePower := 0.0
-		if v, ok := data["activePower"].(float64); ok {
-			activePower = v
-		}
-
+	agvcNbqHises := make([]agvc.AgvcNbqHis, 0)
+	status := "1"
+	for _, setting := range inverterSettings {
+		apparentPower := 0.0
 		reactivePower := 0.0
-		if v, ok := data["reactivePower"].(float64); ok {
-			reactivePower = v
-		}
-
 		powerFactor := 0.0
-		if v, ok := data["powerFactor"].(float64); ok {
-			powerFactor = v
+		if attrValue, ok := codeAttrValueMap[*setting.InverterNo]["apparentPower"]; ok {
+			apparentPower = attrValue
 		}
-
-		ratedPower := 0.0
-		if v, ok := data["ratedPower"].(float64); ok {
-			ratedPower = v
+		if attrValue, ok := codeAttrValueMap[*setting.InverterNo]["reactivePower"]; ok {
+			reactivePower = attrValue
 		}
-
-		nbqHis := agvc.AgvcNbqHis{
-			InverterNo:    &inverterNoInt,
-			Name:          &eqid,
-			ActivePower:   &activePower,
-			ReactivePower: &reactivePower,
-			PowerFactor:   &powerFactor,
-			RatedPower:    &ratedPower,
+		if attrValue, ok := codeAttrValueMap[*setting.InverterNo]["powerFactor"]; ok {
+			powerFactor = attrValue
 		}
-		agvcNbqHisList = append(agvcNbqHisList, nbqHis)
+		agvcNbqHises = append(agvcNbqHises, agvc.AgvcNbqHis{
+			InverterNo:          setting.InverterNo,
+			Name:                setting.Name,
+			Status:              &status,
+			IsParticipateAdjust: setting.IsParticipateAdjust,
+			RatedPower:          setting.RatedActivePower,
+			ActivePower:         &apparentPower,
+			ReactivePower:       &reactivePower,
+			PowerFactor:         &powerFactor,
+		})
 	}
 
+	// 对inverterMonitors手动分页
 	// 计算总数
-	total = int64(len(agvcNbqHisList))
+	total = int64(len(agvcNbqHises))
 
 	// 应用分页
-	offset := info.PageSize * (info.Page - 1)
-	limit := info.PageSize
+	offset = info.PageSize * (info.Page - 1)
+	limit = info.PageSize
 
 	if offset >= int(total) {
 		return []agvc.AgvcNbqHis{}, total, nil
@@ -173,10 +160,10 @@ func (agvcNbqHisService *AgvcNbqHisService) GetAgvcNbqHisInfoList(ctx context.Co
 	}
 
 	if limit != 0 {
-		return agvcNbqHisList[offset:end], total, nil
+		return agvcNbqHises[offset:end], total, nil
 	}
 
-	return agvcNbqHisList, total, nil
+	return agvcNbqHises, total, err
 }
 func (agvcNbqHisService *AgvcNbqHisService) GetAgvcNbqHisPublic(ctx context.Context) {
 	// 此方法为获取数据源定义的数据

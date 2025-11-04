@@ -33,7 +33,7 @@ func (AVCConfig) TableName() string {
 // AVCRegulationRecord AVC调节记录
 type AVCRegulationRecord struct {
 	global.GVA_MODEL
-	PSID               string  `json:"psid" form:"psid" gorm:"column:psid;comment:电站ID;index"`
+	BwdNo              int     `json:"bwdNo" form:"bwdNo" gorm:"column:bwd_no;comment:并网点编号;index"`
 	TargetVoltage      float64 `json:"targetVoltage" form:"targetVoltage" gorm:"column:target_voltage;comment:目标电压(kV)"`
 	ActualVoltage      float64 `json:"actualVoltage" form:"actualVoltage" gorm:"column:actual_voltage;comment:实际电压(kV)"`
 	VoltageDeviation   float64 `json:"voltageDeviation" form:"voltageDeviation" gorm:"column:voltage_deviation;comment:电压偏差(kV)"`
@@ -54,9 +54,9 @@ func (AVCRegulationRecord) TableName() string {
 type DeviceReactiveRegulation struct {
 	global.GVA_MODEL
 	RecordID           uint    `json:"recordId" form:"recordId" gorm:"column:record_id;comment:调节记录ID;index"`
-	PSID               string  `json:"psid" form:"psid" gorm:"column:psid;comment:电站ID"`
-	EQID               string  `json:"eqid" form:"eqid" gorm:"column:eqid;comment:设备ID"`
-	EQType             string  `json:"eqType" form:"eqType" gorm:"column:eq_type;comment:设备类型"`
+	PSID               int     `json:"psid" form:"psid" gorm:"column:psid;comment:电站ID"`
+	EQID               int     `json:"eqid" form:"eqid" gorm:"column:eqid;comment:设备ID"`
+	EQType             int     `json:"eqType" form:"eqType" gorm:"column:eq_type;comment:设备类型"`
 	RegulationReactive float64 `json:"regulationReactive" form:"regulationReactive" gorm:"column:regulation_reactive;comment:分配无功(MVar)"`
 	BeforeReactive     float64 `json:"beforeReactive" form:"beforeReactive" gorm:"column:before_reactive;comment:调节前无功(MVar)"`
 	AfterReactive      float64 `json:"afterReactive" form:"afterReactive" gorm:"column:after_reactive;comment:调节后无功(MVar)"`

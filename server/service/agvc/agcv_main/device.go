@@ -102,7 +102,7 @@ func (s *device) GetInvertersByPSID(psid string) ([]agvc_main.Device, error) {
 }
 
 // GetOnlineInvertersByBwdNo 获取电站的所有在线逆变器
-func (s *device) GetOnlineInvertersByBwdNo(bwdNo string) ([]agvc.AgvcNbqSetting, error) {
+func (s *device) GetOnlineInvertersByBwdNo(bwdNo int) ([]agvc.AgvcNbqSetting, error) {
 	var devices []agvc.AgvcNbqSetting
 	// status := 1
 	err := global.GVA_DB.Where("bwdNo = ? AND isParticipateAdjust = ? ", bwdNo, true).Find(&devices).Error
@@ -117,7 +117,7 @@ func (s *device) UpdateDeviceStatus(psid, eqid, eqType string, status int) error
 }
 
 // GetPointMapping 获取测点映射
-func (s *device) GetPointMapping(eqType, dataType, point string) (agvc_main.PointMapping, error) {
+func (s *device) GetPointMapping(eqType, dataType int, point string) (agvc_main.PointMapping, error) {
 	var mapping agvc_main.PointMapping
 	err := global.GVA_DB.Where("eq_type = ? AND data_type = ? AND point = ?", eqType, dataType, point).
 		First(&mapping).Error
@@ -164,7 +164,7 @@ func (s *device) GetDeviceRealtimeData(psid, eqid, eqType string) (map[string]in
 	allData := DataStorage.GetDeviceAllData(psid, eqid, eqType)
 
 	// 按数据类型组织数据
-	dataByType := make(map[string]map[string]interface{})
+	dataByType := make(map[int]map[string]interface{})
 	for key, data := range allData {
 		if dataByType[data.DataType] == nil {
 			dataByType[data.DataType] = make(map[string]interface{})

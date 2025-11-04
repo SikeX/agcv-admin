@@ -31,7 +31,7 @@ func (AGCConfig) TableName() string {
 // AGCRegulationRecord AGC调节记录
 type AGCRegulationRecord struct {
 	global.GVA_MODEL
-	PSID            string  `json:"psid" form:"psid" gorm:"column:psid;comment:电站ID;index"`
+	BwdNo           int     `json:"bwdNo" form:"bwdNo" gorm:"column:bwdNo;comment:并网点编号;index"`
 	TargetPower     float64 `json:"targetPower" form:"targetPower" gorm:"column:target_power;comment:目标出力(MW)"`
 	ActualPower     float64 `json:"actualPower" form:"actualPower" gorm:"column:actual_power;comment:实际出力(MW)"`
 	PowerDeviation  float64 `json:"powerDeviation" form:"powerDeviation" gorm:"column:power_deviation;comment:出力偏差(MW)"`
@@ -50,8 +50,8 @@ func (AGCRegulationRecord) TableName() string {
 type InverterRegulation struct {
 	global.GVA_MODEL
 	RecordID        uint    `json:"recordId" form:"recordId" gorm:"column:record_id;comment:调节记录ID;index"`
-	BwdNo           string  `json:"bwdNo" form:"bwdNo" gorm:"column:bwdNo;comment:并网点编号"`
-	EQID            string  `json:"eqid" form:"eqid" gorm:"column:eqid;comment:逆变器ID"`
+	BwdNo           int     `json:"bwdNo" form:"bwdNo" gorm:"column:bwdNo;comment:并网点编号"`
+	EQID            int     `json:"eqid" form:"eqid" gorm:"column:eqid;comment:逆变器ID"`
 	RegulationPower float64 `json:"regulationPower" form:"regulationPower" gorm:"column:regulation_power;comment:分配调节量(MW)"`
 	BeforePower     float64 `json:"beforePower" form:"beforePower" gorm:"column:before_power;comment:调节前功率(MW)"`
 	AfterPower      float64 `json:"afterPower" form:"afterPower" gorm:"column:after_power;comment:调节后功率(MW)"`

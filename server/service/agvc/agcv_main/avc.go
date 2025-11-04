@@ -9,90 +9,91 @@ import (
 	"github.com/flipped-aurora/gin-vue-admin/server/model/agvc"
 	"github.com/flipped-aurora/gin-vue-admin/server/model/agvc/agvc_main"
 	"github.com/flipped-aurora/gin-vue-admin/server/model/agvc/agvc_main/request"
+	"github.com/flipped-aurora/gin-vue-admin/server/service/agvc/cons"
 	"go.uber.org/zap"
 )
 
 type avc struct {
-	psidChans map[string]chan struct{} // 每个电站一个停止通道
+	psidChans map[int]chan struct{} // 每个电站一个停止通道
 }
 
 var AVC = new(avc)
 
 // Initialize 初始化AVC服务
 func (s *avc) Initialize() {
-	s.psidChans = make(map[string]chan struct{})
+	s.psidChans = make(map[int]chan struct{})
 	global.GVA_LOG.Info("AVC控制服务初始化成功")
 }
 
 // StartAVC 启动AVC控制循环
-func (s *avc) StartAVC(psid string) error {
+func (s *avc) StartAVC(bwdNo int) error {
 	// 检查是否已经在运行
-	if _, exists := s.psidChans[psid]; exists {
-		return fmt.Errorf("电站%s的AVC控制已在运行", psid)
+	if _, exists := s.psidChans[bwdNo]; exists {
+		return fmt.Errorf("电站%s的AVC控制已在运行", bwdNo)
 	}
 
 	// 获取AVC配置
-	config, err := s.GetAVCConfig(psid)
+	config, err := s.GetAVCConfig(bwdNo)
 	if err != nil {
 		return fmt.Errorf("获取AVC配置失败: %v", err)
 	}
 
 	// 创建停止通道
 	stopChan := make(chan struct{})
-	s.psidChans[psid] = stopChan
+	s.psidChans[bwdNo] = stopChan
 
 	// 启动控制循环
-	go s.avcControlLoop(psid, config, stopChan)
+	go s.avcControlLoop(bwdNo, config, stopChan)
 
-	global.GVA_LOG.Info("AVC控制循环已启动", zap.String("psid", psid))
+	global.GVA_LOG.Info("AVC控制循环已启动", zap.Int("bwdNo", bwdNo))
 	return nil
 }
 
 // StopAVC 停止AVC控制循环
-func (s *avc) StopAVC(psid string) error {
-	stopChan, exists := s.psidChans[psid]
+func (s *avc) StopAVC(bwdNo int) error {
+	stopChan, exists := s.psidChans[bwdNo]
 	if !exists {
-		return fmt.Errorf("电站%s的AVC控制未运行", psid)
+		return fmt.Errorf("电站%s的AVC控制未运行", bwdNo)
 	}
 
 	close(stopChan)
-	delete(s.psidChans, psid)
+	delete(s.psidChans, bwdNo)
 
-	global.GVA_LOG.Info("AVC控制循环已停止", zap.String("psid", psid))
+	global.GVA_LOG.Info("AVC控制循环已停止", zap.Int("bwdNo", bwdNo))
 	return nil
 }
 
 // avcControlLoop AVC控制主循环
-func (s *avc) avcControlLoop(psid string, config agvc_main.AVCConfig, stopChan chan struct{}) {
+func (s *avc) avcControlLoop(bwdNo int, config agvc_main.AVCConfig, stopChan chan struct{}) {
 	ticker := time.NewTicker(time.Duration(config.RegPeriod) * time.Second)
 	defer ticker.Stop()
 
 	for {
 		select {
 		case <-ticker.C:
-			if err := s.executeAVCCycle(psid); err != nil {
+			if err := s.executeAVCCycle(bwdNo); err != nil {
 				global.GVA_LOG.Error("AVC控制周期执行失败",
-					zap.String("psid", psid),
+					zap.Int("bwdNo", bwdNo),
 					zap.Error(err))
 			}
 		case <-stopChan:
-			global.GVA_LOG.Info("AVC控制循环退出", zap.String("psid", psid))
+			global.GVA_LOG.Info("AVC控制循环退出", zap.Int("bwdNo", bwdNo))
 			return
 		}
 	}
 }
 
 // executeAVCCycle 执行一个AVC控制周期
-func (s *avc) executeAVCCycle(psid string) error {
+func (s *avc) executeAVCCycle(bwdNo int) error {
 	// 步骤1：获取最新配置
-	config, err := s.GetAVCConfig(psid)
+	config, err := s.GetAVCConfig(bwdNo)
 	if err != nil {
 		return fmt.Errorf("获取AVC配置失败: %v", err)
 	}
 
 	// 步骤2：检查AVC是否投入
 	if config.IsActive == nil || *config.IsActive == 0 {
-		global.GVA_LOG.Debug("AVC系统未投入", zap.String("psid", psid))
+		global.GVA_LOG.Debug("AVC系统未投入", zap.Int("bwdNo", bwdNo))
 		return nil
 	}
 
@@ -101,7 +102,7 @@ func (s *avc) executeAVCCycle(psid string) error {
 	targetHigh := config.TargetVoltageHigh
 
 	// 步骤4：采集并网点数据
-	collectData, err := s.collectAVCData(psid)
+	collectData, err := s.collectAVCData(bwdNo)
 	if err != nil {
 		return fmt.Errorf("采集数据失败: %v", err)
 	}
@@ -111,7 +112,7 @@ func (s *avc) executeAVCCycle(psid string) error {
 	systemFreq := collectData["systemFreq"].(float64)
 
 	global.GVA_LOG.Debug("AVC数据采集",
-		zap.String("psid", psid),
+		zap.Int("bwdNo", bwdNo),
 		zap.Float64("并网点电压", pointVoltage),
 		zap.Float64("总无功", totalReactive),
 		zap.Float64("系统频率", systemFreq))
@@ -119,7 +120,7 @@ func (s *avc) executeAVCCycle(psid string) error {
 	// 步骤5：判断电压是否在合格范围
 	if pointVoltage >= targetLow && pointVoltage <= targetHigh {
 		global.GVA_LOG.Debug("电压在合格范围，无需调节",
-			zap.String("psid", psid),
+			zap.Int("bwdNo", bwdNo),
 			zap.Float64("电压", pointVoltage),
 			zap.Float64("范围", targetLow),
 			zap.Float64("到", targetHigh))
@@ -140,7 +141,7 @@ func (s *avc) executeAVCCycle(psid string) error {
 	// 判断是否在死区内
 	if math.Abs(deltaV) <= config.VoltageDeadZone {
 		global.GVA_LOG.Debug("电压偏差在死区内，无需调节",
-			zap.String("psid", psid),
+			zap.Int("bwdNo", bwdNo),
 			zap.Float64("偏差", deltaV),
 			zap.Float64("死区", config.VoltageDeadZone))
 		return nil
@@ -148,11 +149,11 @@ func (s *avc) executeAVCCycle(psid string) error {
 
 	// 步骤7：检查闭锁信号
 	if deltaV > 0 && config.UpRegLock != nil && *config.UpRegLock == 1 {
-		global.GVA_LOG.Warn("上调节闭锁，无法增加电压", zap.String("psid", psid))
+		global.GVA_LOG.Warn("上调节闭锁，无法增加电压", zap.Int("bwdNo", bwdNo))
 		return nil
 	}
 	if deltaV < 0 && config.DownRegLock != nil && *config.DownRegLock == 1 {
-		global.GVA_LOG.Warn("下调节闭锁，无法降低电压", zap.String("psid", psid))
+		global.GVA_LOG.Warn("下调节闭锁，无法降低电压", zap.Int("bwdNo", bwdNo))
 		return nil
 	}
 
@@ -160,22 +161,22 @@ func (s *avc) executeAVCCycle(psid string) error {
 	requiredDeltaQ := s.calcRequiredReactive(deltaV, pointVoltage, config.ReactiveSensitivity)
 
 	global.GVA_LOG.Debug("AVC计算结果",
-		zap.String("psid", psid),
+		zap.Int("bwdNo", bwdNo),
 		zap.Float64("电压偏差", deltaV),
 		zap.Float64("需求无功", requiredDeltaQ))
 
 	// 步骤9：筛选可用设备（逆变器）
-	availableDevices, err := s.filterAvailableDevices(psid, requiredDeltaQ)
+	availableDevices, err := s.filterAvailableDevices(bwdNo, requiredDeltaQ)
 	if err != nil || len(availableDevices) == 0 {
 		return fmt.Errorf("没有可用的调节设备: %v", err)
 	}
 
 	// 步骤10：平均分配无功调节量
-	regulationDetails := s.assignReactiveToDevices(psid, requiredDeltaQ, availableDevices)
+	regulationDetails := s.assignReactiveToDevices(bwdNo, requiredDeltaQ, availableDevices)
 
 	// 步骤11：记录调节开始
 	record := agvc_main.AVCRegulationRecord{
-		PSID:               psid,
+		BwdNo:              bwdNo,
 		TargetVoltage:      targetVoltage,
 		ActualVoltage:      pointVoltage,
 		VoltageDeviation:   deltaV,
@@ -192,7 +193,7 @@ func (s *avc) executeAVCCycle(psid string) error {
 	}
 
 	// 步骤12：下发无功调节指令
-	successCount := s.sendReactiveCommands(psid, record.ID, regulationDetails)
+	successCount := s.sendReactiveCommands(bwdNo, record.ID, regulationDetails)
 
 	// 步骤13：更新调节记录
 	if successCount == len(regulationDetails) {
@@ -212,7 +213,7 @@ func (s *avc) executeAVCCycle(psid string) error {
 	})
 
 	global.GVA_LOG.Info("AVC调节周期完成",
-		zap.String("psid", psid),
+		zap.Int("bwdNo", bwdNo),
 		zap.String("status", record.Status),
 		zap.Int("成功数", successCount),
 		zap.Int("总数", len(regulationDetails)))
@@ -221,18 +222,18 @@ func (s *avc) executeAVCCycle(psid string) error {
 }
 
 // collectAVCData 采集AVC控制所需数据
-func (s *avc) collectAVCData(bwdNo string) (map[string]interface{}, error) {
+func (s *avc) collectAVCData(bwdNo int) (map[string]interface{}, error) {
 	data := make(map[string]interface{})
 
 	// 采集并网点电压（遥测401：电压）
-	pointVoltage, err := DataStorage.GetDataAsFloat64(bwdNo + "401")
+	pointVoltage, err := DataStorage.GetDataAsFloat64(bwdNo, cons.TYPE_BWG, cons.YC, "401")
 	if err != nil {
 		return nil, fmt.Errorf("采集并网点电压失败: %v", err)
 	}
 	data["pointVoltage"] = pointVoltage
 
 	// 采集总无功（遥测403：无功功率）
-	totalReactive, err := DataStorage.GetDataAsFloat64(bwdNo + "403")
+	totalReactive, err := DataStorage.GetDataAsFloat64(bwdNo, cons.TYPE_BWG, cons.YC, "403")
 	if err != nil {
 		// 无功不是必须的，使用默认值
 		totalReactive = 0.0
@@ -240,7 +241,7 @@ func (s *avc) collectAVCData(bwdNo string) (map[string]interface{}, error) {
 	data["totalReactive"] = totalReactive
 
 	// 采集系统频率
-	systemFreq, err := DataStorage.GetDataAsFloat64(bwdNo + "404")
+	systemFreq, err := DataStorage.GetDataAsFloat64(bwdNo, cons.TYPE_BWG, cons.YC, "404")
 	if err != nil {
 		systemFreq = 50.0
 	}
@@ -257,10 +258,10 @@ func (s *avc) calcRequiredReactive(deltaV, voltage, sensitivity float64) float64
 	return deltaV * sensitivity
 }
 
-// filterAvailableDevices 筛选可用设备
-func (s *avc) filterAvailableDevices(psid string, requiredQ float64) ([]agvc.AgvcNbqSetting, error) {
+// filterAvailableDevices 筛选可用设备（逆变器）
+func (s *avc) filterAvailableDevices(bwdNo int, requiredQ float64) ([]agvc.AgvcNbqSetting, error) {
 	// 获取所有在线逆变器
-	inverters, err := Device.GetOnlineInvertersByBwdNo(psid)
+	inverters, err := Device.GetOnlineInvertersByBwdNo(bwdNo)
 	if err != nil {
 		return nil, err
 	}
@@ -283,7 +284,7 @@ func (s *avc) filterAvailableDevices(psid string, requiredQ float64) ([]agvc.Agv
 }
 
 // assignReactiveToDevices 分配无功调节量到设备
-func (s *avc) assignReactiveToDevices(nbqNo string, requiredQ float64, devices []agvc.AgvcNbqSetting) []agvc_main.DeviceReactiveRegulation {
+func (s *avc) assignReactiveToDevices(nbqNo int, requiredQ float64, devices []agvc.AgvcNbqSetting) []agvc_main.DeviceReactiveRegulation {
 	details := make([]agvc_main.DeviceReactiveRegulation, 0, len(devices))
 
 	// 平均分配策略
@@ -301,18 +302,17 @@ func (s *avc) assignReactiveToDevices(nbqNo string, requiredQ float64, devices [
 		}
 
 		// 获取设备当前无功
-		currentReactive, err := DataStorage.GetDataAsFloat64(nbqNo + "27")
+		currentReactive, err := DataStorage.GetDataAsFloat64(nbqNo, cons.TYPE_BWG, cons.YC, "27")
 		if err != nil {
 			currentReactive = 0
 		}
 
-		psid := nbqNo[0:3]
-		eqType := nbqNo[3:5]
+		psid := 1
 
 		details = append(details, agvc_main.DeviceReactiveRegulation{
 			PSID:               psid,
 			EQID:               *dev.InverterNo,
-			EQType:             eqType,
+			EQType:             cons.TYPE_NBQ,
 			RegulationReactive: actualQ,
 			BeforeReactive:     currentReactive,
 			Status:             "pending",
@@ -323,7 +323,7 @@ func (s *avc) assignReactiveToDevices(nbqNo string, requiredQ float64, devices [
 }
 
 // sendReactiveCommands 下发无功调节指令
-func (s *avc) sendReactiveCommands(psid string, recordID uint, details []agvc_main.DeviceReactiveRegulation) int {
+func (s *avc) sendReactiveCommands(psid int, recordID uint, details []agvc_main.DeviceReactiveRegulation) int {
 	successCount := 0
 	host := CoapSender.GetDefaultCoapHost()
 	port := CoapSender.GetDefaultCoapPort()
@@ -336,14 +336,14 @@ func (s *avc) sendReactiveCommands(psid string, recordID uint, details []agvc_ma
 		targetReactive := detail.BeforeReactive + detail.RegulationReactive
 
 		// 构建指令
-		commands := map[string]interface{}{
-			"402_reactive": targetReactive, // 无功功率补偿执行值（遥调）
+		commands := map[int]interface{}{
+			402: targetReactive, // 无功功率补偿执行值（遥调）
 		}
 
 		// 发送CoAP指令
 		if err := CoapSender.SendInverterCommand(host, port, psid, detail.EQID, commands); err != nil {
 			global.GVA_LOG.Error("发送设备无功调节指令失败",
-				zap.String("eqid", detail.EQID),
+				zap.Int("eqid", detail.EQID),
 				zap.Error(err))
 			detail.Status = "failed"
 			detail.AfterReactive = detail.BeforeReactive
@@ -361,9 +361,9 @@ func (s *avc) sendReactiveCommands(psid string, recordID uint, details []agvc_ma
 }
 
 // GetAVCConfig 获取AVC配置
-func (s *avc) GetAVCConfig(psid string) (agvc_main.AVCConfig, error) {
+func (s *avc) GetAVCConfig(bwdNo int) (agvc_main.AVCConfig, error) {
 	var config agvc_main.AVCConfig
-	err := global.GVA_DB.Where("psid = ?", psid).First(&config).Error
+	err := global.GVA_DB.Where("psid = ?", bwdNo).First(&config).Error
 	return config, err
 }
 

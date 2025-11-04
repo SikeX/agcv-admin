@@ -8,7 +8,7 @@ import (
 // agvcNbqHis表 结构体  AgvcNbqHis
 type AgvcNbqHis struct {
 	global.GVA_MODEL
-	InverterNo          *int64   `json:"inverterNo" form:"inverterNo" gorm:"column:inverter_no;comment:逆变器编号"`
+	InverterNo          *int     `json:"inverterNo" form:"inverterNo" gorm:"column:inverter_no;comment:逆变器编号"`
 	Name                *string  `json:"name" form:"name" gorm:"column:name;comment:逆变器名称"`
 	Status              *string  `json:"status" form:"status" gorm:"column:status;comment:逆变器运行状态"`
 	IsParticipateAdjust *bool    `json:"isParticipateAdjust" form:"isParticipateAdjust" gorm:"column:is_participate_adjust;comment:是否调节"`

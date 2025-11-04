@@ -49,8 +49,8 @@ func (s *coapReceiver) handleDataReceive(w mux.ResponseWriter, r *mux.Message) {
 		if err := s.validateData(&data); err != nil {
 			global.GVA_LOG.Warn("数据验证失败",
 				zap.Error(err),
-				zap.String("psid", data.PSID),
-				zap.String("eqid", data.EQID),
+				zap.Int("psid", data.PSID),
+				zap.Int("eqid", data.EQID),
 				zap.String("point", data.Point))
 			continue
 		}
@@ -71,16 +71,16 @@ func (s *coapReceiver) handleDataReceive(w mux.ResponseWriter, r *mux.Message) {
 
 // validateData 验证数据完整性
 func (s *coapReceiver) validateData(data *agvc_main.RealtimeData) error {
-	if data.PSID == "" {
+	if data.PSID == 0 {
 		return fmt.Errorf("PSID不能为空")
 	}
-	if data.EQID == "" {
+	if data.EQID == 0 {
 		return fmt.Errorf("EQID不能为空")
 	}
-	if data.EQType == "" {
+	if data.EQType == 0 {
 		return fmt.Errorf("EQType不能为空")
 	}
-	if data.DataType == "" {
+	if data.DataType == 0 {
 		return fmt.Errorf("DataType不能为空")
 	}
 	if data.Point == "" {
@@ -91,18 +91,18 @@ func (s *coapReceiver) validateData(data *agvc_main.RealtimeData) error {
 	}
 
 	// 验证字段长度
-	if len(data.PSID) != 3 {
-		return fmt.Errorf("PSID必须是3位: %s", data.PSID)
-	}
-	if len(data.EQID) != 4 {
-		return fmt.Errorf("EQID必须是4位: %s", data.EQID)
-	}
-	if len(data.EQType) != 2 {
-		return fmt.Errorf("EQType必须是2位: %s", data.EQType)
-	}
-	if len(data.DataType) != 2 {
-		return fmt.Errorf("DataType必须是2位: %s", data.DataType)
-	}
+	// if len(data.PSID) != 3 {
+	// 	return fmt.Errorf("PSID必须是3位: %s", data.PSID)
+	// }
+	// if len(data.EQID) != 4 {
+	// 	return fmt.Errorf("EQID必须是4位: %s", data.EQID)
+	// }
+	// if len(data.EQType) != 2 {
+	// 	return fmt.Errorf("EQType必须是2位: %s", data.EQType)
+	// }
+	// if len(data.DataType) != 2 {
+	// 	return fmt.Errorf("DataType必须是2位: %s", data.DataType)
+	// }
 
 	return nil
 }

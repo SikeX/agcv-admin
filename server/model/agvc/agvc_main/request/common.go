@@ -16,10 +16,10 @@ type DeviceSearch struct {
 
 // RealtimeDataRequest 实时数据查询请求
 type RealtimeDataRequest struct {
-	PSID     string `json:"psid" form:"psid" binding:"required"`
-	EQID     string `json:"eqid" form:"eqid" binding:"required"`
-	EQType   string `json:"eqType" form:"eqType" binding:"required"`
-	DataType string `json:"dataType" form:"dataType"`
+	PSID     string   `json:"psid" form:"psid" binding:"required"`
+	EQID     string   `json:"eqid" form:"eqid" binding:"required"`
+	EQType   string   `json:"eqType" form:"eqType" binding:"required"`
+	DataType string   `json:"dataType" form:"dataType"`
 	Points   []string `json:"points" form:"points"` // 可选，指定查询的点标识
 }
 
@@ -93,10 +93,10 @@ type AVCRegulationRecordSearch struct {
 
 // CoAPDataMessage CoAP数据消息（用于接收和发送）
 type CoAPDataMessage struct {
-	PSID     string      `json:"psid" binding:"required"`
-	EQID     string      `json:"eqid" binding:"required"`
-	EQType   string      `json:"eqType" binding:"required"`
-	DataType string      `json:"dataType" binding:"required"`
-	Point    string      `json:"point" binding:"required"`
+	PSID     int         `json:"psid" binding:"required"`
+	EQID     int         `json:"eqid" binding:"required"`
+	EQType   int         `json:"eqType" binding:"required"`
+	DataType int         `json:"dataType" binding:"required"`
+	Point    int         `json:"point" binding:"required"`
 	Value    interface{} `json:"value" binding:"required"`
 }

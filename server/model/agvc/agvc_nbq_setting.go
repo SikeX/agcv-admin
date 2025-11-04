@@ -8,7 +8,7 @@ import (
 // 逆变器配置 结构体  AgvcNbqSetting
 type AgvcNbqSetting struct {
 	global.GVA_MODEL
-	InverterNo          *string  `json:"inverterNo" form:"inverterNo" gorm:"column:inverter_no;"`                             //逆变器编号
+	InverterNo          *int     `json:"inverterNo" form:"inverterNo" gorm:"column:inverter_no;"`                             //逆变器编号
 	Name                *string  `json:"name" form:"name" gorm:"column:name;"`                                                //逆变器名称
 	RatedActivePower    *float64 `json:"ratedActivePower" form:"ratedActivePower" gorm:"column:rated_active_power;"`          //额定有功功率
 	RatedReactivePower  *float64 `json:"ratedReactivePower" form:"ratedReactivePower" gorm:"column:rated_reactive_power;"`    //额定无功功率

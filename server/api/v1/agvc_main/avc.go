@@ -1,6 +1,8 @@
 package agcv_main
 
 import (
+	"strconv"
+
 	"github.com/flipped-aurora/gin-vue-admin/server/global"
 	"github.com/flipped-aurora/gin-vue-admin/server/model/agvc/agvc_main"
 	"github.com/flipped-aurora/gin-vue-admin/server/model/agvc/agvc_main/request"
@@ -23,13 +25,18 @@ var AVC = new(avc)
 // @Success  200  {object} response.Response{data=model.AVCConfig,msg=string} "获取成功"
 // @Router   /agvc/avc/config [get]
 func (a *avc) GetAVCConfig(c *gin.Context) {
-	psid := c.Query("psid")
-	if psid == "" {
-		response.FailWithMessage("电站ID不能为空", c)
+	bwdNo := c.Query("bwdNo")
+	if bwdNo == "" {
+		response.FailWithMessage("并网点编号不能为空", c)
+		return
+	}
+	bwdNoInt, err := strconv.Atoi(bwdNo)
+	if err != nil {
+		response.FailWithMessage("并网点编号必须是整数", c)
 		return
 	}
 
-	config, err := serviceAVC.GetAVCConfig(psid)
+	config, err := serviceAVC.GetAVCConfig(bwdNoInt)
 	if err != nil {
 		global.GVA_LOG.Error("获取AVC配置失败", zap.Error(err))
 		response.FailWithMessage("获取AVC配置失败", c)
@@ -103,13 +110,18 @@ func (a *avc) CreateAVCConfig(c *gin.Context) {
 // @Success  200  {object} response.Response{msg=string} "启动成功"
 // @Router   /agvc/avc/start [post]
 func (a *avc) StartAVC(c *gin.Context) {
-	psid := c.Query("psid")
-	if psid == "" {
-		response.FailWithMessage("电站ID不能为空", c)
+	bwdNo := c.Query("bwdNo")
+	if bwdNo == "" {
+		response.FailWithMessage("并网点编号不能为空", c)
+		return
+	}
+	bwdNoInt, err := strconv.Atoi(bwdNo)
+	if err != nil {
+		response.FailWithMessage("并网点编号必须是整数", c)
 		return
 	}
 
-	err := serviceAVC.StartAVC(psid)
+	err = serviceAVC.StartAVC(bwdNoInt)
 	if err != nil {
 		global.GVA_LOG.Error("启动AVC失败", zap.Error(err))
 		response.FailWithMessage("启动AVC失败: "+err.Error(), c)
@@ -129,13 +141,18 @@ func (a *avc) StartAVC(c *gin.Context) {
 // @Success  200  {object} response.Response{msg=string} "停止成功"
 // @Router   /agvc/avc/stop [post]
 func (a *avc) StopAVC(c *gin.Context) {
-	psid := c.Query("psid")
-	if psid == "" {
-		response.FailWithMessage("电站ID不能为空", c)
+	bwdNo := c.Query("bwdNo")
+	if bwdNo == "" {
+		response.FailWithMessage("并网点编号不能为空", c)
+		return
+	}
+	bwdNoInt, err := strconv.Atoi(bwdNo)
+	if err != nil {
+		response.FailWithMessage("并网点编号必须是整数", c)
 		return
 	}
 
-	err := serviceAVC.StopAVC(psid)
+	err = serviceAVC.StopAVC(bwdNoInt)
 	if err != nil {
 		global.GVA_LOG.Error("停止AVC失败", zap.Error(err))
 		response.FailWithMessage("停止AVC失败: "+err.Error(), c)

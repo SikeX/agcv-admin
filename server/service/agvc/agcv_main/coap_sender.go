@@ -5,8 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/flipped-aurora/gin-vue-admin/server/model/agvc/agvc_main/request"
 	"time"
+
+	"github.com/flipped-aurora/gin-vue-admin/server/model/agvc/agvc_main/request"
+	"github.com/flipped-aurora/gin-vue-admin/server/service/agvc/cons"
 
 	"github.com/flipped-aurora/gin-vue-admin/server/global"
 	"github.com/plgd-dev/go-coap/v3/message"
@@ -76,7 +78,7 @@ func (s *coapSender) SendData(host string, port int, messages []request.CoAPData
 }
 
 // SendAGCCommand 发送AGC控制指令
-func (s *coapSender) SendAGCCommand(host string, port int, psid string, commands map[string]interface{}) error {
+func (s *coapSender) SendAGCCommand(host string, port int, bwdNo int, commands map[int]interface{}) error {
 	messages := make([]request.CoAPDataMessage, 0)
 
 	// 构建AGC标准点数据
@@ -84,21 +86,21 @@ func (s *coapSender) SendAGCCommand(host string, port int, psid string, commands
 	// 遥调点：有功执行(401)
 
 	for point, value := range commands {
-		var dataType string
+		var dataType int
 		switch point {
-		case "401", "402", "404": // 遥控
-			dataType = "03"
-		case "401_exec": // 有功执行（遥调）
-			dataType = "04"
-			point = "401"
+		case 401, 402, 404: // 遥控
+			dataType = cons.YK
+		case 403: // 有功执行（遥调）
+			dataType = cons.YT
+			point = 401
 		default:
 			continue
 		}
 
 		messages = append(messages, request.CoAPDataMessage{
-			PSID:     psid,
-			EQID:     "0000", // AGC是全站级别的，设备ID为0000
-			EQType:   "02",   // 并网点
+			PSID:     1,
+			EQID:     bwdNo,         // AGC是全站级别的，设备ID为0000
+			EQType:   cons.TYPE_BWG, // 并网点
 			DataType: dataType,
 			Point:    point,
 			Value:    value,
@@ -113,7 +115,7 @@ func (s *coapSender) SendAGCCommand(host string, port int, psid string, commands
 }
 
 // SendAVCCommand 发送AVC控制指令
-func (s *coapSender) SendAVCCommand(host string, port int, psid string, commands map[string]interface{}) error {
+func (s *coapSender) SendAVCCommand(host string, port, bwdNo int, commands map[int]interface{}) error {
 	messages := make([]request.CoAPDataMessage, 0)
 
 	// 构建AVC标准点数据
@@ -121,25 +123,25 @@ func (s *coapSender) SendAVCCommand(host string, port int, psid string, commands
 	// 遥调点：电压执行(401), 无功执行(402)
 
 	for point, value := range commands {
-		var dataType string
+		var dataType int
 		switch point {
-		case "401", "402", "403", "404": // 遥控
-			dataType = "03"
-		case "401_voltage", "402_reactive": // 遥调
-			dataType = "04"
-			if point == "401_voltage" {
-				point = "401"
+		case 401, 402, 403: // 遥控
+			dataType = cons.YK
+		case 404, 405: // 遥调
+			dataType = cons.YT
+			if point == 406 {
+				point = 401
 			} else {
-				point = "402"
+				point = 402
 			}
 		default:
 			continue
 		}
 
 		messages = append(messages, request.CoAPDataMessage{
-			PSID:     psid,
-			EQID:     "0000", // AVC是全站级别的，设备ID为0000
-			EQType:   "02",   // 并网点
+			PSID:     1,
+			EQID:     bwdNo,         // AVC是全站级别的，设备ID为0000
+			EQType:   cons.TYPE_BWG, // 并网点
 			DataType: dataType,
 			Point:    point,
 			Value:    value,
@@ -154,7 +156,7 @@ func (s *coapSender) SendAVCCommand(host string, port int, psid string, commands
 }
 
 // SendInverterCommand 发送逆变器控制指令
-func (s *coapSender) SendInverterCommand(host string, port int, psid, eqid string, commands map[string]interface{}) error {
+func (s *coapSender) SendInverterCommand(host string, port, psid, eqid int, commands map[int]interface{}) error {
 	messages := make([]request.CoAPDataMessage, 0)
 
 	// 逆变器标准点
@@ -162,17 +164,17 @@ func (s *coapSender) SendInverterCommand(host string, port int, psid, eqid strin
 	// 遥调：有功功率降额执行值(401), 无功功率补偿执行值(402)
 
 	for point, value := range commands {
-		var dataType string
+		var dataType int
 		switch point {
-		case "401_switch": // 开关机（遥控）
-			dataType = "03"
-			point = "401"
-		case "401_power", "402_reactive": // 遥调
-			dataType = "04"
-			if point == "401_power" {
-				point = "401"
+		case 401: // 开关机（遥控）
+			dataType = cons.YX
+			point = 401
+		case 402: // 遥调
+			dataType = cons.YC
+			if point == 401 {
+				point = 401
 			} else {
-				point = "402"
+				point = 402
 			}
 		default:
 			continue
@@ -181,7 +183,7 @@ func (s *coapSender) SendInverterCommand(host string, port int, psid, eqid strin
 		messages = append(messages, request.CoAPDataMessage{
 			PSID:     psid,
 			EQID:     eqid,
-			EQType:   "01", // 逆变器
+			EQType:   cons.TYPE_NBQ, // 逆变器
 			DataType: dataType,
 			Point:    point,
 			Value:    value,

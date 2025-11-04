@@ -27,10 +27,10 @@ func (Device) TableName() string {
 
 // RealtimeData 实时数据存储结构（用于内存Map）
 type RealtimeData struct {
-	PSID      string      `json:"psid"`
-	EQID      string      `json:"eqid"`
-	EQType    string      `json:"eqType"`
-	DataType  string      `json:"dataType"`
+	PSID      int         `json:"psid"`
+	EQID      int         `json:"eqid"`
+	EQType    int         `json:"eqType"`
+	DataType  int         `json:"dataType"`
 	Point     string      `json:"point"`
 	Value     interface{} `json:"value"`
 	Timestamp int64       `json:"timestamp"` // 数据时间戳

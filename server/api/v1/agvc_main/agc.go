@@ -1,6 +1,8 @@
 package agcv_main
 
 import (
+	"strconv"
+
 	"github.com/flipped-aurora/gin-vue-admin/server/global"
 	"github.com/flipped-aurora/gin-vue-admin/server/model/agvc/agvc_main"
 	"github.com/flipped-aurora/gin-vue-admin/server/model/agvc/agvc_main/request"
@@ -23,13 +25,19 @@ var AGC = new(agc)
 // @Success  200  {object} response.Response{data=model.AGCConfig,msg=string} "获取成功"
 // @Router   /agvc/agc/config [get]
 func (a *agc) GetAGCConfig(c *gin.Context) {
-	psid := c.Query("psid")
-	if psid == "" {
+	bwdNo := c.Query("bwdNo")
+	if bwdNo == "" {
 		response.FailWithMessage("电站ID不能为空", c)
 		return
 	}
 
-	config, err := serviceAGC.GetAGCConfig(psid)
+	bwdNoInt, err := strconv.Atoi(bwdNo)
+	if err != nil {
+		response.FailWithMessage("电站ID必须为整数", c)
+		return
+	}
+
+	config, err := serviceAGC.GetAGCConfig(bwdNoInt)
 	if err != nil {
 		global.GVA_LOG.Error("获取AGC配置失败", zap.Error(err))
 		response.FailWithMessage("获取AGC配置失败", c)
@@ -103,13 +111,19 @@ func (a *agc) CreateAGCConfig(c *gin.Context) {
 // @Success  200  {object} response.Response{msg=string} "启动成功"
 // @Router   /agvc/agc/start [post]
 func (a *agc) StartAGC(c *gin.Context) {
-	psid := c.Query("psid")
-	if psid == "" {
+	bwdNo := c.Query("bwdNo")
+	if bwdNo == "" {
 		response.FailWithMessage("电站ID不能为空", c)
 		return
 	}
 
-	err := serviceAGC.StartAGC(psid)
+	bwdNoInt, err := strconv.Atoi(bwdNo)
+	if err != nil {
+		response.FailWithMessage("电站ID必须为整数", c)
+		return
+	}
+
+	err = serviceAGC.StartAGC(bwdNoInt)
 	if err != nil {
 		global.GVA_LOG.Error("启动AGC失败", zap.Error(err))
 		response.FailWithMessage("启动AGC失败: "+err.Error(), c)
@@ -125,17 +139,23 @@ func (a *agc) StartAGC(c *gin.Context) {
 // @Security ApiKeyAuth
 // @accept   application/json
 // @Produce  application/json
-// @Param    psid query string true "电站ID"
+// @Param    bwdNo query int true "电站ID"
 // @Success  200  {object} response.Response{msg=string} "停止成功"
 // @Router   /agvc/agc/stop [post]
 func (a *agc) StopAGC(c *gin.Context) {
-	psid := c.Query("psid")
-	if psid == "" {
+	bwdNo := c.Query("bwdNo")
+	if bwdNo == "" {
 		response.FailWithMessage("电站ID不能为空", c)
 		return
 	}
 
-	err := serviceAGC.StopAGC(psid)
+	bwdNoInt, err := strconv.Atoi(bwdNo)
+	if err != nil {
+		response.FailWithMessage("电站ID必须为整数", c)
+		return
+	}
+
+	err = serviceAGC.StopAGC(bwdNoInt)
 	if err != nil {
 		global.GVA_LOG.Error("停止AGC失败", zap.Error(err))
 		response.FailWithMessage("停止AGC失败: "+err.Error(), c)

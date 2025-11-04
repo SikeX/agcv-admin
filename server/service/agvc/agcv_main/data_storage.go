@@ -92,10 +92,10 @@ func (s *dataStorage) StoreAgvcDataBatch(dataBatch []agvc_main.AgvcDataItem) {
 	for _, item := range dataBatch {
 		// 转换为内部RealtimeData格式
 		data := &agvc_main.RealtimeData{
-			PSID:      fmt.Sprintf("%03d", item.Psid),
-			EQID:      fmt.Sprintf("%04d", item.Eqid),
-			EQType:    fmt.Sprintf("%02d", item.EqType),
-			DataType:  fmt.Sprintf("%02d", item.DataType),
+			PSID:      item.Psid,
+			EQID:      item.Eqid,
+			EQType:    item.EqType,
+			DataType:  item.DataType,
 			Point:     item.Point,
 			Value:     item.Value,
 			Timestamp: now,
@@ -106,7 +106,7 @@ func (s *dataStorage) StoreAgvcDataBatch(dataBatch []agvc_main.AgvcDataItem) {
 }
 
 // GetData 从内存获取实时数据
-func (s *dataStorage) GetData(psid, eqid, eqType, dataType, point string) (*agvc_main.RealtimeData, bool) {
+func (s *dataStorage) GetData(psid, eqid, eqType, dataType int, point string) (*agvc_main.RealtimeData, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -194,11 +194,11 @@ func (s *dataStorage) saveToInfluxDB() error {
 		point := influxdb2.NewPoint(
 			"agvc_data",
 			map[string]string{
-				"psid":     data.PSID,
-				"eqid":     data.EQID,
-				"eqType":   data.EQType,
-				"dataType": data.DataType,
-				"point":    data.Point,
+				"psid":     fmt.Sprintf("%d", data.PSID),
+				"eqid":     fmt.Sprintf("%d", data.EQID),
+				"eqType":   fmt.Sprintf("%d", data.EQType),
+				"dataType": fmt.Sprintf("%d", data.DataType),
+				"point":    fmt.Sprintf("%d", data.Point),
 			},
 			map[string]interface{}{
 				"value": data.Value,
@@ -216,17 +216,17 @@ func (s *dataStorage) saveToInfluxDB() error {
 }
 
 // makeKey 生成Map键
-func (s *dataStorage) makeKey(psid, eqid, eqType, dataType, point string) string {
+func (s *dataStorage) makeKey(psid, eqid, eqType, dataType int, point string) string {
 	return fmt.Sprintf("%s_%s_%s_%s_%s", psid, eqid, eqType, dataType, point)
 }
 
 // GetDataAsFloat64 获取数据并转换为float64（用于数值计算）
-func (s *dataStorage) GetDataAsFloat64(code string) (float64, error) {
-	psid := code[0:3]
-	eqid := code[3:7]
-	eqType := code[7:9]
-	dataType := code[9:11]
-	point := code[11:]
+func (s *dataStorage) GetDataAsFloat64(eqid, eqType, dataType int, point string) (float64, error) {
+	psid := 1
+	// eqid :=
+	// eqType := code[7:9]
+	// dataType := code[9:11]
+	// point := code[11:]
 	data, exists := s.GetData(psid, eqid, eqType, dataType, point)
 	if !exists {
 		return 0, fmt.Errorf("数据不存在")
@@ -253,7 +253,7 @@ func (s *dataStorage) GetDataAsFloat64(code string) (float64, error) {
 }
 
 // GetDataAsInt 获取数据并转换为int（用于状态判断）
-func (s *dataStorage) GetDataAsInt(psid, eqid, eqType, dataType, point string) (int, error) {
+func (s *dataStorage) GetDataAsInt(psid, eqid, eqType, dataType int, point string) (int, error) {
 	data, exists := s.GetData(psid, eqid, eqType, dataType, point)
 	if !exists {
 		return 0, fmt.Errorf("数据不存在")
