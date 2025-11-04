@@ -1,227 +1,179 @@
-# AGC/AVC自动启动功能实现总结
+# AGC/AVC 启动检查和常量化点名称实现总结
 
-## 需求
-将AGC和AVC的启动方式从"调用接口开启"改为"系统启动自动开启所有并网点的AGC和AVC功能"。
+## 实现的功能
 
-## 实现方案
+### 1. PointMapper 点名称常量化
 
-### 核心思路
-在系统启动时，自动查询所有并网点配置，根据配置的启用标志（`agc_is_enabled`和`avc_is_enabled`）自动启动相应的功能。
+**问题**: PointMapper.GetPointID 中使用硬编码的中文点名称，容易输入错误。
 
-### 技术实现
+**解决方案**: 在 `server/service/agvc/cons/def.go` 中定义了所有标准点名称常量。
 
-#### 1. AGC服务扩展 (`server/service/agvc/agcv_main/agc.go`)
+#### 新增常量
 
-新增方法：
-```go
-func (s *agc) AutoStartAllGridPoints()
-```
+##### AGC调度标准点名称常量
+- **遥信(YX)**:
+  - `AGC_YX_SIGNAL` - AGC投退信号 (点标识: 401)
+  - `AGC_YX_CONTROL_MODE` - AGC就地远方控制模式 (点标识: 402)
+  - `AGC_YX_LOOP_STATUS` - AGC开/闭环状态 (点标识: 404)
+  - `AGC_YX_UP_REG_LOCK` - AGC有功上调节闭锁 (点标识: 405)
+  - `AGC_YX_DOWN_REG_LOCK` - AGC有功下调节闭锁 (点标识: 406)
 
-功能：
-- 查询所有并网点配置（`agvc_bwd_setting`表）
-- 检查每个并网点的`agc_is_enabled`标志
-- 对启用的并网点调用`StartAGC(bwdNo)`
-- 记录详细的启动日志
+- **遥测(YC)**:
+  - `AGC_YC_POWER_UPPER_LIMIT` - 有功调节上限 (点标识: 401)
+  - `AGC_YC_POWER_LOWER_LIMIT` - 有功调节下限 (点标识: 402)
+  - `AGC_YC_POWER_EXEC_VALUE` - 有功执行值 (点标识: 403)
 
-#### 2. AVC服务扩展 (`server/service/agvc/agcv_main/avc.go`)
+- **遥控(YK)**:
+  - `AGC_YK_SIGNAL` - AGC投退信号 (点标识: 401)
+  - `AGC_YK_CONTROL_MODE` - AGC就地远方控制模式 (点标识: 402)
+  - `AGC_YK_LOOP_STATUS` - AGC开/闭环状态 (点标识: 404)
 
-新增方法：
-```go
-func (s *avc) AutoStartAllGridPoints()
-```
+- **遥调(YT)**:
+  - `AGC_YT_POWER_EXEC` - 有功执行 (点标识: 401)
 
-功能：
-- 查询所有并网点配置（`agvc_bwd_setting`表）
-- 检查每个并网点的`avc_is_enabled`标志
-- 对启用的并网点调用`StartAVC(bwdNo)`
-- 记录详细的启动日志
+##### AVC调度标准点名称常量
+- **遥信(YX)**:
+  - `AVC_YX_SIGNAL` - AVC功能投退信号 (点标识: 401)
+  - `AVC_YX_CONTROL_MODE` - AVC功能就地远方控制模式 (点标识: 402)
+  - `AVC_YX_COMMAND_STATUS` - AVC功能当前指令状态 (点标识: 403)
+  - `AVC_YX_LOOP_STATUS` - AVC功能开闭环状态 (点标识: 404)
+  - `AVC_YX_UP_REG_LOCK` - AVC功能上调节闭锁 (点标识: 405)
+  - `AVC_YX_DOWN_REG_LOCK` - AVC功能下调节闭锁 (点标识: 406)
 
-#### 3. 系统启动集成 (`server/core/server.go`)
+- **遥测(YC)**:
+  - `AVC_YC_REACTIVE_INC_CAP` - 无功可增容量 (点标识: 401)
+  - `AVC_YC_REACTIVE_DEC_CAP` - 无功可减容量 (点标识: 402)
+  - `AVC_YC_VOLTAGE_EXEC_VALUE` - 电压执行值 (点标识: 403)
+  - `AVC_YC_REACTIVE_EXEC_VALUE` - 无功执行值 (点标识: 404)
 
-在`RunServer()`函数中添加：
-```go
-// 自动启动所有并网点的AGC和AVC功能
-go func() {
-    // 延迟3秒启动，确保所有依赖服务已完全初始化
-    time.Sleep(3 * time.Second)
-    
-    global.GVA_LOG.Info("========== 开始自动启动所有并网点的AGC和AVC功能 ==========")
-    
-    agvcMain.AGC.AutoStartAllGridPoints()
-    agvcMain.AVC.AutoStartAllGridPoints()
-    
-    global.GVA_LOG.Info("========== 自动启动流程完成 ==========")
-}()
-```
+- **遥控(YK)**:
+  - `AVC_YK_SIGNAL` - AVC功能投退信号 (点标识: 401)
+  - `AVC_YK_CONTROL_MODE` - AVC功能就地远方控制模式 (点标识: 402)
+  - `AVC_YK_COMMAND_STATUS` - AVC功能当前指令状态 (点标识: 403)
+  - `AVC_YK_LOOP_STATUS` - AVC功能开闭环状态 (点标识: 404)
 
-关键设计：
-- 使用goroutine异步执行，不阻塞系统启动
-- 延迟3秒启动，确保依赖服务（数据库、CoAP等）完全初始化
-- 清晰的日志分隔符，便于监控
+- **遥调(YT)**:
+  - `AVC_YT_VOLTAGE_EXEC` - 电压执行 (点标识: 401)
+  - `AVC_YT_REACTIVE_EXEC` - 无功执行 (点标识: 402)
 
-## 修改文件清单
+##### 并网柜常用点名称常量
+- `BWG_YC_ACTIVE_POWER` - 有功功率P(kW)
+- `BWG_YC_REACTIVE_POWER` - 无功功率Q(kvar)
+- `BWG_YC_VOLTAGE_AB` - AB线电压Uab(kV)
+- `BWG_YC_FREQUENCY` - F(频率Hz)
+- `BWG_YC_APPARENT_POWER` - S(视在功率kVA)
 
-1. **server/service/agvc/agcv_main/agc.go** - 新增`AutoStartAllGridPoints()`方法
-2. **server/service/agvc/agcv_main/avc.go** - 新增`AutoStartAllGridPoints()`方法
-3. **server/core/server.go** - 在系统启动时调用自动启动方法
+##### 逆变器常用点名称常量
+- `NBQ_YC_ACTIVE_POWER` - 交流功率(kW)
+- `NBQ_YC_REACTIVE_POWER` - 无功功率(kVar)
+- `NBQ_YC_APPARENT_POWER` - 视在功率(kVa)
 
-## 文档
+### 2. AGC/AVC 调控启动前的启用检查
 
-1. **AGC_AVC_AUTO_START.md** - 详细的功能说明和使用指南
-2. **CHANGELOG_AUTO_START.md** - 变更日志和部署指南
-3. **IMPLEMENTATION_SUMMARY.md** - 实现总结（本文件）
+**问题**: AGC和AVC调控启动前需要检查是否启用，并根据控制模式（本地/远程）从不同数据源读取值。
 
-## 关键特性
+**解决方案**: 
 
-### 1. 智能过滤
-- 跳过`number`为空的配置
-- 跳过`agc_is_enabled`/`avc_is_enabled`为0或NULL的配置
-- 自动处理并网点编号格式错误
+#### AGC检查逻辑 (agc.go)
 
-### 2. 错误处理
-- 单个并网点启动失败不影响其他并网点
-- 详细的错误日志，便于排查问题
-- 统计启动成功和失败的数量
+在 `executeAGCCycle` 函数中添加了完整的启动前检查：
 
-### 3. 兼容性
-- 保持原有API接口不变
-- 向后兼容现有配置
-- 不影响手动启动/停止功能
+1. **步骤2: 判断控制权限模式**
+   - `ControlAuth = 0 或 nil`: 本地控制模式
+   - `ControlAuth = 1`: 远程调度控制模式
 
-### 4. 可维护性
-- 清晰的日志输出
-- 统一的代码风格
-- 详细的文档说明
+2. **步骤3: 检查AGC投退信号**
+   - **本地模式**: 从数据库 `AgvcBwdSetting.AgcIsEnabled` 读取
+   - **远程模式**: 从调度内存 `DispatchStorage` 读取 AGC投退信号(YX/401)
+   - 如果未投入，直接返回，不执行调控
 
-## 使用示例
+3. **步骤4: 检查AGC就地远方控制模式**
+   - **远程模式**: 从调度内存读取 AGC就地远方控制模式(YX/402)
+   - 如果不是远程模式(值!=1)，跳过调控
 
-### 并网点配置
+4. **步骤5: 检查AGC开/闭环状态**
+   - **本地模式**: 从数据库 `AgvcBwdSetting.RunMode` 读取
+   - **远程模式**: 从调度内存读取 AGC开/闭环状态(YX/404)
 
-在`agvc_bwd_setting`表中配置：
-```sql
--- 启用AGC和AVC的并网点
-INSERT INTO agvc_bwd_setting (
-    number, name, 
-    agc_is_enabled, avc_is_enabled,
-    agc_control_period, avc_control_period
-) VALUES (
-    '1', '并网点1',
-    1, 1,  -- AGC和AVC都启用
-    30, 60 -- 控制周期
-);
+5. **步骤6: 获取执行值**
+   - **本地模式**: 从数据库 `AgvcBwdSetting.StationExecValue` 读取
+   - **远程模式**: 从调度内存读取 有功执行值(YC/403)
+     - 如果调度内存无数据，则使用数据库的 `DispatchExecValue`
 
--- 仅启用AGC的并网点
-INSERT INTO agvc_bwd_setting (
-    number, name,
-    agc_is_enabled, avc_is_enabled,
-    agc_control_period
-) VALUES (
-    '2', '并网点2',
-    1, 0,  -- 仅AGC启用
-    30
-);
-```
+6. **步骤7: 判断是否开环运行**
+   - 如果是开环，直接执行目标值
+   - 如果是闭环，进入PID调节逻辑
 
-### 启动日志
+#### AVC检查逻辑 (avc.go)
 
-系统启动时会看到：
-```
-[INFO] AGC控制服务初始化成功
-[INFO] AVC控制服务初始化成功
-[INFO] ========== 开始自动启动所有并网点的AGC和AVC功能 ==========
-[INFO] 开始自动启动所有并网点的AGC功能 {"并网点数量": 2}
-[INFO] 自动启动AGC成功 {"bwdNo": 1, "name": "并网点1"}
-[INFO] 自动启动AGC成功 {"bwdNo": 2, "name": "并网点2"}
-[INFO] AGC自动启动完成 {"成功数量": 2, "总数量": 2}
-[INFO] 开始自动启动所有并网点的AVC功能 {"并网点数量": 2}
-[INFO] 自动启动AVC成功 {"bwdNo": 1, "name": "并网点1"}
-[DEBUG] 并网点AVC未启用，跳过 {"bwdNo": 2, "name": "并网点2"}
-[INFO] AVC自动启动完成 {"成功数量": 1, "总数量": 2}
-[INFO] ========== 自动启动流程完成 ==========
-```
+在 `executeAVCCycle` 函数中添加了类似的启动前检查：
+
+1. **步骤2: 判断控制权限模式**
+   - `ControlAuth = 0 或 nil`: 本地控制模式
+   - `ControlAuth = 1`: 远程调度控制模式
+
+2. **步骤3: 检查AVC投退信号**
+   - **本地模式**: 从数据库 `AVCConfig.IsActive` 读取
+   - **远程模式**: 从调度内存 `DispatchStorage` 读取 AVC功能投退信号(YX/401)
+   - 如果未投入，直接返回，不执行调控
+
+3. **步骤4: 检查AVC就地远方控制模式**
+   - **远程模式**: 从调度内存读取 AVC功能就地远方控制模式(YX/402)
+   - 如果不是远程模式(值!=1)，跳过调控
+
+4. **步骤5: 检查AVC开/闭环状态**
+   - **本地模式**: 从数据库 `AVCConfig.RunMode` 读取
+   - **远程模式**: 从调度内存读取 AVC功能开闭环状态(YX/404)
+   - (目前AVC暂不支持开环模式，变量仅用于日志记录)
+
+### 3. 更新所有使用硬编码点名称的地方
+
+#### 修改的文件:
+1. `server/service/agvc/agcv_main/agc.go`
+   - 使用 `cons.AGC_YX_SIGNAL` 替代 "AGC投退信号"
+   - 使用 `cons.AGC_YX_CONTROL_MODE` 替代 "AGC就地远方控制模式"
+   - 使用 `cons.AGC_YX_LOOP_STATUS` 替代 "AGC开/闭环状态"
+   - 使用 `cons.AGC_YC_POWER_EXEC_VALUE` 替代 "有功执行值"
+   - 使用 `cons.BWG_YC_FREQUENCY` 替代 "F(频率Hz)"
+
+2. `server/service/agvc/agcv_main/avc.go`
+   - 使用 `cons.AVC_YX_SIGNAL` 替代 "AVC功能投退信号"
+   - 使用 `cons.AVC_YX_CONTROL_MODE` 替代 "AVC功能就地远方控制模式"
+   - 使用 `cons.AVC_YX_LOOP_STATUS` 替代 "AVC功能开闭环状态"
+   - 使用 `cons.BWG_YC_VOLTAGE_AB` 替代 "AB线电压Uab(kV)"
+   - 使用 `cons.BWG_YC_FREQUENCY` 替代 "F(频率Hz)"
+
+3. `server/service/agvc/agcv_main/power_aggregator.go`
+   - 使用 `cons.BWG_YC_ACTIVE_POWER` 替代 "有功功率P(kW)"
+   - 使用 `cons.BWG_YC_REACTIVE_POWER` 替代 "无功功率Q(kvar)"
+   - 使用 `cons.BWG_YC_APPARENT_POWER` 替代 "S(视在功率kVA)"
+   - 使用 `cons.NBQ_YC_ACTIVE_POWER` 替代 "交流功率(kW)"
+   - 使用 `cons.NBQ_YC_REACTIVE_POWER` 替代 "无功功率(kVar)"
+   - 使用 `cons.NBQ_YC_APPARENT_POWER` 替代 "视在功率(kVa)"
+
+## 优势
+
+1. **减少错误**: 使用常量避免拼写错误和输入错误
+2. **代码可维护性**: 点名称统一管理，便于修改和维护
+3. **智能提示**: IDE可以提供自动补全和类型检查
+4. **符合规范**: 符合调度AGC/AVC数据标准点规范
+5. **灵活的控制模式**: 支持本地和远程两种控制模式
+6. **数据源分离**: 本地模式读数据库，远程模式读内存，职责清晰
 
 ## 测试验证
 
-### 编译测试
-```bash
-cd server
-go build -o test_build .
-# 编译成功 ✓
-```
+- ✅ 代码编译通过
+- ✅ 所有硬编码点名称已替换为常量
+- ✅ AGC/AVC启动检查逻辑已实现
+- ✅ 支持本地/远程两种控制模式
 
-### 代码格式化
-```bash
-go fmt ./core/... ./service/agvc/agcv_main/...
-# 格式化完成 ✓
-```
+## 注意事项
 
-### 功能验证点
-1. ✅ 系统启动时自动启动AGC/AVC
-2. ✅ 根据配置标志智能过滤
-3. ✅ 错误处理不影响其他并网点
-4. ✅ 详细的日志记录
-5. ✅ 保持原有API接口兼容性
+1. 调度数据存储在 `DispatchStorage` 内存中，由1187端口接收的CoAP数据填充
+2. 数据库配置作为fallback，当调度数据不可用时使用
+3. 所有点标识需要在Excel文件 `/home/engine/project/server/设备及测点标准.xlsx` 中正确配置
+4. 如果点位映射失败，会使用默认的点标识作为后备方案
 
-## 后续建议
+## 前端说明
 
-### 短期优化
-1. 添加启动重试机制（启动失败自动重试）
-2. 添加启动超时控制
-3. 优化启动延迟时间（根据实际情况调整）
-
-### 中期优化
-1. 实现配置热加载（修改配置后无需重启）
-2. 添加健康检查（定期检查运行状态）
-3. 添加启动状态查询API
-
-### 长期优化
-1. 实现启动优先级控制
-2. 添加启动依赖管理
-3. 集成告警系统（启动失败自动告警）
-
-## 部署步骤
-
-1. **更新代码**
-   ```bash
-   git pull origin feat-autostart-enable-agc-avc-for-all-grid-points
-   ```
-
-2. **编译项目**
-   ```bash
-   cd server
-   go mod tidy
-   go build
-   ```
-
-3. **配置数据库**
-   ```sql
-   -- 确保并网点配置正确
-   UPDATE agvc_bwd_setting 
-   SET agc_is_enabled = 1, avc_is_enabled = 1 
-   WHERE number IN ('1', '2', '3');
-   ```
-
-4. **重启服务**
-   ```bash
-   systemctl restart gin-vue-admin
-   ```
-
-5. **验证日志**
-   ```bash
-   tail -f /var/log/gin-vue-admin/app.log | grep "自动启动"
-   ```
-
-## 完成状态
-
-✅ 需求分析完成  
-✅ 代码实现完成  
-✅ 编译测试通过  
-✅ 文档编写完成  
-✅ 代码格式化完成  
-✅ Git提交准备完成  
-
----
-
-**实现日期**：2024-11-04  
-**功能版本**：v1.0.0  
-**状态**：Ready for Review
+根据用户要求，本次修改**仅涉及后端代码**，前端无需修改，也无需重新编译前端。
