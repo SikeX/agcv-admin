@@ -50,7 +50,7 @@ func (AGCRegulationRecord) TableName() string {
 type InverterRegulation struct {
 	global.GVA_MODEL
 	RecordID        uint    `json:"recordId" form:"recordId" gorm:"column:record_id;comment:调节记录ID;index"`
-	PSID            string  `json:"psid" form:"psid" gorm:"column:psid;comment:电站ID"`
+	BwdNo           string  `json:"bwdNo" form:"bwdNo" gorm:"column:bwdNo;comment:并网点编号"`
 	EQID            string  `json:"eqid" form:"eqid" gorm:"column:eqid;comment:逆变器ID"`
 	RegulationPower float64 `json:"regulationPower" form:"regulationPower" gorm:"column:regulation_power;comment:分配调节量(MW)"`
 	BeforePower     float64 `json:"beforePower" form:"beforePower" gorm:"column:before_power;comment:调节前功率(MW)"`

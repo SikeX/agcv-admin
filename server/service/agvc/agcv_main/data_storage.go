@@ -221,7 +221,12 @@ func (s *dataStorage) makeKey(psid, eqid, eqType, dataType, point string) string
 }
 
 // GetDataAsFloat64 获取数据并转换为float64（用于数值计算）
-func (s *dataStorage) GetDataAsFloat64(psid, eqid, eqType, dataType, point string) (float64, error) {
+func (s *dataStorage) GetDataAsFloat64(code string) (float64, error) {
+	psid := code[0:3]
+	eqid := code[3:7]
+	eqType := code[7:9]
+	dataType := code[9:11]
+	point := code[11:]
 	data, exists := s.GetData(psid, eqid, eqType, dataType, point)
 	if !exists {
 		return 0, fmt.Errorf("数据不存在")

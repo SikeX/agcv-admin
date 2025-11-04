@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/flipped-aurora/gin-vue-admin/server/global"
+	"github.com/flipped-aurora/gin-vue-admin/server/model/agvc"
 	"github.com/flipped-aurora/gin-vue-admin/server/model/agvc/agvc_main"
 	"github.com/flipped-aurora/gin-vue-admin/server/model/agvc/agvc_main/request"
 	"go.uber.org/zap"
@@ -220,22 +221,18 @@ func (s *avc) executeAVCCycle(psid string) error {
 }
 
 // collectAVCData 采集AVC控制所需数据
-func (s *avc) collectAVCData(psid string) (map[string]interface{}, error) {
+func (s *avc) collectAVCData(bwdNo string) (map[string]interface{}, error) {
 	data := make(map[string]interface{})
 
-	// 从并网点采集数据
-	eqid := "0000"
-	eqType := "02" // 并网点
-
 	// 采集并网点电压（遥测401：电压）
-	pointVoltage, err := DataStorage.GetDataAsFloat64(psid, eqid, eqType, "02", "401")
+	pointVoltage, err := DataStorage.GetDataAsFloat64(bwdNo + "401")
 	if err != nil {
 		return nil, fmt.Errorf("采集并网点电压失败: %v", err)
 	}
 	data["pointVoltage"] = pointVoltage
 
 	// 采集总无功（遥测403：无功功率）
-	totalReactive, err := DataStorage.GetDataAsFloat64(psid, eqid, eqType, "02", "403")
+	totalReactive, err := DataStorage.GetDataAsFloat64(bwdNo + "403")
 	if err != nil {
 		// 无功不是必须的，使用默认值
 		totalReactive = 0.0
@@ -243,7 +240,7 @@ func (s *avc) collectAVCData(psid string) (map[string]interface{}, error) {
 	data["totalReactive"] = totalReactive
 
 	// 采集系统频率
-	systemFreq, err := DataStorage.GetDataAsFloat64(psid, eqid, eqType, "02", "404")
+	systemFreq, err := DataStorage.GetDataAsFloat64(bwdNo + "404")
 	if err != nil {
 		systemFreq = 50.0
 	}
@@ -261,19 +258,19 @@ func (s *avc) calcRequiredReactive(deltaV, voltage, sensitivity float64) float64
 }
 
 // filterAvailableDevices 筛选可用设备
-func (s *avc) filterAvailableDevices(psid string, requiredQ float64) ([]agvc_main.Device, error) {
+func (s *avc) filterAvailableDevices(psid string, requiredQ float64) ([]agvc.AgvcNbqSetting, error) {
 	// 获取所有在线逆变器
-	inverters, err := Device.GetOnlineInvertersByPSID(psid)
+	inverters, err := Device.GetOnlineInvertersByBwdNo(psid)
 	if err != nil {
 		return nil, err
 	}
 
-	available := make([]agvc_main.Device, 0)
+	available := make([]agvc.AgvcNbqSetting, 0)
 	for _, inv := range inverters {
 		// 检查设备是否有无功能力
-		if inv.MaxReact <= 0 {
-			continue
-		}
+		// if inv.MaxReact <= 0 {
+		// 	continue
+		// }
 
 		// 检查设备当前无功（可选）
 		// currentReactive, _ := DataStorage.GetDataAsFloat64(psid, inv.EQID, "01", "02", "402")
@@ -286,7 +283,7 @@ func (s *avc) filterAvailableDevices(psid string, requiredQ float64) ([]agvc_mai
 }
 
 // assignReactiveToDevices 分配无功调节量到设备
-func (s *avc) assignReactiveToDevices(psid string, requiredQ float64, devices []agvc_main.Device) []agvc_main.DeviceReactiveRegulation {
+func (s *avc) assignReactiveToDevices(nbqNo string, requiredQ float64, devices []agvc.AgvcNbqSetting) []agvc_main.DeviceReactiveRegulation {
 	details := make([]agvc_main.DeviceReactiveRegulation, 0, len(devices))
 
 	// 平均分配策略
@@ -295,24 +292,27 @@ func (s *avc) assignReactiveToDevices(psid string, requiredQ float64, devices []
 	for _, dev := range devices {
 		// 限制调节量不超过设备最大无功容量
 		actualQ := perDeviceQ
-		if math.Abs(actualQ) > dev.MaxReact {
+		if math.Abs(actualQ) > *dev.RatedReactivePower {
 			if actualQ > 0 {
-				actualQ = dev.MaxReact
+				actualQ = *dev.RatedReactivePower
 			} else {
-				actualQ = -dev.MaxReact
+				actualQ = -*dev.RatedReactivePower
 			}
 		}
 
 		// 获取设备当前无功
-		currentReactive, err := DataStorage.GetDataAsFloat64(psid, dev.EQID, "01", "02", "402")
+		currentReactive, err := DataStorage.GetDataAsFloat64(nbqNo + "27")
 		if err != nil {
 			currentReactive = 0
 		}
 
+		psid := nbqNo[0:3]
+		eqType := nbqNo[3:5]
+
 		details = append(details, agvc_main.DeviceReactiveRegulation{
 			PSID:               psid,
-			EQID:               dev.EQID,
-			EQType:             dev.EQType,
+			EQID:               *dev.InverterNo,
+			EQType:             eqType,
 			RegulationReactive: actualQ,
 			BeforeReactive:     currentReactive,
 			Status:             "pending",

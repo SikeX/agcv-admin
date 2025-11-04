@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/flipped-aurora/gin-vue-admin/server/global"
+	"github.com/flipped-aurora/gin-vue-admin/server/model/agvc"
 	"github.com/flipped-aurora/gin-vue-admin/server/model/agvc/agvc_main"
 	"github.com/flipped-aurora/gin-vue-admin/server/model/agvc/agvc_main/request"
 )
@@ -100,11 +101,11 @@ func (s *device) GetInvertersByPSID(psid string) ([]agvc_main.Device, error) {
 	return devices, err
 }
 
-// GetOnlineInvertersByPSID 获取电站的所有在线逆变器
-func (s *device) GetOnlineInvertersByPSID(psid string) ([]agvc_main.Device, error) {
-	var devices []agvc_main.Device
-	status := 1
-	err := global.GVA_DB.Where("psid = ? AND eq_type = ? AND status = ?", psid, "01", status).Find(&devices).Error
+// GetOnlineInvertersByBwdNo 获取电站的所有在线逆变器
+func (s *device) GetOnlineInvertersByBwdNo(bwdNo string) ([]agvc.AgvcNbqSetting, error) {
+	var devices []agvc.AgvcNbqSetting
+	// status := 1
+	err := global.GVA_DB.Where("bwdNo = ? AND isParticipateAdjust = ? ", bwdNo, true).Find(&devices).Error
 	return devices, err
 }
 
