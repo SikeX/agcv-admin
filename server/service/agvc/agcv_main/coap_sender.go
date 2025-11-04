@@ -1,20 +1,20 @@
 package agcv_main
 
 import (
-	"bytes"
-	"context"
-	"encoding/json"
-	"fmt"
-	"time"
+    "bytes"
+    "context"
+    "encoding/json"
+    "fmt"
+    "time"
 
-	"github.com/flipped-aurora/gin-vue-admin/server/model/agvc/agvc_main/request"
-	"github.com/flipped-aurora/gin-vue-admin/server/service/agvc/cons"
+    "github.com/flipped-aurora/gin-vue-admin/server/model/agvc/agvc_main/request"
+    "github.com/flipped-aurora/gin-vue-admin/server/service/agvc/cons"
 
-	"github.com/flipped-aurora/gin-vue-admin/server/global"
-	"github.com/plgd-dev/go-coap/v3/message"
-	"github.com/plgd-dev/go-coap/v3/message/codes"
-	"github.com/plgd-dev/go-coap/v3/udp"
-	"go.uber.org/zap"
+    "github.com/flipped-aurora/gin-vue-admin/server/global"
+    "github.com/plgd-dev/go-coap/v3/message"
+    "github.com/plgd-dev/go-coap/v3/message/codes"
+    "github.com/plgd-dev/go-coap/v3/udp"
+    "go.uber.org/zap"
 )
 
 type coapSender struct{}
@@ -23,187 +23,329 @@ var CoapSender = new(coapSender)
 
 // SendData 发送数据到CoAP服务器
 func (s *coapSender) SendData(host string, port int, messages []request.CoAPDataMessage) error {
-	if len(messages) == 0 {
-		return fmt.Errorf("没有数据需要发送")
-	}
+    if len(messages) == 0 {
+        return fmt.Errorf("没有数据需要发送")
+    }
 
-	// 创建CoAP客户端
-	conn, err := udp.Dial(fmt.Sprintf("%s:%d", host, port))
-	if err != nil {
-		global.GVA_LOG.Error("连接CoAP服务器失败",
-			zap.String("host", host),
-			zap.Int("port", port),
-			zap.Error(err))
-		return fmt.Errorf("连接CoAP服务器失败: %v", err)
-	}
-	defer conn.Close()
+    // 创建CoAP客户端
+    conn, err := udp.Dial(fmt.Sprintf("%s:%d", host, port))
+    if err != nil {
+        global.GVA_LOG.Error("连接CoAP服务器失败",
+            zap.String("host", host),
+            zap.Int("port", port),
+            zap.Error(err))
+        return fmt.Errorf("连接CoAP服务器失败: %v", err)
+    }
+    defer conn.Close()
 
-	// coapClient := client.NewClient(conn)
+    // coapClient := client.NewClient(conn)
 
-	// 准备请求数据
-	jsonData, err := json.Marshal(messages)
-	if err != nil {
-		return fmt.Errorf("序列化数据失败: %v", err)
-	}
+    // 准备请求数据
+    jsonData, err := json.Marshal(messages)
+    if err != nil {
+        return fmt.Errorf("序列化数据失败: %v", err)
+    }
 
-	// 创建CoAP请求
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+    // 创建CoAP请求
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+    defer cancel()
 
-	// 发送POST请求
-	resp, err := conn.Post(ctx, "/agvc/data", message.AppJSON, bytes.NewReader(jsonData))
-	if err != nil {
-		global.GVA_LOG.Error("发送CoAP数据失败",
-			zap.String("host", host),
-			zap.Int("port", port),
-			zap.Error(err))
-		return fmt.Errorf("发送CoAP数据失败: %v", err)
-	}
+    // 发送POST请求
+    resp, err := conn.Post(ctx, "/agvc/data", message.AppJSON, bytes.NewReader(jsonData))
+    if err != nil {
+        global.GVA_LOG.Error("发送CoAP数据失败",
+            zap.String("host", host),
+            zap.Int("port", port),
+            zap.Error(err))
+        return fmt.Errorf("发送CoAP数据失败: %v", err)
+    }
 
-	// 检查响应
-	if resp.Code() != codes.Content && resp.Code() != codes.Created && resp.Code() != codes.Changed {
-		respBody, _ := resp.ReadBody()
-		global.GVA_LOG.Warn("CoAP服务器返回非成功状态",
-			zap.String("code", resp.Code().String()),
-			zap.String("body", string(respBody)))
-		return fmt.Errorf("CoAP服务器返回错误: %s", resp.Code().String())
-	}
+    // 检查响应
+    if resp.Code() != codes.Content && resp.Code() != codes.Created && resp.Code() != codes.Changed {
+        respBody, _ := resp.ReadBody()
+        global.GVA_LOG.Warn("CoAP服务器返回非成功状态",
+            zap.String("code", resp.Code().String()),
+            zap.String("body", string(respBody)))
+        return fmt.Errorf("CoAP服务器返回错误: %s", resp.Code().String())
+    }
 
-	global.GVA_LOG.Info("CoAP数据发送成功",
-		zap.String("host", host),
-		zap.Int("port", port),
-		zap.Int("count", len(messages)))
+    global.GVA_LOG.Info("CoAP数据发送成功",
+        zap.String("host", host),
+        zap.Int("port", port),
+        zap.Int("count", len(messages)))
 
-	return nil
+    return nil
 }
 
 // SendAGCCommand 发送AGC控制指令
 func (s *coapSender) SendAGCCommand(host string, port int, bwdNo int, commands map[int]interface{}) error {
-	messages := make([]request.CoAPDataMessage, 0)
+    messages := make([]request.CoAPDataMessage, 0)
 
-	// 构建AGC标准点数据
-	// 遥控点：AGC投退信号(401), AGC就地远方控制模式(402), AGC开/闭环状态(404)
-	// 遥调点：有功执行(401)
+    // 构建AGC标准点数据
+    // 遥控点：AGC投退信号(401), AGC就地远方控制模式(402), AGC开/闭环状态(404)
+    // 遥调点：有功执行(401)
 
-	for point, value := range commands {
-		var dataType int
-		switch point {
-		case 401, 402, 404: // 遥控
-			dataType = cons.YK
-		case 403: // 有功执行（遥调）
-			dataType = cons.YT
-			point = 401
-		default:
-			continue
-		}
+    for point, value := range commands {
+        var dataType int
+        var pointStr string
+        switch point {
+        case 401, 402, 404: // 遥控
+            dataType = cons.YK
+            pointStr = fmt.Sprintf("%d", point)
+        case 403: // 有功执行（遥调）
+            dataType = cons.YT
+            pointStr = "401"
+        default:
+            continue
+        }
 
-		messages = append(messages, request.CoAPDataMessage{
-			PSID:     1,
-			EQID:     bwdNo,         // AGC是全站级别的，设备ID为0000
-			EQType:   cons.TYPE_BWG, // 并网点
-			DataType: dataType,
-			Point:    point,
-			Value:    value,
-		})
-	}
+        messages = append(messages, request.CoAPDataMessage{
+            PSID:     1,
+            EQID:     bwdNo,         // AGC是全站级别的，设备ID为0000
+            EQType:   cons.TYPE_BWG, // 并网点
+            DataType: dataType,
+            Point:    pointStr,
+            Value:    value,
+        })
+    }
 
-	if len(messages) == 0 {
-		return fmt.Errorf("没有有效的AGC指令")
-	}
+    if len(messages) == 0 {
+        return fmt.Errorf("没有有效的AGC指令")
+    }
 
-	return s.SendData(host, port, messages)
+    return s.SendData(host, port, messages)
 }
 
 // SendAVCCommand 发送AVC控制指令
 func (s *coapSender) SendAVCCommand(host string, port, bwdNo int, commands map[int]interface{}) error {
-	messages := make([]request.CoAPDataMessage, 0)
+    messages := make([]request.CoAPDataMessage, 0)
 
-	// 构建AVC标准点数据
-	// 遥控点：AVC功能投退信号(401), AVC功能就地远方控制模式(402), AVC功能当前指令状态(403), AVC功能开闭环状态(404)
-	// 遥调点：电压执行(401), 无功执行(402)
+    // 构建AVC标准点数据
+    // 遥控点：AVC功能投退信号(401), AVC功能就地远方控制模式(402), AVC功能当前指令状态(403), AVC功能开闭环状态(404)
+    // 遥调点：电压执行(401), 无功执行(402)
 
-	for point, value := range commands {
-		var dataType int
-		switch point {
-		case 401, 402, 403: // 遥控
-			dataType = cons.YK
-		case 404, 405: // 遥调
-			dataType = cons.YT
-			if point == 406 {
-				point = 401
-			} else {
-				point = 402
-			}
-		default:
-			continue
-		}
+    for point, value := range commands {
+        var dataType int
+        var pointStr string
+        switch point {
+        case 401, 402, 403: // 遥控
+            dataType = cons.YK
+            pointStr = fmt.Sprintf("%d", point)
+        case 404, 405: // 遥调
+            dataType = cons.YT
+            if point == 406 {
+                pointStr = "401"
+            } else {
+                pointStr = "402"
+            }
+        default:
+            continue
+        }
 
-		messages = append(messages, request.CoAPDataMessage{
-			PSID:     1,
-			EQID:     bwdNo,         // AVC是全站级别的，设备ID为0000
-			EQType:   cons.TYPE_BWG, // 并网点
-			DataType: dataType,
-			Point:    point,
-			Value:    value,
-		})
-	}
+        messages = append(messages, request.CoAPDataMessage{
+            PSID:     1,
+            EQID:     bwdNo,         // AVC是全站级别的，设备ID为0000
+            EQType:   cons.TYPE_BWG, // 并网点
+            DataType: dataType,
+            Point:    pointStr,
+            Value:    value,
+        })
+    }
 
-	if len(messages) == 0 {
-		return fmt.Errorf("没有有效的AVC指令")
-	}
+    if len(messages) == 0 {
+        return fmt.Errorf("没有有效的AVC指令")
+    }
 
-	return s.SendData(host, port, messages)
+    return s.SendData(host, port, messages)
 }
 
 // SendInverterCommand 发送逆变器控制指令
 func (s *coapSender) SendInverterCommand(host string, port, psid, eqid int, commands map[int]interface{}) error {
-	messages := make([]request.CoAPDataMessage, 0)
+    messages := make([]request.CoAPDataMessage, 0)
 
-	// 逆变器标准点
-	// 遥控：开关机(401)
-	// 遥调：有功功率降额执行值(401), 无功功率补偿执行值(402)
+    // 逆变器标准点
+    // 遥控：开关机(401)
+    // 遥调：有功功率降额执行值(401), 无功功率补偿执行值(402)
 
-	for point, value := range commands {
-		var dataType int
-		switch point {
-		case 401: // 开关机（遥控）
-			dataType = cons.YX
-			point = 401
-		case 402: // 遥调
-			dataType = cons.YC
-			if point == 401 {
-				point = 401
-			} else {
-				point = 402
-			}
-		default:
-			continue
-		}
+    for point, value := range commands {
+        var dataType int
+        var pointStr string
+        switch point {
+        case 401: // 开关机（遥控）或有功功率降额
+            dataType = cons.YC
+            pointStr = "401"
+        case 402: // 无功功率补偿
+            dataType = cons.YC
+            pointStr = "402"
+        default:
+            continue
+        }
 
-		messages = append(messages, request.CoAPDataMessage{
-			PSID:     psid,
-			EQID:     eqid,
-			EQType:   cons.TYPE_NBQ, // 逆变器
-			DataType: dataType,
-			Point:    point,
-			Value:    value,
-		})
-	}
+        messages = append(messages, request.CoAPDataMessage{
+            PSID:     psid,
+            EQID:     eqid,
+            EQType:   cons.TYPE_NBQ, // 逆变器
+            DataType: dataType,
+            Point:    pointStr,
+            Value:    value,
+        })
+    }
 
-	if len(messages) == 0 {
-		return fmt.Errorf("没有有效的逆变器指令")
-	}
+    if len(messages) == 0 {
+        return fmt.Errorf("没有有效的逆变器指令")
+    }
 
-	return s.SendData(host, port, messages)
+    return s.SendData(host, port, messages)
 }
 
 // GetDefaultCoapHost 获取默认CoAP主机地址（可从配置读取）
 func (s *coapSender) GetDefaultCoapHost() string {
-	// TODO: 从配置文件读取
-	return "127.0.0.1"
+    // TODO: 从配置文件读取
+    return "127.0.0.1"
 }
 
 // GetDefaultCoapPort 获取默认CoAP端口
 func (s *coapSender) GetDefaultCoapPort() int {
-	return 1188
+    return 1188
+}
+
+// GetDispatchCoapHost 获取调度CoAP主机地址
+func (s *coapSender) GetDispatchCoapHost() string {
+    // TODO: 从配置文件读取
+    return "127.0.0.1"
+}
+
+// GetDispatchCoapPort 获取调度CoAP返回端口（1189）
+func (s *coapSender) GetDispatchCoapPort() int {
+    return 1189
+}
+
+// SendAGCResultToDispatch 发送AGC计算结果到调度（1189端口）
+func (s *coapSender) SendAGCResultToDispatch(bwdNo int, results map[string]interface{}) error {
+    messages := make([]request.CoAPDataMessage, 0)
+    
+    // AGC遥信标准点
+    yxPoints := map[string]string{
+        "401": "agcSignal",          // AGC投退信号
+        "402": "agcControlMode",     // AGC就地远方控制模式
+        "404": "agcLoopStatus",      // AGC开/闭环状态
+        "405": "agcUpRegLock",       // AGC有功上调节闭锁
+        "406": "agcDownRegLock",     // AGC有功下调节闭锁
+    }
+    
+    // AGC遥测标准点
+    ycPoints := map[string]string{
+        "401": "powerUpperLimit",    // 有功调节上限
+        "402": "powerLowerLimit",    // 有功调节下限
+        "403": "powerExecValue",     // 有功执行值
+    }
+    
+    // 添加遥信点
+    for point, key := range yxPoints {
+        if value, ok := results[key]; ok {
+            messages = append(messages, request.CoAPDataMessage{
+                PSID:     1,
+                EQID:     bwdNo,
+                EQType:   cons.TYPE_BWG,
+                DataType: cons.YX,
+                Point:    point,
+                Value:    value,
+            })
+        }
+    }
+    
+    // 添加遥测点
+    for point, key := range ycPoints {
+        if value, ok := results[key]; ok {
+            messages = append(messages, request.CoAPDataMessage{
+                PSID:     1,
+                EQID:     bwdNo,
+                EQType:   cons.TYPE_BWG,
+                DataType: cons.YC,
+                Point:    point,
+                Value:    value,
+            })
+        }
+    }
+    
+    if len(messages) == 0 {
+        return fmt.Errorf("没有AGC结果数据需要发送")
+    }
+    
+    host := s.GetDispatchCoapHost()
+    port := s.GetDispatchCoapPort()
+    
+    global.GVA_LOG.Info("发送AGC计算结果到调度",
+        zap.Int("bwdNo", bwdNo),
+        zap.String("host", host),
+        zap.Int("port", port),
+        zap.Int("dataCount", len(messages)))
+    
+    return s.SendData(host, port, messages)
+}
+
+// SendAVCResultToDispatch 发送AVC计算结果到调度（1189端口）
+func (s *coapSender) SendAVCResultToDispatch(bwdNo int, results map[string]interface{}) error {
+    messages := make([]request.CoAPDataMessage, 0)
+    
+    // AVC遥信标准点
+    yxPoints := map[string]string{
+        "401": "avcSignal",          // AVC功能投退信号
+        "402": "avcControlMode",     // AVC功能就地远方控制模式
+        "403": "avcCmdStatus",       // AVC功能当前指令状态
+        "404": "avcLoopStatus",      // AVC功能开闭环状态
+        "405": "avcUpRegLock",       // AVC功能上调节闭锁
+        "406": "avcDownRegLock",     // AVC功能下调节闭锁
+    }
+    
+    // AVC遥测标准点
+    ycPoints := map[string]string{
+        "401": "reactiveIncreaseCap", // 无功可增容量
+        "402": "reactiveDecreaseCap", // 无功可减容量
+        "403": "voltageExecValue",    // 电压执行值
+        "404": "reactiveExecValue",   // 无功执行值
+    }
+    
+    // 添加遥信点
+    for point, key := range yxPoints {
+        if value, ok := results[key]; ok {
+            messages = append(messages, request.CoAPDataMessage{
+                PSID:     1,
+                EQID:     bwdNo,
+                EQType:   cons.TYPE_BWG,
+                DataType: cons.YX,
+                Point:    point,
+                Value:    value,
+            })
+        }
+    }
+    
+    // 添加遥测点
+    for point, key := range ycPoints {
+        if value, ok := results[key]; ok {
+            messages = append(messages, request.CoAPDataMessage{
+                PSID:     1,
+                EQID:     bwdNo,
+                EQType:   cons.TYPE_BWG,
+                DataType: cons.YC,
+                Point:    point,
+                Value:    value,
+            })
+        }
+    }
+    
+    if len(messages) == 0 {
+        return fmt.Errorf("没有AVC结果数据需要发送")
+    }
+    
+    host := s.GetDispatchCoapHost()
+    port := s.GetDispatchCoapPort()
+    
+    global.GVA_LOG.Info("发送AVC计算结果到调度",
+        zap.Int("bwdNo", bwdNo),
+        zap.String("host", host),
+        zap.Int("port", port),
+        zap.Int("dataCount", len(messages)))
+    
+    return s.SendData(host, port, messages)
 }
