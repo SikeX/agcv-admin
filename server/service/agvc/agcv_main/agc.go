@@ -208,87 +208,107 @@ func (s *agc) executeAGCCycle(bwdNo int) error {
     }
 
     // 步骤2：判断控制权限模式
-
     var isRemoteControl bool
 
     pointID, err := PointMapper.GetPointID(cons.TYPE_AGC, cons.AGC_YX_CONTROL_MODE)
     if err != nil {
         global.GVA_LOG.Warn("获取AGC就地远方控制模式点位失败，使用数据库配置",
             zap.Error(err))
-        isRemoteControl = false
+        // 从数据库配置读取控制模式
+        if config.ControlAuth != nil && *config.ControlAuth == 1 {
+            isRemoteControl = true
+        } else {
+            isRemoteControl = false
+        }
     } else {
         signalVal, err := DispatchStorage.GetDataAsFloat64(1, bwdNo, cons.TYPE_AGC, cons.YX, pointID)
         if err != nil {
             global.GVA_LOG.Warn("获取AGC就地远方控制模式值失败，使用数据库配置",
                 zap.Error(err))
-            isRemoteControl = false
+            // 从数据库配置读取控制模式
+            if config.ControlAuth != nil && *config.ControlAuth == 1 {
+                isRemoteControl = true
+            } else {
+                isRemoteControl = false
+            }
         } else {
             isRemoteControl = signalVal == 1 //0:就地控制，1:远方控制
         }
     }
 
-    // if config.ControlAuth != nil && *config.ControlAuth == 1 {
-    //     isRemoteControl = true // 远程调度控制
-    // } else {
-    //     isRemoteControl = false // 本地控制
-    // }
+    global.GVA_LOG.Info("AGC控制模式判断",
+        zap.Int("bwdNo", bwdNo),
+        zap.Bool("isRemoteControl", isRemoteControl))
 
-    // 步骤3：检查AGC投退信号
-    var agcEnabled bool
+    // 如果是远程模式，无论调控过程是否成功，都必须发送结果到1189端口
     if isRemoteControl {
-        // 远程模式：从内存读取AGC投退信号
-        pointID, err := PointMapper.GetPointID(cons.TYPE_BWG, cons.AGC_YX_SIGNAL)
+        // 初始化默认值，用于发送结果
+        var actualOutput float64 = 0.0
+        var targetOutput float64 = 0.0
+
+        // 使用defer确保无论函数如何返回，都会发送结果
+        defer func() {
+            if sendErr := s.sendAGCResultToDispatch(bwdNo, config, actualOutput, targetOutput); sendErr != nil {
+                global.GVA_LOG.Error("发送AGC结果到调度失败",
+                    zap.Int("bwdNo", bwdNo),
+                    zap.Error(sendErr))
+            }
+        }()
+
+        // 执行远程调控逻辑
+        return s.executeRemoteAGCControl(bwdNo, config, &actualOutput, &targetOutput)
+    }
+
+    // 执行就地调控逻辑
+    return s.executeLocalAGCControl(bwdNo, config)
+}
+
+// executeRemoteAGCControl 执行远程AGC调控逻辑
+func (s *agc) executeRemoteAGCControl(bwdNo int, config agvc.AgvcBwdSetting, actualOutput, targetOutput *float64) error {
+    // 步骤1：检查AGC投退信号（从内存读取）
+    var agcEnabled bool
+    pointID, err := PointMapper.GetPointID(cons.TYPE_BWG, cons.AGC_YX_SIGNAL)
+    if err != nil {
+        global.GVA_LOG.Warn("获取AGC投退信号点位失败，使用数据库配置", zap.Error(err))
+        agcEnabled = config.AgcIsEnabled != nil && *config.AgcIsEnabled == 1
+    } else {
+        signalVal, err := DispatchStorage.GetDataAsFloat64(1, bwdNo, cons.TYPE_BWG, cons.YX, pointID)
         if err != nil {
-            global.GVA_LOG.Warn("获取AGC投退信号点位失败，使用数据库配置", zap.Error(err))
+            global.GVA_LOG.Debug("从调度存储读取AGC投退信号失败，使用数据库配置", zap.Error(err))
             agcEnabled = config.AgcIsEnabled != nil && *config.AgcIsEnabled == 1
         } else {
-            signalVal, err := DispatchStorage.GetDataAsFloat64(1, bwdNo, cons.TYPE_BWG, cons.YX, pointID)
-            if err != nil {
-                global.GVA_LOG.Debug("从调度存储读取AGC投退信号失败，使用数据库配置", zap.Error(err))
-                agcEnabled = config.AgcIsEnabled != nil && *config.AgcIsEnabled == 1
-            } else {
-                agcEnabled = signalVal == 1
-                global.GVA_LOG.Debug("从调度存储读取AGC投退信号",
-                    zap.Int("bwdNo", bwdNo),
-                    zap.Float64("signalVal", signalVal),
-                    zap.Bool("agcEnabled", agcEnabled))
-            }
+            agcEnabled = signalVal == 1
+            global.GVA_LOG.Debug("从调度存储读取AGC投退信号",
+                zap.Int("bwdNo", bwdNo),
+                zap.Float64("signalVal", signalVal),
+                zap.Bool("agcEnabled", agcEnabled))
         }
-    } else {
-        // 本地模式：从数据库读取
-        agcEnabled = config.AgcIsEnabled != nil && *config.AgcIsEnabled == 1
     }
 
     if !agcEnabled {
-        global.GVA_LOG.Debug("AGC系统未投入", zap.Int("bwdNo", bwdNo), zap.Bool("isRemoteControl", isRemoteControl))
+        global.GVA_LOG.Debug("AGC系统未投入（远程模式）", zap.Int("bwdNo", bwdNo))
         return nil
     }
 
-    // 步骤4：检查AGC就地远方控制模式
-    if isRemoteControl {
-        pointID, err := PointMapper.GetPointID(cons.TYPE_BWG, cons.AGC_YX_CONTROL_MODE)
-        if err == nil {
-            controlMode, err := DispatchStorage.GetDataAsFloat64(1, bwdNo, cons.TYPE_BWG, cons.YX, pointID)
-            if err == nil && controlMode != 1 {
-                global.GVA_LOG.Debug("AGC控制模式不是远程模式，跳过调控",
-                    zap.Int("bwdNo", bwdNo),
-                    zap.Float64("controlMode", controlMode))
-                return nil
-            }
+    // 步骤2：检查AGC就地远方控制模式
+    pointID, err = PointMapper.GetPointID(cons.TYPE_BWG, cons.AGC_YX_CONTROL_MODE)
+    if err == nil {
+        controlMode, err := DispatchStorage.GetDataAsFloat64(1, bwdNo, cons.TYPE_BWG, cons.YX, pointID)
+        if err == nil && controlMode != 1 {
+            global.GVA_LOG.Debug("AGC控制模式不是远程模式，跳过调控",
+                zap.Int("bwdNo", bwdNo),
+                zap.Float64("controlMode", controlMode))
+            return nil
         }
     }
 
-    // 步骤5：检查AGC开/闭环状态
+    // 步骤3：检查AGC开/闭环状态
     var isOpenLoop bool
-    if isRemoteControl {
-        pointID, err := PointMapper.GetPointID(cons.TYPE_BWG, cons.AGC_YX_LOOP_STATUS)
+    pointID, err = PointMapper.GetPointID(cons.TYPE_BWG, cons.AGC_YX_LOOP_STATUS)
+    if err == nil {
+        loopStatus, err := DispatchStorage.GetDataAsFloat64(1, bwdNo, cons.TYPE_BWG, cons.YX, pointID)
         if err == nil {
-            loopStatus, err := DispatchStorage.GetDataAsFloat64(1, bwdNo, cons.TYPE_BWG, cons.YX, pointID)
-            if err == nil {
-                isOpenLoop = loopStatus == 1
-            } else {
-                isOpenLoop = config.RunMode != nil && *config.RunMode == 1
-            }
+            isOpenLoop = loopStatus == 1
         } else {
             isOpenLoop = config.RunMode != nil && *config.RunMode == 1
         }
@@ -296,47 +316,101 @@ func (s *agc) executeAGCCycle(bwdNo int) error {
         isOpenLoop = config.RunMode != nil && *config.RunMode == 1
     }
 
-    // 步骤6：获取执行值
+    // 步骤4：获取执行值（从内存获取有功执行值）
     var execVal float64
-    if isRemoteControl {
-        // 远程模式：从内存获取有功执行值
-        pointID, err := PointMapper.GetPointID(cons.TYPE_BWG, cons.AGC_YC_POWER_EXEC_VALUE)
-        if err != nil {
-            pointID = "403" // 使用默认点标识
-        }
-
-        dispatchVal, err := DispatchStorage.GetDataAsFloat64(1, bwdNo, cons.TYPE_BWG, cons.YC, pointID)
-        if err == nil {
-            execVal = dispatchVal
-            global.GVA_LOG.Debug("从调度存储获取AGC目标值",
-                zap.Int("bwdNo", bwdNo),
-                zap.Float64("execVal", execVal))
-        } else {
-            // 调度存储没有值，使用配置中的值
-            if config.DispatchExecValue != nil {
-                execVal = *config.DispatchExecValue
-            }
-            global.GVA_LOG.Debug("调度存储无数据，使用配置中的调度执行值",
-                zap.Int("bwdNo", bwdNo),
-                zap.Float64("execVal", execVal))
-        }
-    } else {
-        // 本地模式：从数据库配置读取
-        if config.StationExecValue != nil {
-            execVal = *config.StationExecValue
-        }
+    pointID, err = PointMapper.GetPointID(cons.TYPE_BWG, cons.AGC_YC_POWER_EXEC_VALUE)
+    if err != nil {
+        pointID = "403" // 使用默认点标识
     }
 
-    // 步骤7：判断是否开环运行
+    dispatchVal, err := DispatchStorage.GetDataAsFloat64(1, bwdNo, cons.TYPE_BWG, cons.YC, pointID)
+    if err == nil {
+        execVal = dispatchVal
+        global.GVA_LOG.Debug("从调度存储获取AGC目标值",
+            zap.Int("bwdNo", bwdNo),
+            zap.Float64("execVal", execVal))
+    } else {
+        // 调度存储没有值，使用配置中的值
+        if config.DispatchExecValue != nil {
+            execVal = *config.DispatchExecValue
+        }
+        global.GVA_LOG.Debug("调度存储无数据，使用配置中的调度执行值",
+            zap.Int("bwdNo", bwdNo),
+            zap.Float64("execVal", execVal))
+    }
+
+    *targetOutput = execVal
+
+    // 步骤5：采集实际出力
+    actual, err := PowerAggregator.GetBwgActivePower(bwdNo)
+    if err != nil {
+        global.GVA_LOG.Warn("采集实际出力失败，使用默认值0",
+            zap.Int("bwdNo", bwdNo),
+            zap.Error(err))
+        actual = 0.0
+    }
+    *actualOutput = actual
+
+    // 步骤6：判断是否开环运行
     if isOpenLoop {
         // 开环运行，直接执行目标值
-        global.GVA_LOG.Debug("AGC开环运行，直接执行目标值",
+        global.GVA_LOG.Debug("AGC开环运行（远程模式），直接执行目标值",
+            zap.Int("bwdNo", bwdNo),
+            zap.Float64("execVal", execVal))
+        return s.executeRemoteOpenLoopControl(bwdNo, execVal)
+    }
+
+    // 步骤7：闭环运行，计算偏差
+    outputDeviation := *targetOutput - *actualOutput
+
+    global.GVA_LOG.Debug("AGC数据采集（远程模式）",
+        zap.Int("bwdNo", bwdNo),
+        zap.Float64("目标出力", *targetOutput),
+        zap.Float64("实际出力", *actualOutput),
+        zap.Float64("出力偏差", outputDeviation))
+
+    // 步骤8：判断偏差是否在抖动区间内
+    if config.AgcVibrationRange != nil && math.Abs(outputDeviation) <= *config.AgcVibrationRange {
+        global.GVA_LOG.Debug("偏差在抖动区间内，无需调节（远程模式）",
+            zap.Int("bwdNo", bwdNo),
+            zap.Float64("偏差", outputDeviation),
+            zap.Float64("抖动区间", *config.AgcVibrationRange))
+        return nil
+    }
+
+    // 步骤9：执行闭环调节
+    return s.executeRemoteClosedLoopControl(bwdNo, outputDeviation)
+}
+
+// executeLocalAGCControl 执行就地AGC调控逻辑
+func (s *agc) executeLocalAGCControl(bwdNo int, config agvc.AgvcBwdSetting) error {
+    // 步骤1：检查AGC投退信号（从数据库读取）
+    agcEnabled := config.AgcIsEnabled != nil && *config.AgcIsEnabled == 1
+
+    if !agcEnabled {
+        global.GVA_LOG.Debug("AGC系统未投入（就地模式）", zap.Int("bwdNo", bwdNo))
+        return nil
+    }
+
+    // 步骤2：检查AGC开/闭环状态
+    isOpenLoop := config.RunMode != nil && *config.RunMode == 1
+
+    // 步骤3：获取执行值（从数据库配置读取）
+    var execVal float64
+    if config.StationExecValue != nil {
+        execVal = *config.StationExecValue
+    }
+
+    // 步骤4：判断是否开环运行
+    if isOpenLoop {
+        // 开环运行，直接执行目标值
+        global.GVA_LOG.Debug("AGC开环运行（就地模式），直接执行目标值",
             zap.Int("bwdNo", bwdNo),
             zap.Float64("execVal", execVal))
         return s.executeOpenLoopControl(bwdNo, execVal)
     }
 
-    // 步骤8：闭环运行，采集数据
+    // 步骤5：闭环运行，采集数据
     collectData, err := s.collectAGCData(bwdNo)
     if err != nil {
         return fmt.Errorf("采集数据失败: %v", err)
@@ -347,45 +421,65 @@ func (s *agc) executeAGCCycle(bwdNo int) error {
     actualOutput := collectData["actualOutput"].(float64)
     outputDeviation := targetOutput - actualOutput
 
-    global.GVA_LOG.Debug("AGC数据采集",
-        zap.String("并网点编号", fmt.Sprintf("%d", bwdNo)),
+    global.GVA_LOG.Debug("AGC数据采集（就地模式）",
+        zap.Int("bwdNo", bwdNo),
         zap.Float64("目标出力", targetOutput),
         zap.Float64("实际出力", actualOutput),
         zap.Float64("出力偏差", outputDeviation))
 
     // 步骤7：判断偏差是否在抖动区间内
-    if math.Abs(outputDeviation) <= *config.AgcVibrationRange {
-        global.GVA_LOG.Debug("偏差在抖动区间内，无需调节",
-            zap.String("bwdNo", fmt.Sprintf("%d", bwdNo)),
+    if config.AgcVibrationRange != nil && math.Abs(outputDeviation) <= *config.AgcVibrationRange {
+        global.GVA_LOG.Debug("偏差在抖动区间内，无需调节（就地模式）",
+            zap.Int("bwdNo", bwdNo),
             zap.Float64("偏差", outputDeviation),
             zap.Float64("抖动区间", *config.AgcVibrationRange))
         return nil
     }
 
-    // 步骤8：检查闭锁信号
-    // if outputDeviation > 0 && config.UpRegLock != nil && *config.UpRegLock == 1 {
-    //     global.GVA_LOG.Warn("上调节闭锁，无法增加出力", zap.String("bwdNo", bwdNo))
-    //     return nil
-    // }
-    // if outputDeviation < 0 && config.DownRegLock != nil && *config.DownRegLock == 1 {
-    //     global.GVA_LOG.Warn("下调节闭锁，无法减少出力", zap.String("bwdNo", bwdNo))
-    //     return nil
-    // }
+    // 步骤8：执行闭环调节
+    return s.executeClosedLoopControl(bwdNo, outputDeviation)
+}
 
-    // 步骤9：获取可用逆变器
+// executeRemoteOpenLoopControl 执行远程开环控制
+func (s *agc) executeRemoteOpenLoopControl(bwdNo int, execVal float64) error {
+    // 获取可用逆变器
     inverters, err := Device.GetOnlineInvertersByBwdNo(bwdNo)
     if err != nil || len(inverters) == 0 {
         return fmt.Errorf("没有可用的逆变器: %v", err)
     }
 
-    // 步骤10：平均分配调节量
+    // 平均分配目标功率
+    perInvPower := execVal / float64(len(inverters))
+
+    for _, inv := range inverters {
+        commands := map[int]interface{}{
+            401: perInvPower,
+        }
+
+        host := CoapSender.GetDefaultCoapHost()
+        port := CoapSender.GetDefaultCoapPort()
+        psid := 1
+        CoapSender.SendInverterCommand(host, port, psid, *inv.InverterNo, commands)
+    }
+
+    return nil
+}
+
+// executeRemoteClosedLoopControl 执行远程闭环控制
+func (s *agc) executeRemoteClosedLoopControl(bwdNo int, outputDeviation float64) error {
+    // 获取可用逆变器
+    inverters, err := Device.GetOnlineInvertersByBwdNo(bwdNo)
+    if err != nil || len(inverters) == 0 {
+        return fmt.Errorf("没有可用的逆变器: %v", err)
+    }
+
+    // 平均分配调节量
     perInvDeviation := outputDeviation / float64(len(inverters))
-    regulationDetails := make([]agvc_main.InverterRegulation, 0, len(inverters))
 
     for _, inv := range inverters {
         // 限制调节量不超过逆变器最大调节能力
         actualReg := perInvDeviation
-        if math.Abs(actualReg) > *inv.RatedActivePower {
+        if inv.RatedActivePower != nil && math.Abs(actualReg) > *inv.RatedActivePower {
             if actualReg > 0 {
                 actualReg = *inv.RatedActivePower
             } else {
@@ -396,9 +490,53 @@ func (s *agc) executeAGCCycle(bwdNo int) error {
         // 获取逆变器当前功率
         currentPower, err := DataStorage.GetDataAsFloat64(*inv.InverterNo, 2, cons.YC, "28")
         if err != nil {
-            global.GVA_LOG.Warn("获取逆变器当前功率失败",
-                zap.String("逆变器编号", fmt.Sprintf("%d", *inv.InverterNo)),
-                zap.Error(err))
+            currentPower = 0
+        }
+
+        // 计算目标功率
+        targetPower := currentPower + actualReg
+
+        // 构建指令
+        commands := map[int]interface{}{
+            401: targetPower,
+        }
+
+        // 发送CoAP指令
+        host := CoapSender.GetDefaultCoapHost()
+        port := CoapSender.GetDefaultCoapPort()
+        psid := 1
+        CoapSender.SendInverterCommand(host, port, psid, *inv.InverterNo, commands)
+    }
+
+    return nil
+}
+
+// executeClosedLoopControl 执行就地闭环控制
+func (s *agc) executeClosedLoopControl(bwdNo int, outputDeviation float64) error {
+    // 获取可用逆变器
+    inverters, err := Device.GetOnlineInvertersByBwdNo(bwdNo)
+    if err != nil || len(inverters) == 0 {
+        return fmt.Errorf("没有可用的逆变器: %v", err)
+    }
+
+    // 平均分配调节量
+    perInvDeviation := outputDeviation / float64(len(inverters))
+    regulationDetails := make([]agvc_main.InverterRegulation, 0, len(inverters))
+
+    for _, inv := range inverters {
+        // 限制调节量不超过逆变器最大调节能力
+        actualReg := perInvDeviation
+        if inv.RatedActivePower != nil && math.Abs(actualReg) > *inv.RatedActivePower {
+            if actualReg > 0 {
+                actualReg = *inv.RatedActivePower
+            } else {
+                actualReg = -*inv.RatedActivePower
+            }
+        }
+
+        // 获取逆变器当前功率
+        currentPower, err := DataStorage.GetDataAsFloat64(*inv.InverterNo, 2, cons.YC, "28")
+        if err != nil {
             currentPower = 0
         }
 
@@ -411,34 +549,17 @@ func (s *agc) executeAGCCycle(bwdNo int) error {
         })
     }
 
-    // 步骤11：记录调节开始
-    record := agvc_main.AGCRegulationRecord{
-        BwdNo:           bwdNo,
-        TargetPower:     targetOutput,
-        ActualPower:     actualOutput,
-        PowerDeviation:  outputDeviation,
-        RegulationPower: outputDeviation,
-        SystemFreq:      collectData["systemFreq"].(float64),
-        Status:          "executing",
-        Message:         fmt.Sprintf("开始调节，分配%d个逆变器", len(inverters)),
-    }
-
-    // if err := global.GVA_DB.Create(&record).Error; err != nil {
-    //     return fmt.Errorf("记录调节失败: %v", err)
-    // }
-
-    // 步骤12：下发调节指令
+    // 下发调节指令
     successCount := 0
     for i := range regulationDetails {
         detail := &regulationDetails[i]
-        detail.RecordID = record.ID
 
         // 计算目标功率
         targetPower := detail.BeforePower + detail.RegulationPower
 
         // 构建指令
         commands := map[int]interface{}{
-            401: targetPower, // 有功功率降额执行值（遥调）
+            401: targetPower,
         }
 
         // 发送CoAP指令
@@ -456,40 +577,12 @@ func (s *agc) executeAGCCycle(bwdNo int) error {
             detail.AfterPower = targetPower
             successCount++
         }
-
-        // 保存调节详情
-        // global.GVA_DB.Create(detail)
     }
 
-    // 步骤13：更新调节记录
-    if successCount == len(regulationDetails) {
-        record.Status = "success"
-        record.Message = fmt.Sprintf("调节成功，%d个逆变器全部响应", successCount)
-    } else if successCount > 0 {
-        record.Status = "partial"
-        record.Message = fmt.Sprintf("部分调节成功，%d/%d个逆变器响应", successCount, len(regulationDetails))
-    } else {
-        record.Status = "failed"
-        record.Message = "调节失败，所有逆变器无响应"
-    }
-
-    global.GVA_DB.Model(&record).Updates(map[string]interface{}{
-        "status":  record.Status,
-        "message": record.Message,
-    })
-
-    global.GVA_LOG.Info("AGC调节周期完成",
+    global.GVA_LOG.Info("AGC调节周期完成（就地模式）",
         zap.Int("bwdNo", bwdNo),
-        zap.String("status", record.Status),
         zap.Int("成功数", successCount),
         zap.Int("总数", len(regulationDetails)))
-
-    // 步骤14：发送AGC计算结果到调度（1189端口）
-    if err := s.sendAGCResultToDispatch(bwdNo, config, actualOutput, targetOutput); err != nil {
-        global.GVA_LOG.Error("发送AGC结果到调度失败",
-            zap.Int("bwdNo", bwdNo),
-            zap.Error(err))
-    }
 
     return nil
 }

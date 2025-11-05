@@ -164,7 +164,7 @@ func (s *avc) executeAVCCycle(bwdNo int) error {
         return fmt.Errorf("获取AVC配置失败: %v", err)
     }
 
-    // 步骤2：判断控制权限模式
+    // 步骤2：判断控制权限模式（从数据库配置读取）
     var isRemoteControl bool
     if config.ControlAuth != nil && *config.ControlAuth == 1 {
         isRemoteControl = true // 远程调度控制
@@ -172,62 +172,92 @@ func (s *avc) executeAVCCycle(bwdNo int) error {
         isRemoteControl = false // 本地控制
     }
 
-    // 步骤3：检查AVC投退信号
-    var avcEnabled bool
+    global.GVA_LOG.Info("AVC控制模式判断",
+        zap.Int("bwdNo", bwdNo),
+        zap.Bool("isRemoteControl", isRemoteControl))
+
+    // 如果是远程模式，无论调控过程是否成功，都必须发送结果到1189端口
     if isRemoteControl {
-        // 远程模式：从内存读取AVC投退信号
-        pointID, err := PointMapper.GetPointID(cons.TYPE_BWG, cons.AVC_YX_SIGNAL)
+        // 初始化默认值，用于发送结果
+        var actualVoltage float64 = 0.0
+        var actualReactive float64 = 0.0
+
+        // 使用defer确保无论函数如何返回，都会发送结果
+        defer func() {
+            if sendErr := s.sendAVCResultToDispatch(bwdNo, config, actualVoltage, actualReactive); sendErr != nil {
+                global.GVA_LOG.Error("发送AVC结果到调度失败",
+                    zap.Int("bwdNo", bwdNo),
+                    zap.Error(sendErr))
+            }
+        }()
+
+        // 执行远程调控逻辑
+        return s.executeRemoteAVCControl(bwdNo, config, &actualVoltage, &actualReactive)
+    }
+
+    // 执行就地调控逻辑
+    return s.executeLocalAVCControl(bwdNo, config)
+}
+
+// executeRemoteAVCControl 执行远程AVC调控逻辑
+func (s *avc) executeRemoteAVCControl(bwdNo int, config agvc_main.AVCConfig, actualVoltage, actualReactive *float64) error {
+    // 步骤1：检查AVC投退信号（从内存读取）
+    var avcEnabled bool
+    pointID, err := PointMapper.GetPointID(cons.TYPE_BWG, cons.AVC_YX_SIGNAL)
+    if err != nil {
+        global.GVA_LOG.Warn("获取AVC投退信号点位失败，使用数据库配置", zap.Error(err))
+        avcEnabled = config.IsActive != nil && *config.IsActive == 1
+    } else {
+        signalVal, err := DispatchStorage.GetDataAsFloat64(1, bwdNo, cons.TYPE_BWG, cons.YX, pointID)
         if err != nil {
-            global.GVA_LOG.Warn("获取AVC投退信号点位失败，使用数据库配置", zap.Error(err))
+            global.GVA_LOG.Debug("从调度存储读取AVC投退信号失败，使用数据库配置", zap.Error(err))
             avcEnabled = config.IsActive != nil && *config.IsActive == 1
         } else {
-            signalVal, err := DispatchStorage.GetDataAsFloat64(1, bwdNo, cons.TYPE_BWG, cons.YX, pointID)
-            if err != nil {
-                global.GVA_LOG.Debug("从调度存储读取AVC投退信号失败，使用数据库配置", zap.Error(err))
-                avcEnabled = config.IsActive != nil && *config.IsActive == 1
-            } else {
-                avcEnabled = signalVal == 1
-                global.GVA_LOG.Debug("从调度存储读取AVC投退信号",
-                    zap.Int("bwdNo", bwdNo),
-                    zap.Float64("signalVal", signalVal),
-                    zap.Bool("avcEnabled", avcEnabled))
-            }
+            avcEnabled = signalVal == 1
+            global.GVA_LOG.Debug("从调度存储读取AVC投退信号",
+                zap.Int("bwdNo", bwdNo),
+                zap.Float64("signalVal", signalVal),
+                zap.Bool("avcEnabled", avcEnabled))
         }
-    } else {
-        // 本地模式：从数据库读取
-        avcEnabled = config.IsActive != nil && *config.IsActive == 1
     }
 
     if !avcEnabled {
-        global.GVA_LOG.Debug("AVC系统未投入", zap.Int("bwdNo", bwdNo), zap.Bool("isRemoteControl", isRemoteControl))
+        global.GVA_LOG.Debug("AVC系统未投入（远程模式）", zap.Int("bwdNo", bwdNo))
         return nil
     }
 
-    // 步骤4：检查AVC就地远方控制模式
-    if isRemoteControl {
-        pointID, err := PointMapper.GetPointID(cons.TYPE_BWG, cons.AVC_YX_CONTROL_MODE)
-        if err == nil {
-            controlMode, err := DispatchStorage.GetDataAsFloat64(1, bwdNo, cons.TYPE_BWG, cons.YX, pointID)
-            if err == nil && controlMode != 1 {
-                global.GVA_LOG.Debug("AVC控制模式不是远程模式，跳过调控",
-                    zap.Int("bwdNo", bwdNo),
-                    zap.Float64("controlMode", controlMode))
-                return nil
-            }
+    // 步骤2：检查AVC就地远方控制模式
+    pointID, err = PointMapper.GetPointID(cons.TYPE_BWG, cons.AVC_YX_CONTROL_MODE)
+    if err == nil {
+        controlMode, err := DispatchStorage.GetDataAsFloat64(1, bwdNo, cons.TYPE_BWG, cons.YX, pointID)
+        if err == nil && controlMode != 1 {
+            global.GVA_LOG.Debug("AVC控制模式不是远程模式，跳过调控",
+                zap.Int("bwdNo", bwdNo),
+                zap.Float64("controlMode", controlMode))
+            return nil
         }
     }
 
-    // 步骤5：检查AVC开/闭环状态
+    // 步骤3：采集并网点数据
+    collectData, err := s.collectAVCData(bwdNo)
+    if err != nil {
+        global.GVA_LOG.Warn("采集AVC数据失败，使用默认值",
+            zap.Int("bwdNo", bwdNo),
+            zap.Error(err))
+        *actualVoltage = 0.0
+        *actualReactive = 0.0
+    } else {
+        *actualVoltage = collectData["pointVoltage"].(float64)
+        *actualReactive = collectData["totalReactive"].(float64)
+    }
+
+    // 步骤4：检查AVC开/闭环状态
     var isOpenLoop bool
-    if isRemoteControl {
-        pointID, err := PointMapper.GetPointID(cons.TYPE_BWG, cons.AVC_YX_LOOP_STATUS)
+    pointID, err = PointMapper.GetPointID(cons.TYPE_BWG, cons.AVC_YX_LOOP_STATUS)
+    if err == nil {
+        loopStatus, err := DispatchStorage.GetDataAsFloat64(1, bwdNo, cons.TYPE_BWG, cons.YX, pointID)
         if err == nil {
-            loopStatus, err := DispatchStorage.GetDataAsFloat64(1, bwdNo, cons.TYPE_BWG, cons.YX, pointID)
-            if err == nil {
-                isOpenLoop = loopStatus == 1
-            } else {
-                isOpenLoop = config.RunMode != nil && *config.RunMode == 1
-            }
+            isOpenLoop = loopStatus == 1
         } else {
             isOpenLoop = config.RunMode != nil && *config.RunMode == 1
         }
@@ -235,11 +265,68 @@ func (s *avc) executeAVCCycle(bwdNo int) error {
         isOpenLoop = config.RunMode != nil && *config.RunMode == 1
     }
 
-    // 步骤6：获取目标电压范围
+    global.GVA_LOG.Debug("AVC数据采集（远程模式）",
+        zap.Int("bwdNo", bwdNo),
+        zap.Bool("isOpenLoop", isOpenLoop),
+        zap.Float64("并网点电压", *actualVoltage),
+        zap.Float64("总无功", *actualReactive))
+
+    // 步骤5：获取目标电压范围
     targetLow := config.TargetVoltageLow
     targetHigh := config.TargetVoltageHigh
 
-    // 步骤7：采集并网点数据
+    // 步骤6：判断电压是否在合格范围
+    if *actualVoltage >= targetLow && *actualVoltage <= targetHigh {
+        global.GVA_LOG.Debug("电压在合格范围，无需调节（远程模式）",
+            zap.Int("bwdNo", bwdNo),
+            zap.Float64("电压", *actualVoltage))
+        return nil
+    }
+
+    // 步骤7：计算电压偏差
+    var deltaV float64
+    if *actualVoltage < targetLow {
+        deltaV = targetLow - *actualVoltage
+    } else {
+        deltaV = targetHigh - *actualVoltage
+    }
+
+    // 判断是否在死区内
+    if math.Abs(deltaV) <= config.VoltageDeadZone {
+        global.GVA_LOG.Debug("电压偏差在死区内，无需调节（远程模式）",
+            zap.Int("bwdNo", bwdNo),
+            zap.Float64("偏差", deltaV))
+        return nil
+    }
+
+    // 步骤8：检查闭锁信号
+    if deltaV > 0 && config.UpRegLock != nil && *config.UpRegLock == 1 {
+        global.GVA_LOG.Warn("上调节闭锁，无法增加电压（远程模式）", zap.Int("bwdNo", bwdNo))
+        return nil
+    }
+    if deltaV < 0 && config.DownRegLock != nil && *config.DownRegLock == 1 {
+        global.GVA_LOG.Warn("下调节闭锁，无法降低电压（远程模式）", zap.Int("bwdNo", bwdNo))
+        return nil
+    }
+
+    // 步骤9：计算所需无功调节量
+    requiredDeltaQ := s.calcRequiredReactive(deltaV, *actualVoltage, config.ReactiveSensitivity)
+
+    // 步骤10：执行无功调节
+    return s.executeRemoteReactiveControl(bwdNo, requiredDeltaQ)
+}
+
+// executeLocalAVCControl 执行就地AVC调控逻辑
+func (s *avc) executeLocalAVCControl(bwdNo int, config agvc_main.AVCConfig) error {
+    // 步骤1：检查AVC投退信号（从数据库读取）
+    avcEnabled := config.IsActive != nil && *config.IsActive == 1
+
+    if !avcEnabled {
+        global.GVA_LOG.Debug("AVC系统未投入（就地模式）", zap.Int("bwdNo", bwdNo))
+        return nil
+    }
+
+    // 步骤2：采集并网点数据
     collectData, err := s.collectAVCData(bwdNo)
     if err != nil {
         return fmt.Errorf("采集数据失败: %v", err)
@@ -247,122 +334,121 @@ func (s *avc) executeAVCCycle(bwdNo int) error {
 
     pointVoltage := collectData["pointVoltage"].(float64)
     totalReactive := collectData["totalReactive"].(float64)
-    systemFreq := collectData["systemFreq"].(float64)
 
-    global.GVA_LOG.Debug("AVC数据采集",
+    global.GVA_LOG.Debug("AVC数据采集（就地模式）",
         zap.Int("bwdNo", bwdNo),
-        zap.Bool("isOpenLoop", isOpenLoop),
         zap.Float64("并网点电压", pointVoltage),
-        zap.Float64("总无功", totalReactive),
-        zap.Float64("系统频率", systemFreq))
+        zap.Float64("总无功", totalReactive))
 
-    // 步骤5：判断电压是否在合格范围
+    // 步骤3：获取目标电压范围
+    targetLow := config.TargetVoltageLow
+    targetHigh := config.TargetVoltageHigh
+
+    // 步骤4：判断电压是否在合格范围
     if pointVoltage >= targetLow && pointVoltage <= targetHigh {
-        global.GVA_LOG.Debug("电压在合格范围，无需调节",
+        global.GVA_LOG.Debug("电压在合格范围，无需调节（就地模式）",
             zap.Int("bwdNo", bwdNo),
-            zap.Float64("电压", pointVoltage),
-            zap.Float64("范围", targetLow),
-            zap.Float64("到", targetHigh))
+            zap.Float64("电压", pointVoltage))
         return nil
     }
 
-    // 步骤6：计算电压偏差
+    // 步骤5：计算电压偏差
     var deltaV float64
-    var targetVoltage float64
     if pointVoltage < targetLow {
         deltaV = targetLow - pointVoltage
-        targetVoltage = targetLow
     } else {
         deltaV = targetHigh - pointVoltage
-        targetVoltage = targetHigh
     }
 
     // 判断是否在死区内
     if math.Abs(deltaV) <= config.VoltageDeadZone {
-        global.GVA_LOG.Debug("电压偏差在死区内，无需调节",
+        global.GVA_LOG.Debug("电压偏差在死区内，无需调节（就地模式）",
             zap.Int("bwdNo", bwdNo),
-            zap.Float64("偏差", deltaV),
-            zap.Float64("死区", config.VoltageDeadZone))
+            zap.Float64("偏差", deltaV))
         return nil
     }
 
-    // 步骤7：检查闭锁信号
+    // 步骤6：检查闭锁信号
     if deltaV > 0 && config.UpRegLock != nil && *config.UpRegLock == 1 {
-        global.GVA_LOG.Warn("上调节闭锁，无法增加电压", zap.Int("bwdNo", bwdNo))
+        global.GVA_LOG.Warn("上调节闭锁，无法增加电压（就地模式）", zap.Int("bwdNo", bwdNo))
         return nil
     }
     if deltaV < 0 && config.DownRegLock != nil && *config.DownRegLock == 1 {
-        global.GVA_LOG.Warn("下调节闭锁，无法降低电压", zap.Int("bwdNo", bwdNo))
+        global.GVA_LOG.Warn("下调节闭锁，无法降低电压（就地模式）", zap.Int("bwdNo", bwdNo))
         return nil
     }
 
-    // 步骤8：计算所需无功调节量
+    // 步骤7：计算所需无功调节量
     requiredDeltaQ := s.calcRequiredReactive(deltaV, pointVoltage, config.ReactiveSensitivity)
 
-    global.GVA_LOG.Debug("AVC计算结果",
-        zap.Int("bwdNo", bwdNo),
-        zap.Float64("电压偏差", deltaV),
-        zap.Float64("需求无功", requiredDeltaQ))
+    // 步骤8：执行无功调节
+    return s.executeReactiveControl(bwdNo, requiredDeltaQ)
+}
 
-    // 步骤9：筛选可用设备（逆变器）
+// executeRemoteReactiveControl 执行远程无功调节
+func (s *avc) executeRemoteReactiveControl(bwdNo int, requiredDeltaQ float64) error {
+    // 筛选可用设备（逆变器）
     availableDevices, err := s.filterAvailableDevices(bwdNo, requiredDeltaQ)
     if err != nil || len(availableDevices) == 0 {
         return fmt.Errorf("没有可用的调节设备: %v", err)
     }
 
-    // 步骤10：平均分配无功调节量
+    // 平均分配无功调节量
+    perDeviceQ := requiredDeltaQ / float64(len(availableDevices))
+
+    for _, dev := range availableDevices {
+        // 限制调节量不超过设备最大无功容量
+        actualQ := perDeviceQ
+        if dev.RatedReactivePower != nil && math.Abs(actualQ) > *dev.RatedReactivePower {
+            if actualQ > 0 {
+                actualQ = *dev.RatedReactivePower
+            } else {
+                actualQ = -*dev.RatedReactivePower
+            }
+        }
+
+        // 获取设备当前无功
+        currentReactive, err := DataStorage.GetDataAsFloat64(bwdNo, cons.TYPE_BWG, cons.YC, "27")
+        if err != nil {
+            currentReactive = 0
+        }
+
+        // 计算目标无功
+        targetReactive := currentReactive + actualQ
+
+        // 构建指令
+        commands := map[int]interface{}{
+            402: targetReactive,
+        }
+
+        // 发送CoAP指令
+        host := CoapSender.GetDefaultCoapHost()
+        port := CoapSender.GetDefaultCoapPort()
+        psid := 1
+        CoapSender.SendInverterCommand(host, port, psid, *dev.InverterNo, commands)
+    }
+
+    return nil
+}
+
+// executeReactiveControl 执行就地无功调节
+func (s *avc) executeReactiveControl(bwdNo int, requiredDeltaQ float64) error {
+    // 筛选可用设备（逆变器）
+    availableDevices, err := s.filterAvailableDevices(bwdNo, requiredDeltaQ)
+    if err != nil || len(availableDevices) == 0 {
+        return fmt.Errorf("没有可用的调节设备: %v", err)
+    }
+
+    // 平均分配无功调节量
     regulationDetails := s.assignReactiveToDevices(bwdNo, requiredDeltaQ, availableDevices)
 
-    // 步骤11：记录调节开始
-    record := agvc_main.AVCRegulationRecord{
-        BwdNo:              bwdNo,
-        TargetVoltage:      targetVoltage,
-        ActualVoltage:      pointVoltage,
-        VoltageDeviation:   deltaV,
-        RequiredReactive:   requiredDeltaQ,
-        RegulationReactive: requiredDeltaQ,
-        TotalReactive:      totalReactive,
-        SystemFreq:         systemFreq,
-        Status:             "executing",
-        Message:            fmt.Sprintf("开始调节，分配%d个设备", len(availableDevices)),
-    }
+    // 下发无功调节指令
+    successCount := s.sendReactiveCommands(bwdNo, 0, regulationDetails)
 
-    if err := global.GVA_DB.Create(&record).Error; err != nil {
-        return fmt.Errorf("记录调节失败: %v", err)
-    }
-
-    // 步骤12：下发无功调节指令
-    successCount := s.sendReactiveCommands(bwdNo, record.ID, regulationDetails)
-
-    // 步骤13：更新调节记录
-    if successCount == len(regulationDetails) {
-        record.Status = "success"
-        record.Message = fmt.Sprintf("调节成功，%d个设备全部响应", successCount)
-    } else if successCount > 0 {
-        record.Status = "partial"
-        record.Message = fmt.Sprintf("部分调节成功，%d/%d个设备响应", successCount, len(regulationDetails))
-    } else {
-        record.Status = "failed"
-        record.Message = "调节失败，所有设备无响应"
-    }
-
-    global.GVA_DB.Model(&record).Updates(map[string]interface{}{
-        "status":  record.Status,
-        "message": record.Message,
-    })
-
-    global.GVA_LOG.Info("AVC调节周期完成",
+    global.GVA_LOG.Info("AVC调节周期完成（就地模式）",
         zap.Int("bwdNo", bwdNo),
-        zap.String("status", record.Status),
         zap.Int("成功数", successCount),
         zap.Int("总数", len(regulationDetails)))
-
-    // 步骤14：发送AVC计算结果到调度（1189端口）
-    if err := s.sendAVCResultToDispatch(bwdNo, config, pointVoltage, totalReactive); err != nil {
-        global.GVA_LOG.Error("发送AVC结果到调度失败",
-            zap.Int("bwdNo", bwdNo),
-            zap.Error(err))
-    }
 
     return nil
 }
