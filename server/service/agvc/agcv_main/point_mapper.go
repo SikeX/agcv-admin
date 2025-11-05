@@ -29,7 +29,7 @@ func (pm *pointMapper) Initialize() error {
 	pm.reverseMapping = make(map[int]map[string]string)
 
 	// 从Excel加载映射关系
-	if err := pm.loadFromExcel("/home/engine/project/server/设备及测点标准.xlsx"); err != nil {
+	if err := pm.loadFromExcel("D:\\code\\gin-vue-admin\\server\\设备及测点标准.xlsx"); err != nil {
 		global.GVA_LOG.Error("加载设备映射Excel失败", zap.Error(err))
 		return err
 	}
@@ -48,14 +48,16 @@ func (pm *pointMapper) loadFromExcel(filePath string) error {
 
 	// 获取所有sheet名称
 	sheets := f.GetSheetList()
-	
+
 	// 设备类型映射
 	sheetToEqType := map[string]int{
-		"逆变器":  2,
-		"箱变":   4,
-		"并网柜":  5,
-		"电表":   7,
-		"气象仪":  8,
+		"逆变器":      2,
+		"箱变":       4,
+		"开关柜和保护装置": 5,
+		"电表":       7,
+		"气象仪":      8,
+		"agc":      98,
+		"agv":      99,
 	}
 
 	for _, sheetName := range sheets {
@@ -86,8 +88,8 @@ func (pm *pointMapper) loadFromExcel(filePath string) error {
 				continue
 			}
 
-			pointName := row[0]  // 第1列：测点名称
-			pointID := row[1]    // 第2列：点标识
+			pointName := row[0] // 第1列：测点名称
+			pointID := row[1]   // 第2列：点标识
 
 			if pointName != "" && pointID != "" {
 				pm.mapping[eqType][pointName] = pointID
