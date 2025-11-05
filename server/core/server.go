@@ -47,6 +47,14 @@ func RunServer() {
         zap.L().Error("初始化设备点位映射失败", zap.Error(err))
     }
 
+    // 初始化逆变器品牌点位映射
+    agvcMain.InverterBrandMapper.Initialize()
+
+    // 初始化并网点配置缓存
+    if err := agvcMain.SettingCache.Initialize(); err != nil {
+        zap.L().Error("初始化并网点配置缓存失败", zap.Error(err))
+    }
+
     // 初始化AGC服务
     agvcMain.AGC.Initialize()
 
