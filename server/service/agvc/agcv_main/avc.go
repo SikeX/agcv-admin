@@ -102,7 +102,7 @@ func (s *avc) AutoStartAllGridPoints() {
 func (s *avc) StartAVC(bwdNo int) error {
     // 检查是否已经在运行
     if _, exists := s.psidChans[bwdNo]; exists {
-        return fmt.Errorf("电站%s的AVC控制已在运行", bwdNo)
+        return fmt.Errorf("电站%d的AVC控制已在运行", bwdNo)
     }
 
     // 获取AVC配置
@@ -126,7 +126,7 @@ func (s *avc) StartAVC(bwdNo int) error {
 func (s *avc) StopAVC(bwdNo int) error {
     stopChan, exists := s.psidChans[bwdNo]
     if !exists {
-        return fmt.Errorf("电站%s的AVC控制未运行", bwdNo)
+        return fmt.Errorf("电站%d的AVC控制未运行", bwdNo)
     }
 
     close(stopChan)
