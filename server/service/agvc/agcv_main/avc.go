@@ -416,34 +416,59 @@ func (s *avc) executeRemoteReactiveControl(bwdNo int, requiredDeltaQ float64) er
         // 计算目标无功
         targetReactive := currentReactive + actualQ
 
-        // 根据逆变器品牌获取控制点位
+        // 根据逆变器品牌选择不同的控制方式
         brand := cons.INVERTER_BRAND_HUAWEI // 默认华为
         if dev.InverterBrand != nil {
             brand = *dev.InverterBrand
         }
 
-        reactivePowerPoint, err := InverterBrandMapper.GetReactivePowerPoint(brand)
-        if err != nil {
-            global.GVA_LOG.Warn("获取逆变器品牌点位失败，使用默认点位",
-                zap.Int("inverterNo", *dev.InverterNo),
-                zap.Int("brand", brand),
-                zap.Error(err))
-            reactivePowerPoint = "402"
+        // 华为逆变器使用专用控制器，通过Q/S模式调节
+        if brand == cons.INVERTER_BRAND_HUAWEI {
+            // 计算目标Q/S比值
+            // 获取设备当前视在功率
+            apparentPower, err := DataStorage.GetDataAsFloat64(*dev.InverterNo, cons.TYPE_NBQ, cons.YC, "202")
+            if err != nil || apparentPower == 0 {
+                global.GVA_LOG.Warn("无法获取视在功率，跳过该逆变器",
+                    zap.Int("inverterNo", *dev.InverterNo),
+                    zap.Error(err))
+                continue
+            }
+
+            targetQS := targetReactive / apparentPower
+            
+            // 使用华为控制器进行AVC调控
+            if err := HuaweiController.ControlAVCByReactivePower(dev, targetQS); err != nil {
+                global.GVA_LOG.Error("华为逆变器AVC控制失败",
+                    zap.Int("inverterNo", *dev.InverterNo),
+                    zap.Float64("targetQS", targetQS),
+                    zap.Error(err))
+                continue
+            }
+        } else {
+            // 其他品牌逆变器使用原有方式
+            reactivePowerPoint, err := InverterBrandMapper.GetReactivePowerPoint(brand)
+            if err != nil {
+                global.GVA_LOG.Warn("获取逆变器品牌点位失败，使用默认点位",
+                    zap.Int("inverterNo", *dev.InverterNo),
+                    zap.Int("brand", brand),
+                    zap.Error(err))
+                reactivePowerPoint = "402"
+            }
+
+            var pointID int
+            fmt.Sscanf(reactivePowerPoint, "%d", &pointID)
+
+            // 构建指令
+            commands := map[int]interface{}{
+                pointID: targetReactive,
+            }
+
+            // 发送CoAP指令
+            host := CoapSender.GetDefaultCoapHost()
+            port := CoapSender.GetDefaultCoapPort()
+            psid := 1
+            CoapSender.SendInverterCommand(host, port, psid, *dev.InverterNo, commands)
         }
-
-        var pointID int
-        fmt.Sscanf(reactivePowerPoint, "%d", &pointID)
-
-        // 构建指令
-        commands := map[int]interface{}{
-            pointID: targetReactive,
-        }
-
-        // 发送CoAP指令
-        host := CoapSender.GetDefaultCoapHost()
-        port := CoapSender.GetDefaultCoapPort()
-        psid := 1
-        CoapSender.SendInverterCommand(host, port, psid, *dev.InverterNo, commands)
     }
 
     return nil
