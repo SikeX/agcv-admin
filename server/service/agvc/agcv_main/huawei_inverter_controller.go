@@ -5,21 +5,20 @@ import (
 	"math"
 
 	"github.com/flipped-aurora/gin-vue-admin/server/global"
-	"github.com/flipped-aurora/gin-vue-admin/server/model/agvc/agvc_main"
-	"github.com/flipped-aurora/gin-vue-admin/server/service/agvc/cons"
+	"github.com/flipped-aurora/gin-vue-admin/server/model/agvc"
 	"go.uber.org/zap"
 )
 
 // HuaweiInverterPoint 华为逆变器控制点位定义(5xx系列)
 type HuaweiInverterPoint struct {
-	PointID     string
-	PointName   string
-	Unit        string
-	Multiplier  float64
-	Offset      float64
-	RegisterAddr int
+	PointID       string
+	PointName     string
+	Unit          string
+	Multiplier    float64
+	Offset        float64
+	RegisterAddr  int
 	RegisterCount int
-	Description string
+	Description   string
 }
 
 // 华为逆变器控制点位映射表(5xx系列点标识)
@@ -28,16 +27,16 @@ var HuaweiInverterPoints = map[string]HuaweiInverterPoint{
 	"501": {PointID: "501", PointName: "无功功率变化梯度", Unit: "%/s", Multiplier: 0.001, Offset: 0, RegisterAddr: 42015, RegisterCount: 5, Description: "无功功率变化梯度(%/s)"},
 	"502": {PointID: "502", PointName: "有功功率变化梯度", Unit: "%/s", Multiplier: 0.001, Offset: 0, RegisterAddr: 42017, RegisterCount: 5, Description: "有功功率变化梯度(%/s)"},
 	"503": {PointID: "503", PointName: "调度指令维持时间", Unit: "s", Multiplier: 1, Offset: 0, RegisterAddr: 42019, RegisterCount: 5, Description: "调度指令维持时间(s)"},
-	
+
 	// 有功调节
 	"504": {PointID: "504", PointName: "有功功率固定值降额(kW)", Unit: "kW", Multiplier: 0.1, Offset: 0, RegisterAddr: 40120, RegisterCount: 1, Description: "有功功率固定值降额(kW)"},
 	"507": {PointID: "507", PointName: "有功功率百分比降额", Unit: "0.1%", Multiplier: 0.1, Offset: 0, RegisterAddr: 40125, RegisterCount: 1, Description: "有功功率百分比降额(0.1%)"},
 	"508": {PointID: "508", PointName: "有功功率固定值降额(W)", Unit: "W", Multiplier: 1, Offset: 0, RegisterAddr: 40126, RegisterCount: 5, Description: "有功功率固定值降额(W)"},
-	
+
 	// 无功调节
 	"505": {PointID: "505", PointName: "无功功率补偿(PF)", Unit: "PF", Multiplier: 0.001, Offset: 0, RegisterAddr: 40122, RegisterCount: 2, Description: "无功功率补偿(功率因数)"},
 	"506": {PointID: "506", PointName: "无功功率补偿(Q/S)", Unit: "Q/S", Multiplier: 0.001, Offset: 0, RegisterAddr: 40123, RegisterCount: 2, Description: "无功功率补偿(Q/S)"},
-	
+
 	// 调节模式和指令
 	"510": {PointID: "510", PointName: "有功调节模式", Unit: "", Multiplier: 1, Offset: 0, RegisterAddr: 35300, RegisterCount: 1, Description: "[有功]调节模式"},
 	"511": {PointID: "511", PointName: "有功调节值", Unit: "", Multiplier: 1, Offset: 0, RegisterAddr: 35301, RegisterCount: 5, Description: "[有功]调节值"},
@@ -46,6 +45,12 @@ var HuaweiInverterPoints = map[string]HuaweiInverterPoint{
 	"514": {PointID: "514", PointName: "无功调节值", Unit: "", Multiplier: 1, Offset: 0, RegisterAddr: 35305, RegisterCount: 5, Description: "[无功]调节值"},
 	"515": {PointID: "515", PointName: "无功调节指令", Unit: "", Multiplier: 1, Offset: 0, RegisterAddr: 35307, RegisterCount: 1, Description: "[无功]调节指令"},
 }
+
+// yx
+const (
+	HW_NBQ_YG_MODE  = "501" //[有功]调节模式
+	HW_NBQ_YG_VALUE = "502" //[有功]调节值
+)
 
 // HuaweiControlMode 华为逆变器调节模式
 type HuaweiControlMode int
@@ -61,13 +66,13 @@ type HuaweiInverterController struct{}
 var HuaweiController = &HuaweiInverterController{}
 
 // ControlAGCByPercentage 按百分比进行AGC调控
-func (h *HuaweiInverterController) ControlAGCByPercentage(inverter *agvc_main.AgvcNbqSetting, targetPercentage float64) error {
+func (h *HuaweiInverterController) ControlAGCByPercentage(inverter *agvc.AgvcNbqSetting, targetPercentage float64) error {
 	if inverter.InverterNo == nil {
 		return fmt.Errorf("逆变器编号为空")
 	}
 
 	invNo := *inverter.InverterNo
-	
+
 	// 限制百分比范围 0-100%
 	if targetPercentage < 0 {
 		targetPercentage = 0
@@ -83,22 +88,22 @@ func (h *HuaweiInverterController) ControlAGCByPercentage(inverter *agvc_main.Ag
 	modeCommands := map[int]interface{}{
 		35300: int(HuaweiModePercentage),
 	}
-	
+
 	host := CoapSender.GetDefaultCoapHost()
 	port := CoapSender.GetDefaultCoapPort()
 	psid := 1
-	
+
 	if err := CoapSender.SendInverterCommand(host, port, psid, invNo, modeCommands); err != nil {
 		return fmt.Errorf("设置调节模式失败: %v", err)
 	}
 
 	// 2. 设置有功调节值(百分比，0.1%精度，所以需要乘以10)
 	valueInt := int(targetPercentage * 10) // 转换为0.1%单位
-	
+
 	valueCommands := map[int]interface{}{
 		40125: valueInt, // 有功功率百分比降额寄存器
 	}
-	
+
 	if err := CoapSender.SendInverterCommand(host, port, psid, invNo, valueCommands); err != nil {
 		return fmt.Errorf("设置调节值失败: %v", err)
 	}
@@ -107,7 +112,7 @@ func (h *HuaweiInverterController) ControlAGCByPercentage(inverter *agvc_main.Ag
 	execCommands := map[int]interface{}{
 		35303: 1, // 有功调节指令执行
 	}
-	
+
 	if err := CoapSender.SendInverterCommand(host, port, psid, invNo, execCommands); err != nil {
 		return fmt.Errorf("发送调节指令失败: %v", err)
 	}
@@ -121,13 +126,13 @@ func (h *HuaweiInverterController) ControlAGCByPercentage(inverter *agvc_main.Ag
 }
 
 // ControlAGCByAbsolute 按绝对值进行AGC调控
-func (h *HuaweiInverterController) ControlAGCByAbsolute(inverter *agvc_main.AgvcNbqSetting, targetPowerKW float64) error {
+func (h *HuaweiInverterController) ControlAGCByAbsolute(inverter *agvc.AgvcNbqSetting, targetPowerKW float64) error {
 	if inverter.InverterNo == nil {
 		return fmt.Errorf("逆变器编号为空")
 	}
 
 	invNo := *inverter.InverterNo
-	
+
 	// 限制功率范围
 	if targetPowerKW < 0 {
 		targetPowerKW = 0
@@ -144,22 +149,22 @@ func (h *HuaweiInverterController) ControlAGCByAbsolute(inverter *agvc_main.Agvc
 	modeCommands := map[int]interface{}{
 		35300: int(HuaweiModeAbsolute),
 	}
-	
+
 	host := CoapSender.GetDefaultCoapHost()
 	port := CoapSender.GetDefaultCoapPort()
 	psid := 1
-	
+
 	if err := CoapSender.SendInverterCommand(host, port, psid, invNo, modeCommands); err != nil {
 		return fmt.Errorf("设置调节模式失败: %v", err)
 	}
 
 	// 2. 设置有功调节值(kW，0.1精度)
 	valueInt := int(targetPowerKW * 10) // 转换为0.1kW单位
-	
+
 	valueCommands := map[int]interface{}{
 		40120: valueInt, // 有功功率固定值降额(kW)寄存器
 	}
-	
+
 	if err := CoapSender.SendInverterCommand(host, port, psid, invNo, valueCommands); err != nil {
 		return fmt.Errorf("设置调节值失败: %v", err)
 	}
@@ -168,7 +173,7 @@ func (h *HuaweiInverterController) ControlAGCByAbsolute(inverter *agvc_main.Agvc
 	execCommands := map[int]interface{}{
 		35303: 1, // 有功调节指令执行
 	}
-	
+
 	if err := CoapSender.SendInverterCommand(host, port, psid, invNo, execCommands); err != nil {
 		return fmt.Errorf("发送调节指令失败: %v", err)
 	}
@@ -182,13 +187,13 @@ func (h *HuaweiInverterController) ControlAGCByAbsolute(inverter *agvc_main.Agvc
 }
 
 // ControlAVCByPowerFactor 按功率因数进行AVC调控
-func (h *HuaweiInverterController) ControlAVCByPowerFactor(inverter *agvc_main.AgvcNbqSetting, targetPF float64) error {
+func (h *HuaweiInverterController) ControlAVCByPowerFactor(inverter *agvc.AgvcNbqSetting, targetPF float64) error {
 	if inverter.InverterNo == nil {
 		return fmt.Errorf("逆变器编号为空")
 	}
 
 	invNo := *inverter.InverterNo
-	
+
 	// 限制功率因数范围 -1 到 1
 	if targetPF < -1 {
 		targetPF = -1
@@ -204,22 +209,22 @@ func (h *HuaweiInverterController) ControlAVCByPowerFactor(inverter *agvc_main.A
 	modeCommands := map[int]interface{}{
 		35304: 1, // 功率因数模式
 	}
-	
+
 	host := CoapSender.GetDefaultCoapHost()
 	port := CoapSender.GetDefaultCoapPort()
 	psid := 1
-	
+
 	if err := CoapSender.SendInverterCommand(host, port, psid, invNo, modeCommands); err != nil {
 		return fmt.Errorf("设置调节模式失败: %v", err)
 	}
 
 	// 2. 设置无功调节值(功率因数，0.001精度)
 	valueInt := int(targetPF * 1000) // 转换为0.001单位
-	
+
 	valueCommands := map[int]interface{}{
 		40122: valueInt, // 无功功率补偿(功率因数)寄存器
 	}
-	
+
 	if err := CoapSender.SendInverterCommand(host, port, psid, invNo, valueCommands); err != nil {
 		return fmt.Errorf("设置调节值失败: %v", err)
 	}
@@ -228,7 +233,7 @@ func (h *HuaweiInverterController) ControlAVCByPowerFactor(inverter *agvc_main.A
 	execCommands := map[int]interface{}{
 		35307: 1, // 无功调节指令执行
 	}
-	
+
 	if err := CoapSender.SendInverterCommand(host, port, psid, invNo, execCommands); err != nil {
 		return fmt.Errorf("发送调节指令失败: %v", err)
 	}
@@ -242,13 +247,13 @@ func (h *HuaweiInverterController) ControlAVCByPowerFactor(inverter *agvc_main.A
 }
 
 // ControlAVCByReactivePower 按无功功率(Q/S)进行AVC调控
-func (h *HuaweiInverterController) ControlAVCByReactivePower(inverter *agvc_main.AgvcNbqSetting, targetQS float64) error {
+func (h *HuaweiInverterController) ControlAVCByReactivePower(inverter *agvc.AgvcNbqSetting, targetQS float64) error {
 	if inverter.InverterNo == nil {
 		return fmt.Errorf("逆变器编号为空")
 	}
 
 	invNo := *inverter.InverterNo
-	
+
 	// 限制Q/S范围 -1 到 1
 	if targetQS < -1 {
 		targetQS = -1
@@ -264,22 +269,22 @@ func (h *HuaweiInverterController) ControlAVCByReactivePower(inverter *agvc_main
 	modeCommands := map[int]interface{}{
 		35304: 2, // Q/S模式
 	}
-	
+
 	host := CoapSender.GetDefaultCoapHost()
 	port := CoapSender.GetDefaultCoapPort()
 	psid := 1
-	
+
 	if err := CoapSender.SendInverterCommand(host, port, psid, invNo, modeCommands); err != nil {
 		return fmt.Errorf("设置调节模式失败: %v", err)
 	}
 
 	// 2. 设置无功调节值(Q/S，0.001精度)
 	valueInt := int(targetQS * 1000) // 转换为0.001单位
-	
+
 	valueCommands := map[int]interface{}{
 		40123: valueInt, // 无功功率补偿(Q/S)寄存器
 	}
-	
+
 	if err := CoapSender.SendInverterCommand(host, port, psid, invNo, valueCommands); err != nil {
 		return fmt.Errorf("设置调节值失败: %v", err)
 	}
@@ -288,7 +293,7 @@ func (h *HuaweiInverterController) ControlAVCByReactivePower(inverter *agvc_main
 	execCommands := map[int]interface{}{
 		35307: 1, // 无功调节指令执行
 	}
-	
+
 	if err := CoapSender.SendInverterCommand(host, port, psid, invNo, execCommands); err != nil {
 		return fmt.Errorf("发送调节指令失败: %v", err)
 	}
@@ -302,13 +307,13 @@ func (h *HuaweiInverterController) ControlAVCByReactivePower(inverter *agvc_main
 }
 
 // SetControlGradient 设置调节梯度
-func (h *HuaweiInverterController) SetControlGradient(inverter *agvc_main.AgvcNbqSetting, activePowerGradient, reactivePowerGradient float64) error {
+func (h *HuaweiInverterController) SetControlGradient(inverter *agvc.AgvcNbqSetting, activePowerGradient, reactivePowerGradient float64) error {
 	if inverter.InverterNo == nil {
 		return fmt.Errorf("逆变器编号为空")
 	}
 
 	invNo := *inverter.InverterNo
-	
+
 	host := CoapSender.GetDefaultCoapHost()
 	port := CoapSender.GetDefaultCoapPort()
 	psid := 1
@@ -319,12 +324,12 @@ func (h *HuaweiInverterController) SetControlGradient(inverter *agvc_main.AgvcNb
 		zap.Float64("无功梯度(%/s)", reactivePowerGradient))
 
 	commands := make(map[int]interface{})
-	
+
 	// 设置有功功率变化梯度(0.001精度)
 	if activePowerGradient > 0 {
 		commands[42017] = int(activePowerGradient * 1000)
 	}
-	
+
 	// 设置无功功率变化梯度(0.001精度)
 	if reactivePowerGradient > 0 {
 		commands[42015] = int(reactivePowerGradient * 1000)
@@ -340,9 +345,9 @@ func (h *HuaweiInverterController) SetControlGradient(inverter *agvc_main.AgvcNb
 }
 
 // CalculateInverterPowerDistribution 计算逆变器功率分配
-func (h *HuaweiInverterController) CalculateInverterPowerDistribution(inverters []*agvc_main.AgvcNbqSetting, totalPowerKW float64, usePercentage bool) map[int]float64 {
+func (h *HuaweiInverterController) CalculateInverterPowerDistribution(inverters []*agvc.AgvcNbqSetting, totalPowerKW float64, usePercentage bool) map[int]float64 {
 	distribution := make(map[int]float64)
-	
+
 	if len(inverters) == 0 {
 		return distribution
 	}
@@ -355,7 +360,7 @@ func (h *HuaweiInverterController) CalculateInverterPowerDistribution(inverters 
 				totalRatedPower += *inv.RatedActivePower
 			}
 		}
-		
+
 		if totalRatedPower > 0 {
 			percentage := (totalPowerKW / totalRatedPower) * 100
 			for _, inv := range inverters {
@@ -372,7 +377,7 @@ func (h *HuaweiInverterController) CalculateInverterPowerDistribution(inverters 
 				totalRatedPower += *inv.RatedActivePower
 			}
 		}
-		
+
 		if totalRatedPower > 0 {
 			for _, inv := range inverters {
 				if inv.InverterNo != nil && inv.RatedActivePower != nil {
@@ -390,7 +395,7 @@ func (h *HuaweiInverterController) CalculateInverterPowerDistribution(inverters 
 			}
 		}
 	}
-	
+
 	return distribution
 }
 
@@ -452,7 +457,7 @@ func (h *HuaweiInverterController) ConvertToRegisterValue(pointID string, realVa
 
 	// 应用倍率和偏移
 	registerValue := int(math.Round((realValue - point.Offset) / point.Multiplier))
-	
+
 	return registerValue, nil
 }
 
@@ -465,6 +470,6 @@ func (h *HuaweiInverterController) ConvertFromRegisterValue(pointID string, regi
 
 	// 应用倍率和偏移
 	realValue := float64(registerValue)*point.Multiplier + point.Offset
-	
+
 	return realValue, nil
 }
