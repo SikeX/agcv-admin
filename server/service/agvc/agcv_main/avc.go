@@ -124,8 +124,8 @@ func (s *avc) StopAVC(bwdNo int) error {
 }
 
 // avcControlLoop AVC控制主循环
-func (s *avc) avcControlLoop(bwdNo int, config agvc_main.AVCConfig, stopChan chan struct{}) {
-	ticker := time.NewTicker(time.Duration(config.RegPeriod) * time.Second)
+func (s *avc) avcControlLoop(bwdNo int, config agvc.AgvcBwdSetting, stopChan chan struct{}) {
+	ticker := time.NewTicker(time.Duration(*config.AvcStepPeriod) * time.Second)
 	defer ticker.Stop()
 
 	for {
@@ -199,7 +199,7 @@ func (s *avc) executeAVCCycle(bwdNo int) error {
 }
 
 // executeRemoteAVCControl 执行远程AVC调控逻辑
-func (s *avc) executeRemoteAVCControl(bwdNo int, config agvc_main.AVCConfig, actualVoltage, actualReactive *float64) error {
+func (s *avc) executeRemoteAVCControl(bwdNo int, config agvc.AgvcBwdSetting, actualVoltage, actualReactive *float64) error {
 	// 步骤1：检查AVC投退信号（从内存读取）
 	var avcEnabled bool
 	pointID, err := PointMapper.GetPointID(cons.TYPE_AVC, cons.AVC_YX_SIGNAL)
@@ -209,7 +209,7 @@ func (s *avc) executeRemoteAVCControl(bwdNo int, config agvc_main.AVCConfig, act
 	signalVal, err := DataStorage.GetDataAsFloat64(1, bwdNo, cons.TYPE_AGC, cons.YX, pointID)
 	if err != nil {
 		global.GVA_LOG.Debug("从调度存储读取AVC投退信号失败，使用数据库配置", zap.Error(err))
-		avcEnabled = config.IsActive != nil && *config.IsActive == 1
+		avcEnabled = config.AvcIsEnabled != nil && *config.AvcIsEnabled == 1
 	} else {
 		avcEnabled = signalVal == 1
 		global.GVA_LOG.Debug("从调度存储读取AVC投退信号",
@@ -269,11 +269,11 @@ func (s *avc) executeRemoteAVCControl(bwdNo int, config agvc_main.AVCConfig, act
 		zap.Float64("总无功", *actualReactive))
 
 	// 步骤5：获取目标电压范围
-	targetLow := config.TargetVoltageLow
-	targetHigh := config.TargetVoltageHigh
+	targetLow := config.AvcAdjustmentRangeMin
+	targetHigh := config.AvcAdjustmentRangeMax
 
 	// 步骤6：判断电压是否在合格范围
-	if *actualVoltage >= targetLow && *actualVoltage <= targetHigh {
+	if *actualVoltage >= *targetLow && *actualVoltage <= *targetHigh {
 		global.GVA_LOG.Debug("电压在合格范围，无需调节（远程模式）",
 			zap.Int("bwdNo", bwdNo),
 			zap.Float64("电压", *actualVoltage))
@@ -282,14 +282,14 @@ func (s *avc) executeRemoteAVCControl(bwdNo int, config agvc_main.AVCConfig, act
 
 	// 步骤7：计算电压偏差
 	var deltaV float64
-	if *actualVoltage < targetLow {
-		deltaV = targetLow - *actualVoltage
+	if *actualVoltage < *targetLow {
+		deltaV = *targetLow - *actualVoltage
 	} else {
-		deltaV = targetHigh - *actualVoltage
+		deltaV = *targetHigh - *actualVoltage
 	}
 
 	// 判断是否在死区内
-	if math.Abs(deltaV) <= config.VoltageDeadZone {
+	if math.Abs(deltaV) <= *config.AvcVibrationRange {
 		global.GVA_LOG.Debug("电压偏差在死区内，无需调节（远程模式）",
 			zap.Int("bwdNo", bwdNo),
 			zap.Float64("偏差", deltaV))
@@ -297,26 +297,42 @@ func (s *avc) executeRemoteAVCControl(bwdNo int, config agvc_main.AVCConfig, act
 	}
 
 	// 步骤8：检查闭锁信号
-	if deltaV > 0 && config.UpRegLock != nil && *config.UpRegLock == 1 {
+	//闭锁pointId
+	pointID = "405"
+	upRegLock, err := DispatchStorage.GetDataAsFloat64(1, bwdNo, cons.TYPE_AVC, cons.YX, pointID)
+	if err != nil {
+		upRegLock = 0
+		global.GVA_LOG.Error("获取AVC闭锁信号失败，",
+			zap.Error(err))
+	}
+	if deltaV > 0 && upRegLock == 1 {
 		global.GVA_LOG.Warn("上调节闭锁，无法增加电压（远程模式）", zap.Int("bwdNo", bwdNo))
 		return nil
 	}
-	if deltaV < 0 && config.DownRegLock != nil && *config.DownRegLock == 1 {
+
+	pointID = "406"
+	downRegLock, err := DispatchStorage.GetDataAsFloat64(1, bwdNo, cons.TYPE_AVC, cons.YX, pointID)
+	if err != nil {
+		downRegLock = 0
+		global.GVA_LOG.Error("获取AVC闭锁信号失败，",
+			zap.Error(err))
+	}
+	if deltaV < 0 && downRegLock == 1 {
 		global.GVA_LOG.Warn("下调节闭锁，无法降低电压（远程模式）", zap.Int("bwdNo", bwdNo))
 		return nil
 	}
 
 	// 步骤9：计算所需无功调节量
-	requiredDeltaQ := s.calcRequiredReactive(deltaV, *actualVoltage, config.ReactiveSensitivity)
+	requiredDeltaQ := s.calcRequiredReactive(deltaV, *actualVoltage, *config.AvcSystemImpedance)
 
 	// 步骤10：执行无功调节
 	return s.executeRemoteReactiveControl(bwdNo, requiredDeltaQ)
 }
 
 // executeLocalAVCControl 执行就地AVC调控逻辑
-func (s *avc) executeLocalAVCControl(bwdNo int, config agvc_main.AVCConfig) error {
+func (s *avc) executeLocalAVCControl(bwdNo int, config agvc.AgvcBwdSetting) error {
 	// 步骤1：检查AVC投退信号（从数据库读取）
-	avcEnabled := config.IsActive != nil && *config.IsActive == 1
+	avcEnabled := config.AvcIsEnabled != nil && *config.AvcIsEnabled == 1
 
 	if !avcEnabled {
 		global.GVA_LOG.Debug("AVC系统未投入（就地模式）", zap.Int("bwdNo", bwdNo))
@@ -338,11 +354,11 @@ func (s *avc) executeLocalAVCControl(bwdNo int, config agvc_main.AVCConfig) erro
 		zap.Float64("总无功", totalReactive))
 
 	// 步骤3：获取目标电压范围
-	targetLow := config.TargetVoltageLow
-	targetHigh := config.TargetVoltageHigh
+	targetLow := config.AvcAdjustmentRangeMin
+	targetHigh := config.AvcAdjustmentRangeMax
 
 	// 步骤4：判断电压是否在合格范围
-	if pointVoltage >= targetLow && pointVoltage <= targetHigh {
+	if pointVoltage >= *targetLow && pointVoltage <= *targetHigh {
 		global.GVA_LOG.Debug("电压在合格范围，无需调节（就地模式）",
 			zap.Int("bwdNo", bwdNo),
 			zap.Float64("电压", pointVoltage))
@@ -351,32 +367,22 @@ func (s *avc) executeLocalAVCControl(bwdNo int, config agvc_main.AVCConfig) erro
 
 	// 步骤5：计算电压偏差
 	var deltaV float64
-	if pointVoltage < targetLow {
-		deltaV = targetLow - pointVoltage
+	if pointVoltage < *targetLow {
+		deltaV = *targetLow - pointVoltage
 	} else {
-		deltaV = targetHigh - pointVoltage
+		deltaV = *targetHigh - pointVoltage
 	}
 
 	// 判断是否在死区内
-	if math.Abs(deltaV) <= config.VoltageDeadZone {
+	if math.Abs(deltaV) <= *config.AvcVibrationRange {
 		global.GVA_LOG.Debug("电压偏差在死区内，无需调节（就地模式）",
 			zap.Int("bwdNo", bwdNo),
 			zap.Float64("偏差", deltaV))
 		return nil
 	}
 
-	// 步骤6：检查闭锁信号
-	if deltaV > 0 && config.UpRegLock != nil && *config.UpRegLock == 1 {
-		global.GVA_LOG.Warn("上调节闭锁，无法增加电压（就地模式）", zap.Int("bwdNo", bwdNo))
-		return nil
-	}
-	if deltaV < 0 && config.DownRegLock != nil && *config.DownRegLock == 1 {
-		global.GVA_LOG.Warn("下调节闭锁，无法降低电压（就地模式）", zap.Int("bwdNo", bwdNo))
-		return nil
-	}
-
 	// 步骤7：计算所需无功调节量
-	requiredDeltaQ := s.calcRequiredReactive(deltaV, pointVoltage, config.ReactiveSensitivity)
+	requiredDeltaQ := s.calcRequiredReactive(deltaV, pointVoltage, *config.AvcSystemImpedance)
 
 	// 步骤8：执行无功调节
 	return s.executeReactiveControl(bwdNo, requiredDeltaQ)
@@ -531,11 +537,11 @@ func (s *avc) collectAVCData(bwdNo int) (map[string]interface{}, error) {
 }
 
 // calcRequiredReactive 计算所需无功调节量
-func (s *avc) calcRequiredReactive(deltaV, voltage, sensitivity float64) float64 {
+func (s *avc) calcRequiredReactive(deltaV, voltage, systemFreq float64) float64 {
 	// 使用无功灵敏度计算
-	// deltaQ = deltaV * sensitivity
+	// deltaQ = deltaV * V_real / 系统电抗
 	// 正值表示需要发出无功（增加电压），负值表示需要吸收无功（降低电压）
-	return deltaV * sensitivity
+	return deltaV * voltage / systemFreq
 }
 
 // filterAvailableDevices 筛选可用设备（逆变器）
@@ -662,9 +668,9 @@ func (s *avc) sendReactiveCommands(psid int, recordID uint, details []agvc_main.
 }
 
 // GetAVCConfig 获取AVC配置
-func (s *avc) GetAVCConfig(bwdNo int) (agvc_main.AVCConfig, error) {
-	var config agvc_main.AVCConfig
-	err := global.GVA_DB.Where("psid = ?", bwdNo).First(&config).Error
+func (s *avc) GetAVCConfig(bwdNo int) (agvc.AgvcBwdSetting, error) {
+	var config agvc.AgvcBwdSetting
+	err := global.GVA_DB.Where("number = ?", bwdNo).First(&config).Error
 	return config, err
 }
 
@@ -710,7 +716,7 @@ func (s *avc) UpdateAVCConfig(req request.AVCConfigUpdate) error {
 		updates["reactive_sensitivity"] = req.ReactiveSensitivity
 	}
 
-	return global.GVA_DB.Model(&agvc_main.AVCConfig{}).
+	return global.GVA_DB.Model(&agvc.AgvcBwdSetting{}).
 		Where("psid = ?", req.PSID).
 		Updates(updates).Error
 }
@@ -749,9 +755,9 @@ func (s *avc) GetAVCRecords(req request.AVCRegulationRecordSearch) ([]agvc_main.
 }
 
 // CreateOrUpdateConfig 创建或更新配置
-func (s *avc) CreateOrUpdateConfig(config *agvc_main.AVCConfig) error {
-	var existing agvc_main.AVCConfig
-	err := global.GVA_DB.Where("psid = ?", config.PSID).First(&existing).Error
+func (s *avc) CreateOrUpdateConfig(config *agvc.AgvcBwdSetting) error {
+	var existing agvc.AgvcBwdSetting
+	err := global.GVA_DB.Where("number = ?", config.Number).First(&existing).Error
 
 	if err != nil {
 		// 不存在，创建新配置
@@ -763,7 +769,7 @@ func (s *avc) CreateOrUpdateConfig(config *agvc_main.AVCConfig) error {
 }
 
 // sendAVCResultToDispatch 发送AVC计算结果到调度
-func (s *avc) sendAVCResultToDispatch(bwdNo int, config agvc_main.AVCConfig, actualVoltage, actualReactive float64) error {
+func (s *avc) sendAVCResultToDispatch(bwdNo int, config agvc.AgvcBwdSetting, actualVoltage, actualReactive float64) error {
 	results := make(map[string]interface{})
 
 	// AVC遥信标准点

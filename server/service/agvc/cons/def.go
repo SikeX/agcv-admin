@@ -12,8 +12,8 @@ const (
 const (
 	TYPE_BWG = 5
 	TYPE_NBQ = 2
-	TYPE_AGC = 98
-	TYPE_AVC = 99
+	TYPE_AGC = 60
+	TYPE_AVC = 61
 )
 
 // AGC调度标准点名称常量

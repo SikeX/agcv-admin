@@ -4,7 +4,7 @@ import (
 	"strconv"
 
 	"github.com/flipped-aurora/gin-vue-admin/server/global"
-	"github.com/flipped-aurora/gin-vue-admin/server/model/agvc/agvc_main"
+	"github.com/flipped-aurora/gin-vue-admin/server/model/agvc"
 	"github.com/flipped-aurora/gin-vue-admin/server/model/agvc/agvc_main/request"
 	"github.com/flipped-aurora/gin-vue-admin/server/model/common/response"
 	"github.com/gin-gonic/gin"
@@ -83,7 +83,7 @@ func (a *avc) UpdateAVCConfig(c *gin.Context) {
 // @Success  200  {object} response.Response{msg=string} "创建成功"
 // @Router   /agvc/avc/config [post]
 func (a *avc) CreateAVCConfig(c *gin.Context) {
-	var config agvc_main.AVCConfig
+	var config agvc.AgvcBwdSetting
 	err := c.ShouldBindJSON(&config)
 	if err != nil {
 		response.FailWithMessage(err.Error(), c)

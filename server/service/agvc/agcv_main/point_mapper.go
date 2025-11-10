@@ -44,8 +44,8 @@ func (pm *pointMapper) loadFromInlineData() {
 		"开关柜和保护装置": 5,
 		"电能表":      7,
 		"环境监测仪":    8,
-		"agc":      98,
-		"avc":      99,
+		"agc":      60,
+		"avc":      61,
 	}
 
 	for sheetName, eqType := range sheetToEqType {
