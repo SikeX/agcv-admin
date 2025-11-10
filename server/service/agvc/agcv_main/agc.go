@@ -207,7 +207,14 @@ func (s *agc) executeAGCCycle(bwdNo int) error {
         return fmt.Errorf("获取AGC配置失败: %v", err)
     }
 
-    // 步骤2：判断控制权限模式
+    // 步骤2：检查并更新调节闭锁状态
+    if err := s.checkAndUpdateRegulationLocks(bwdNo); err != nil {
+        global.GVA_LOG.Warn("检查调节闭锁状态失败",
+            zap.Int("bwdNo", bwdNo),
+            zap.Error(err))
+    }
+
+    // 步骤3：判断控制权限模式
     var isRemoteControl bool
 
     pointID, err := PointMapper.GetPointID(cons.TYPE_AGC, cons.AGC_YX_CONTROL_MODE)
@@ -1093,26 +1100,26 @@ func (s *agc) sendAGCResultToDispatch(bwdNo int, config agvc.AgvcBwdSetting, act
     results["agcLoopStatus"] = loopStatus
 
     // 405: AGC有功上调节闭锁（从调度存储读取）
-    // pointID, _ = PointMapper.GetPointID(cons.TYPE_BWG, cons.AGC_YX_UP_REG_LOCK)
-    // if pointID == "" {
-    //     pointID = "405"
-    // }
-    // upRegLock, err := DispatchStorage.GetDataAsFloat64(1, bwdNo, cons.TYPE_BWG, cons.YX, pointID)
-    // if err != nil {
-    //     upRegLock = 0
-    // }
-    // results["agcUpRegLock"] = upRegLock
+    pointID, _ = PointMapper.GetPointID(cons.TYPE_AGC, cons.AGC_YX_UP_REG_LOCK)
+    if pointID == "" {
+        pointID = "405"
+    }
+    upRegLock, err := DispatchStorage.GetDataAsFloat64(1, bwdNo, cons.TYPE_AGC, cons.YX, pointID)
+    if err != nil {
+        upRegLock = 0
+    }
+    results["agcUpRegLock"] = upRegLock
 
     // 406: AGC有功下调节闭锁（从调度存储读取）
-    // pointID, _ = PointMapper.GetPointID(cons.TYPE_BWG, cons.AGC_YX_DOWN_REG_LOCK)
-    // if pointID == "" {
-    //     pointID = "406"
-    // }
-    // downRegLock, err := DispatchStorage.GetDataAsFloat64(1, bwdNo, cons.TYPE_BWG, cons.YX, pointID)
-    // if err != nil {
-    //     downRegLock = 0
-    // }
-    // results["agcDownRegLock"] = downRegLock
+    pointID, _ = PointMapper.GetPointID(cons.TYPE_AGC, cons.AGC_YX_DOWN_REG_LOCK)
+    if pointID == "" {
+        pointID = "406"
+    }
+    downRegLock, err := DispatchStorage.GetDataAsFloat64(1, bwdNo, cons.TYPE_AGC, cons.YX, pointID)
+    if err != nil {
+        downRegLock = 0
+    }
+    results["agcDownRegLock"] = downRegLock
 
     // AGC遥测标准点
     // 401: 有功调节上限（从调度存储读取）
@@ -1222,4 +1229,184 @@ func (s *agc) calculateActivePowerLimitFromIrradiance(bwdNo int, inverters []agv
         zap.Float64("有功调节上限(kW)", totalActivePowerLimit))
 
     return totalActivePowerLimit, nil
+}
+
+// checkAndUpdateRegulationLocks 检查并更新上下调节闭锁状态
+// 如果所有逆变器都不能再往上调节，则设置上调节闭锁
+// 如果所有逆变器都不能再往下调节，则设置下调节闭锁
+func (s *agc) checkAndUpdateRegulationLocks(bwdNo int) error {
+    // 获取可用逆变器列表
+    inverters, err := Device.GetOnlineInvertersByBwdNo(bwdNo)
+    if err != nil || len(inverters) == 0 {
+        global.GVA_LOG.Debug("没有可用的逆变器，无法检查调节闭锁",
+            zap.Int("bwdNo", bwdNo))
+        return nil
+    }
+
+    // 获取气象站辐射数据用于计算功率上限
+    qxyNo := 1
+    horizontalIrradiance, err1 := DataStorage.GetDataAsFloat64(1, qxyNo, 8, cons.YC, "8")
+    if err1 != nil {
+        horizontalIrradiance = 0
+    }
+    tiltedIrradiance, err2 := DataStorage.GetDataAsFloat64(1, qxyNo, 8, cons.YC, "9")
+    if err2 != nil {
+        tiltedIrradiance = 0
+    }
+
+    // 使用倾斜辐射和水平辐射中的最大值
+    actualIrradiance := horizontalIrradiance
+    if tiltedIrradiance > actualIrradiance {
+        actualIrradiance = tiltedIrradiance
+    }
+
+    // 标准测试条件下的辐射强度为1000 W/㎡
+    standardIrradiance := 1000.0
+
+    // 统计逆变器调节能力
+    canUpCount := 0      // 能够上调的逆变器数量
+    canDownCount := 0    // 能够下调的逆变器数量
+    totalCount := len(inverters)
+
+    // 定义功率裕度阈值（kW）- 当功率距离上限或下限小于此值时，认为无法调节
+    const powerMargin = 0.5 // 0.5kW裕度
+    const minPower = 0.0    // 最小功率下限
+
+    for _, inv := range inverters {
+        if inv.InverterNo == nil || inv.RatedActivePower == nil || *inv.RatedActivePower <= 0 {
+            continue
+        }
+
+        invNo := *inv.InverterNo
+        ratedPower := *inv.RatedActivePower
+
+        // 获取逆变器当前有功功率
+        pointID, err := PointMapper.GetPointID(cons.TYPE_NBQ, cons.NBQ_YC_ACTIVE_POWER)
+        if err != nil {
+            pointID = "10" // 默认点位
+        }
+        currentPower, err := DataStorage.GetDataAsFloat64(1, invNo, cons.TYPE_NBQ, cons.YC, pointID)
+        if err != nil {
+            global.GVA_LOG.Debug("获取逆变器当前功率失败，跳过此逆变器",
+                zap.Int("inverterNo", invNo),
+                zap.Error(err))
+            totalCount-- // 不计入统计
+            continue
+        }
+
+        // 计算基于辐射的逆变器功率上限
+        invPowerUpperLimit := ratedPower * (actualIrradiance / standardIrradiance)
+        
+        // 如果辐射数据无效（小于5%），则使用额定功率作为上限
+        if actualIrradiance < 50 {
+            invPowerUpperLimit = ratedPower
+        }
+
+        // 判断是否能够上调：当前功率距离上限是否还有裕度
+        if (invPowerUpperLimit - currentPower) > powerMargin {
+            canUpCount++
+        }
+
+        // 判断是否能够下调：当前功率是否大于最小功率加裕度
+        if (currentPower - minPower) > powerMargin {
+            canDownCount++
+        }
+
+        global.GVA_LOG.Debug("逆变器调节能力检查",
+            zap.Int("inverterNo", invNo),
+            zap.Float64("当前功率(kW)", currentPower),
+            zap.Float64("额定功率(kW)", ratedPower),
+            zap.Float64("功率上限(kW)", invPowerUpperLimit),
+            zap.Float64("辐射比例", actualIrradiance/standardIrradiance),
+            zap.Bool("能上调", (invPowerUpperLimit-currentPower) > powerMargin),
+            zap.Bool("能下调", (currentPower-minPower) > powerMargin))
+    }
+
+    // 如果没有有效的逆变器数据，不更新闭锁状态
+    if totalCount == 0 {
+        global.GVA_LOG.Debug("没有有效的逆变器数据，跳过闭锁状态更新",
+            zap.Int("bwdNo", bwdNo))
+        return nil
+    }
+
+    // 判断是否需要设置上调节闭锁
+    // 如果所有逆变器都不能上调，则设置上调节闭锁
+    var upRegLock float64 = 0
+    if canUpCount == 0 {
+        upRegLock = 1
+        global.GVA_LOG.Info("所有逆变器都无法上调，设置上调节闭锁",
+            zap.Int("bwdNo", bwdNo),
+            zap.Int("总逆变器数", totalCount),
+            zap.Int("可上调数", canUpCount))
+    } else {
+        global.GVA_LOG.Debug("存在可上调的逆变器，解除上调节闭锁",
+            zap.Int("bwdNo", bwdNo),
+            zap.Int("总逆变器数", totalCount),
+            zap.Int("可上调数", canUpCount))
+    }
+
+    // 判断是否需要设置下调节闭锁
+    // 如果所有逆变器都不能下调，则设置下调节闭锁
+    var downRegLock float64 = 0
+    if canDownCount == 0 {
+        downRegLock = 1
+        global.GVA_LOG.Info("所有逆变器都无法下调，设置下调节闭锁",
+            zap.Int("bwdNo", bwdNo),
+            zap.Int("总逆变器数", totalCount),
+            zap.Int("可下调数", canDownCount))
+    } else {
+        global.GVA_LOG.Debug("存在可下调的逆变器，解除下调节闭锁",
+            zap.Int("bwdNo", bwdNo),
+            zap.Int("总逆变器数", totalCount),
+            zap.Int("可下调数", canDownCount))
+    }
+
+    // 更新DataStorage中的上调节闭锁状态（点位405）
+    upRegLockPointID, _ := PointMapper.GetPointID(cons.TYPE_AGC, cons.AGC_YX_UP_REG_LOCK)
+    if upRegLockPointID == "" {
+        upRegLockPointID = "405"
+    }
+    if err := DataStorage.SetData(1, bwdNo, cons.TYPE_AGC, cons.YX, upRegLockPointID, upRegLock); err != nil {
+        global.GVA_LOG.Error("更新DataStorage上调节闭锁状态失败",
+            zap.Int("bwdNo", bwdNo),
+            zap.Float64("upRegLock", upRegLock),
+            zap.Error(err))
+    }
+
+    // 更新DataStorage中的下调节闭锁状态（点位406）
+    downRegLockPointID, _ := PointMapper.GetPointID(cons.TYPE_AGC, cons.AGC_YX_DOWN_REG_LOCK)
+    if downRegLockPointID == "" {
+        downRegLockPointID = "406"
+    }
+    if err := DataStorage.SetData(1, bwdNo, cons.TYPE_AGC, cons.YX, downRegLockPointID, downRegLock); err != nil {
+        global.GVA_LOG.Error("更新DataStorage下调节闭锁状态失败",
+            zap.Int("bwdNo", bwdNo),
+            zap.Float64("downRegLock", downRegLock),
+            zap.Error(err))
+    }
+
+    // 同时更新DispatchStorage供调度系统读取
+    if err := DispatchStorage.SetData(1, bwdNo, cons.TYPE_AGC, cons.YX, upRegLockPointID, upRegLock); err != nil {
+        global.GVA_LOG.Error("更新DispatchStorage上调节闭锁状态失败",
+            zap.Int("bwdNo", bwdNo),
+            zap.Float64("upRegLock", upRegLock),
+            zap.Error(err))
+    }
+
+    if err := DispatchStorage.SetData(1, bwdNo, cons.TYPE_AGC, cons.YX, downRegLockPointID, downRegLock); err != nil {
+        global.GVA_LOG.Error("更新DispatchStorage下调节闭锁状态失败",
+            zap.Int("bwdNo", bwdNo),
+            zap.Float64("downRegLock", downRegLock),
+            zap.Error(err))
+    }
+
+    global.GVA_LOG.Info("调节闭锁状态更新完成",
+        zap.Int("bwdNo", bwdNo),
+        zap.Float64("上调节闭锁", upRegLock),
+        zap.Float64("下调节闭锁", downRegLock),
+        zap.Int("可上调逆变器数", canUpCount),
+        zap.Int("可下调逆变器数", canDownCount),
+        zap.Int("总逆变器数", totalCount))
+
+    return nil
 }
