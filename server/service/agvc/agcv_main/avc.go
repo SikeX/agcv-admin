@@ -56,19 +56,6 @@ func (s *avc) AutoStartAllGridPoints() {
 			continue
 		}
 
-		// 检查AVC是否启用
-		if setting.AvcIsEnabled == nil || *setting.AvcIsEnabled == 0 {
-			global.GVA_LOG.Debug("并网点AVC未启用，跳过",
-				zap.Int("bwdNo", bwdNo),
-				zap.String("name", func() string {
-					if setting.Name != nil {
-						return *setting.Name
-					}
-					return ""
-				}()))
-			continue
-		}
-
 		// 启动AVC
 		if err := s.StartAVC(bwdNo); err != nil {
 			global.GVA_LOG.Warn("自动启动AVC失败",
@@ -166,10 +153,22 @@ func (s *avc) executeAVCCycle(bwdNo int) error {
 
 	// 步骤2：判断控制权限模式（从数据库配置读取）
 	var isRemoteControl bool
-	if config.ControlAuth != nil && *config.ControlAuth == 1 {
-		isRemoteControl = true // 远程调度控制
+	pointID, err := PointMapper.GetPointID(cons.TYPE_AVC, cons.AVC_YX_CONTROL_MODE)
+	if err != nil {
+		pointID = "402" // 使用默认点标识
+	}
+	signalVal, err := DispatchStorage.GetDataAsFloat64(1, bwdNo, cons.TYPE_AVC, cons.YK, pointID)
+	if err != nil {
+		global.GVA_LOG.Warn("获取AVC就地远方控制模式值失败，使用数据库配置",
+			zap.Error(err))
+		// 从数据库配置读取控制模式
+		if config.ControlAuth != nil && *config.ControlAuth == 1 {
+			isRemoteControl = true
+		} else {
+			isRemoteControl = false
+		}
 	} else {
-		isRemoteControl = false // 本地控制
+		isRemoteControl = signalVal == 1 //0:就地控制，1:远方控制
 	}
 
 	global.GVA_LOG.Info("AVC控制模式判断",
@@ -203,22 +202,20 @@ func (s *avc) executeAVCCycle(bwdNo int) error {
 func (s *avc) executeRemoteAVCControl(bwdNo int, config agvc_main.AVCConfig, actualVoltage, actualReactive *float64) error {
 	// 步骤1：检查AVC投退信号（从内存读取）
 	var avcEnabled bool
-	pointID, err := PointMapper.GetPointID(cons.TYPE_BWG, cons.AVC_YX_SIGNAL)
+	pointID, err := PointMapper.GetPointID(cons.TYPE_AVC, cons.AVC_YX_SIGNAL)
 	if err != nil {
-		global.GVA_LOG.Warn("获取AVC投退信号点位失败，使用数据库配置", zap.Error(err))
+		pointID = "401" // 使用默认点标识
+	}
+	signalVal, err := DataStorage.GetDataAsFloat64(1, bwdNo, cons.TYPE_AGC, cons.YX, pointID)
+	if err != nil {
+		global.GVA_LOG.Debug("从调度存储读取AVC投退信号失败，使用数据库配置", zap.Error(err))
 		avcEnabled = config.IsActive != nil && *config.IsActive == 1
 	} else {
-		signalVal, err := DispatchStorage.GetDataAsFloat64(1, bwdNo, cons.TYPE_BWG, cons.YX, pointID)
-		if err != nil {
-			global.GVA_LOG.Debug("从调度存储读取AVC投退信号失败，使用数据库配置", zap.Error(err))
-			avcEnabled = config.IsActive != nil && *config.IsActive == 1
-		} else {
-			avcEnabled = signalVal == 1
-			global.GVA_LOG.Debug("从调度存储读取AVC投退信号",
-				zap.Int("bwdNo", bwdNo),
-				zap.Float64("signalVal", signalVal),
-				zap.Bool("avcEnabled", avcEnabled))
-		}
+		avcEnabled = signalVal == 1
+		global.GVA_LOG.Debug("从调度存储读取AVC投退信号",
+			zap.Int("bwdNo", bwdNo),
+			zap.Float64("signalVal", signalVal),
+			zap.Bool("avcEnabled", avcEnabled))
 	}
 
 	if !avcEnabled {
@@ -227,7 +224,7 @@ func (s *avc) executeRemoteAVCControl(bwdNo int, config agvc_main.AVCConfig, act
 	}
 
 	// 步骤2：检查AVC就地远方控制模式
-	pointID, err = PointMapper.GetPointID(cons.TYPE_BWG, cons.AVC_YX_CONTROL_MODE)
+	pointID, err = PointMapper.GetPointID(cons.TYPE_AVC, cons.AVC_YX_CONTROL_MODE)
 	if err == nil {
 		controlMode, err := DispatchStorage.GetDataAsFloat64(1, bwdNo, cons.TYPE_BWG, cons.YX, pointID)
 		if err == nil && controlMode != 1 {
