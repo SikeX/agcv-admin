@@ -77,9 +77,9 @@ const (
 
 // 逆变器常用点名称常量
 const (
-	NBQ_YC_ACTIVE_POWER   = "交流功率(kW)"
-	NBQ_YC_REACTIVE_POWER = "无功功率(kVar)"
-	NBQ_YC_APPARENT_POWER = "视在功率(kVa)"
+	NBQ_YC_ACTIVE_POWER   = "交流功率(kW)"   // 点标识: 10
+	NBQ_YC_REACTIVE_POWER = "无功功率(kVar)" // 点标识:
+	NBQ_YC_APPARENT_POWER = "视在功率(kVa)"  // 点标识:
 )
 
 // 逆变器品牌常量
@@ -97,4 +97,14 @@ const (
 	// 遥调点位
 	INV_YT_ACTIVE_POWER_LIMIT  = "有功功率降额执行值" // 点标识: 401
 	INV_YT_REACTIVE_POWER_COMP = "无功功率补偿执行值" // 点标识: 402
+)
+
+const (
+	// 遥测点位
+	HUAWEI_YG_MODE             = "501" //有功功率执行值
+	HUAWEI_POWER_EXEC_VALUE    = "502" //有功功率执行值
+	HUAWEI_POWER_ADJUST_VALUE  = "503" //有功调节指令值
+	HUAWEI_WG_MODE             = "504" //无功调节模式
+	HUAWEI_REACTIVE_EXEC_VALUE = "505" //无功执行值
+
 )

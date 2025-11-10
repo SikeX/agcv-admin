@@ -110,7 +110,7 @@ func (agvcNbqHisService *AgvcNbqHisService) GetAgvcNbqHisInfoList(ctx context.Co
 
 	for _, codePoint := range nbqPoints {
 		//从内存中获取数据
-		if value, err := agcv_main.DataStorage.GetDataAsFloat64(codePoint.Code, cons.TYPE_NBQ, cons.YC, cons.NBLabelPointMap[codePoint.Attr]); err == nil {
+		if value, err := agcv_main.DataStorage.GetDataAsFloat64(1, codePoint.Code, cons.TYPE_NBQ, cons.YC, cons.NBLabelPointMap[codePoint.Attr]); err == nil {
 			codeAttrValueMap[codePoint.Code][codePoint.Attr] = value
 		}
 	}

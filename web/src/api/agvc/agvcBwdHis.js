@@ -141,3 +141,163 @@ export const generateAgvcBwdTestData = (params) => {
     params
   })
 }
+
+// @Tags AgvcBwdHis
+// @Summary 更新AGC参数设置
+// @Security ApiKeyAuth
+// @Accept application/json
+// @Produce application/json
+// @Param data body object true "AGC参数"
+// @Success 200 {object} response.Response{msg=string} "更新成功"
+// @Router /agvcBwdHis/updateAgcParameters [put]
+export const updateAgcParameters = (data) => {
+  return service({
+    url: '/agvcBwdHis/updateAgcParameters',
+    method: 'put',
+    data
+  })
+}
+
+// @Tags AgvcBwdHis
+// @Summary 更新AVC参数设置
+// @Security ApiKeyAuth
+// @Accept application/json
+// @Produce application/json
+// @Param data body object true "AVC参数"
+// @Success 200 {object} response.Response{msg=string} "更新成功"
+// @Router /agvcBwdHis/updateAvcParameters [put]
+export const updateAvcParameters = (data) => {
+  return service({
+    url: '/agvcBwdHis/updateAvcParameters',
+    method: 'put',
+    data
+  })
+}
+
+// @Tags AgvcBwdHis
+// @Summary 更新计划曲线
+// @Security ApiKeyAuth
+// @Accept application/json
+// @Produce application/json
+// @Param data body object true "计划曲线数据"
+// @Success 200 {object} response.Response{msg=string} "更新成功"
+// @Router /agvcBwdHis/updatePlanCurves [put]
+export const updatePlanCurves = (data) => {
+  return service({
+    url: '/agvcBwdHis/updatePlanCurves',
+    method: 'put',
+    data
+  })
+}
+
+// @Tags AgvcBwdHis
+// @Summary 获取AGC参数设置
+// @Security ApiKeyAuth
+// @Accept application/json
+// @Produce application/json
+// @Param number query string true "并网点编号"
+// @Success 200 {object} response.Response{data=object,msg=string} "获取成功"
+// @Router /agvcBwdHis/getAgcParameters [get]
+export const getAgcParameters = (params) => {
+  return service({
+    url: '/agvcBwdHis/getAgcParameters',
+    method: 'get',
+    params
+  })
+}
+
+// @Tags AgvcBwdHis
+// @Summary 获取AVC参数设置
+// @Security ApiKeyAuth
+// @Accept application/json
+// @Produce application/json
+// @Param number query string true "并网点编号"
+// @Success 200 {object} response.Response{data=object,msg=string} "获取成功"
+// @Router /agvcBwdHis/getAvcParameters [get]
+export const getAvcParameters = (params) => {
+  return service({
+    url: '/agvcBwdHis/getAvcParameters',
+    method: 'get',
+    params
+  })
+}
+
+// @Tags AgvcBwdHis
+// @Summary 获取计划曲线
+// @Security ApiKeyAuth
+// @Accept application/json
+// @Produce application/json
+// @Param number query string true "并网点编号"
+// @Success 200 {object} response.Response{data=object,msg=string} "获取成功"
+// @Router /agvcBwdHis/getPlanCurves [get]
+export const getPlanCurves = (params) => {
+  return service({
+    url: '/agvcBwdHis/getPlanCurves',
+    method: 'get',
+    params
+  })
+}
+
+// @Tags AgvcBwdHis
+// @Summary 更新AGC状态
+// @Security ApiKeyAuth
+// @Accept application/json
+// @Produce application/json
+// @Param data body object true "AGC状态数据"
+// @Success 200 {object} response.Response{msg=string} "更新成功"
+// @Router /agvcBwdHis/updateAgcStatus [put]
+export const updateAgcStatus = (data) => {
+  return service({
+    url: '/agvcBwdHis/updateAgcStatus',
+    method: 'put',
+    data
+  })
+}
+
+// @Tags AgvcBwdHis
+// @Summary 获取AGC状态
+// @Security ApiKeyAuth
+// @Accept application/json
+// @Produce application/json
+// @Param number query string true "并网点编号"
+// @Success 200 {object} response.Response{data=object,msg=string} "获取成功"
+// @Router /agvcBwdHis/getAgcStatus [get]
+export const getAgcStatus = (params) => {
+  return service({
+    url: '/agvcBwdHis/getAgcStatus',
+    method: 'get',
+    params
+  })
+}
+
+// @Tags AgvcBwdHis
+// @Summary 更新AVC状态
+// @Security ApiKeyAuth
+// @Accept application/json
+// @Produce application/json
+// @Param data body object true "AVC状态数据"
+// @Success 200 {object} response.Response{msg=string} "更新成功"
+// @Router /agvcBwdHis/updateAvcStatus [put]
+export const updateAvcStatus = (data) => {
+  return service({
+    url: '/agvcBwdHis/updateAvcStatus',
+    method: 'put',
+    data
+  })
+}
+
+// @Tags AgvcBwdHis
+// @Summary 获取AVC状态
+// @Security ApiKeyAuth
+// @Accept application/json
+// @Produce application/json
+// @Param number query string true "并网点编号"
+// @Success 200 {object} response.Response{data=object,msg=string} "获取成功"
+// @Router /agvcBwdHis/getAvcStatus [get]
+export const getAvcStatus = (params) => {
+  return service({
+    url: '/agvcBwdHis/getAvcStatus',
+    method: 'get',
+    params
+  })
+}

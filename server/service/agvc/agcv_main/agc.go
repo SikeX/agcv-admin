@@ -212,7 +212,11 @@ func (s *agc) executeAGCCycle(bwdNo int) error {
 
 	pointID, err := PointMapper.GetPointID(cons.TYPE_AGC, cons.AGC_YX_CONTROL_MODE)
 	if err != nil {
-		global.GVA_LOG.Warn("获取AGC就地远方控制模式点位失败，使用数据库配置",
+		pointID = "402" // 使用默认点标识
+	}
+	signalVal, err := DispatchStorage.GetDataAsFloat64(1, bwdNo, cons.TYPE_AGC, cons.YK, pointID)
+	if err != nil {
+		global.GVA_LOG.Warn("获取AGC就地远方控制模式值失败，使用数据库配置",
 			zap.Error(err))
 		// 从数据库配置读取控制模式
 		if config.ControlAuth != nil && *config.ControlAuth == 1 {
@@ -221,19 +225,7 @@ func (s *agc) executeAGCCycle(bwdNo int) error {
 			isRemoteControl = false
 		}
 	} else {
-		signalVal, err := DispatchStorage.GetDataAsFloat64(1, bwdNo, cons.TYPE_AGC, cons.YX, pointID)
-		if err != nil {
-			global.GVA_LOG.Warn("获取AGC就地远方控制模式值失败，使用数据库配置",
-				zap.Error(err))
-			// 从数据库配置读取控制模式
-			if config.ControlAuth != nil && *config.ControlAuth == 1 {
-				isRemoteControl = true
-			} else {
-				isRemoteControl = false
-			}
-		} else {
-			isRemoteControl = signalVal == 1 //0:就地控制，1:远方控制
-		}
+		isRemoteControl = signalVal == 1 //0:就地控制，1:远方控制
 	}
 
 	global.GVA_LOG.Info("AGC控制模式判断",
@@ -269,20 +261,18 @@ func (s *agc) executeRemoteAGCControl(bwdNo int, config agvc.AgvcBwdSetting, act
 	var agcEnabled bool
 	pointID, err := PointMapper.GetPointID(cons.TYPE_AGC, cons.AGC_YX_SIGNAL)
 	if err != nil {
-		global.GVA_LOG.Warn("获取AGC投退信号点位失败，使用数据库配置", zap.Error(err))
+		pointID = "401" // 使用默认点标识
+	}
+	signalVal, err := DataStorage.GetDataAsFloat64(1, bwdNo, cons.TYPE_AGC, cons.YX, pointID)
+	if err != nil {
+		global.GVA_LOG.Debug("从调度存储读取AGC投退信号失败，使用数据库配置", zap.Error(err))
 		agcEnabled = config.AgcIsEnabled != nil && *config.AgcIsEnabled == 1
 	} else {
-		signalVal, err := DispatchStorage.GetDataAsFloat64(1, bwdNo, cons.TYPE_AGC, cons.YX, pointID)
-		if err != nil {
-			global.GVA_LOG.Debug("从调度存储读取AGC投退信号失败，使用数据库配置", zap.Error(err))
-			agcEnabled = config.AgcIsEnabled != nil && *config.AgcIsEnabled == 1
-		} else {
-			agcEnabled = signalVal == 1
-			global.GVA_LOG.Debug("从调度存储读取AGC投退信号",
-				zap.Int("bwdNo", bwdNo),
-				zap.Float64("signalVal", signalVal),
-				zap.Bool("agcEnabled", agcEnabled))
-		}
+		agcEnabled = signalVal == 1
+		global.GVA_LOG.Debug("从调度存储读取AGC投退信号",
+			zap.Int("bwdNo", bwdNo),
+			zap.Float64("signalVal", signalVal),
+			zap.Bool("agcEnabled", agcEnabled))
 	}
 
 	if !agcEnabled {
@@ -292,25 +282,27 @@ func (s *agc) executeRemoteAGCControl(bwdNo int, config agvc.AgvcBwdSetting, act
 
 	// 步骤2：检查AGC就地远方控制模式
 	pointID, err = PointMapper.GetPointID(cons.TYPE_AGC, cons.AGC_YX_CONTROL_MODE)
-	if err == nil {
-		controlMode, err := DispatchStorage.GetDataAsFloat64(1, bwdNo, cons.TYPE_AGC, cons.YX, pointID)
-		if err == nil && controlMode != 1 {
-			global.GVA_LOG.Debug("AGC控制模式不是远程模式，跳过调控",
-				zap.Int("bwdNo", bwdNo),
-				zap.Float64("controlMode", controlMode))
-			return nil
-		}
+	if err != nil {
+		pointID = "402" // 使用默认点标识
+	}
+	controlMode, err := DataStorage.GetDataAsFloat64(1, bwdNo, cons.TYPE_AGC, cons.YX, pointID)
+	if err == nil && controlMode != 1 {
+		global.GVA_LOG.Debug("AGC控制模式不是远程模式，跳过调控",
+			zap.Int("bwdNo", bwdNo),
+			zap.Float64("controlMode", controlMode))
+		return nil
 	}
 
 	// 步骤3：检查AGC开/闭环状态
 	var isOpenLoop bool
 	isOpenLoop = true
-	pointID, err = PointMapper.GetPointID(cons.TYPE_BWG, cons.AGC_YX_LOOP_STATUS)
+	pointID, err = PointMapper.GetPointID(cons.TYPE_AGC, cons.AGC_YX_LOOP_STATUS)
+	if err != nil {
+		pointID = "404"
+	}
+	loopStatus, err := DataStorage.GetDataAsFloat64(1, bwdNo, cons.TYPE_AGC, cons.YX, pointID)
 	if err == nil {
-		loopStatus, err := DispatchStorage.GetDataAsFloat64(1, bwdNo, cons.TYPE_AGC, cons.YX, pointID)
-		if err == nil {
-			isOpenLoop = loopStatus == 1
-		}
+		isOpenLoop = loopStatus == 1
 	}
 
 	// 步骤4：获取执行值（从内存获取有功执行值）
@@ -320,7 +312,7 @@ func (s *agc) executeRemoteAGCControl(bwdNo int, config agvc.AgvcBwdSetting, act
 		pointID = "403" // 使用默认点标识
 	}
 
-	dispatchVal, err := DispatchStorage.GetDataAsFloat64(1, bwdNo, cons.TYPE_BWG, cons.YC, pointID)
+	dispatchVal, err := DataStorage.GetDataAsFloat64(1, bwdNo, cons.TYPE_AGC, cons.YC, pointID)
 	if err == nil {
 		execVal = dispatchVal
 		global.GVA_LOG.Debug("从调度存储获取AGC目标值",
@@ -447,6 +439,8 @@ func (s *agc) executeRemoteOpenLoopControl(bwdNo int, execVal float64) error {
 
 	// 平均分配目标功率
 	perInvPower := execVal / float64(len(inverters))
+	global.GVA_LOG.Debug("平均分配目标功率",
+		zap.Float64("perInvPower", perInvPower))
 
 	for _, inv := range inverters {
 		// 根据逆变器品牌选择不同的控制方式
@@ -457,12 +451,32 @@ func (s *agc) executeRemoteOpenLoopControl(bwdNo int, execVal float64) error {
 
 		// 华为逆变器使用专用控制器
 		if brand == cons.INVERTER_BRAND_HUAWEI {
-			// 使用绝对值模式控制
-			if err := HuaweiController.ControlAGCByAbsolute(&inv, perInvPower); err != nil {
-				global.GVA_LOG.Error("华为逆变器AGC控制失败",
+			// 获取华为逆变器调节模式
+			pointID := cons.HUAWEI_YG_MODE
+			mode, err := DataStorage.GetDataAsFloat64(1, *inv.InverterNo, cons.TYPE_NBQ, cons.YC, pointID)
+			if err != nil {
+				global.GVA_LOG.Error("获取华为逆变器AGC模式失败",
 					zap.Int("inverterNo", *inv.InverterNo),
 					zap.Error(err))
 				continue
+			}
+			// 0:百分比模式 1:绝对值模式
+			if mode == 0 {
+				// 使用百分比模式控制
+				if err := HuaweiController.ControlAGCByPercentage(&inv, perInvPower); err != nil {
+					global.GVA_LOG.Error("华为逆变器AGC控制失败",
+						zap.Int("inverterNo", *inv.InverterNo),
+						zap.Error(err))
+					continue
+				}
+			} else {
+				// 使用绝对值模式控制
+				if err := HuaweiController.ControlAGCByAbsolute(&inv, perInvPower); err != nil {
+					global.GVA_LOG.Error("华为逆变器AGC控制失败",
+						zap.Int("inverterNo", *inv.InverterNo),
+						zap.Error(err))
+					continue
+				}
 			}
 		} else {
 			// 其他品牌逆变器使用原有方式
@@ -515,7 +529,11 @@ func (s *agc) executeRemoteClosedLoopControl(bwdNo int, outputDeviation float64)
 		}
 
 		// 获取逆变器当前功率
-		currentPower, err := DataStorage.GetDataAsFloat64(*inv.InverterNo, 2, cons.YC, "28")
+		pointID, err := PointMapper.GetPointID(cons.TYPE_NBQ, cons.NBQ_YC_ACTIVE_POWER)
+		if err != nil {
+			pointID = "10" // 默认值
+		}
+		currentPower, err := DataStorage.GetDataAsFloat64(1, *inv.InverterNo, cons.TYPE_NBQ, cons.YC, pointID)
 		if err != nil {
 			currentPower = 0
 		}
@@ -531,14 +549,36 @@ func (s *agc) executeRemoteClosedLoopControl(bwdNo int, outputDeviation float64)
 
 		// 华为逆变器使用专用控制器
 		if brand == cons.INVERTER_BRAND_HUAWEI {
-			// 使用绝对值模式控制
-			if err := HuaweiController.ControlAGCByAbsolute(&inv, targetPower); err != nil {
-				global.GVA_LOG.Error("华为逆变器AGC闭环控制失败",
+
+			pointID := cons.HUAWEI_YG_MODE
+			mode, err := DataStorage.GetDataAsFloat64(1, *inv.InverterNo, cons.TYPE_NBQ, cons.YC, pointID)
+			if err != nil {
+				global.GVA_LOG.Error("获取华为逆变器AGC模式失败",
 					zap.Int("inverterNo", *inv.InverterNo),
-					zap.Float64("currentPower", currentPower),
-					zap.Float64("targetPower", targetPower),
 					zap.Error(err))
 				continue
+			}
+			// 0:百分比模式 1:绝对值模式
+			if mode == 0 {
+				// 使用百分比模式控制
+				if err := HuaweiController.ControlAGCByPercentage(&inv, targetPower); err != nil {
+					global.GVA_LOG.Error("华为逆变器AGC闭环控制失败",
+						zap.Int("inverterNo", *inv.InverterNo),
+						zap.Float64("currentPower", currentPower),
+						zap.Float64("targetPower", targetPower),
+						zap.Error(err))
+					continue
+				}
+			} else {
+				// 使用绝对值模式控制
+				if err := HuaweiController.ControlAGCByAbsolute(&inv, targetPower); err != nil {
+					global.GVA_LOG.Error("华为逆变器AGC闭环控制失败",
+						zap.Int("inverterNo", *inv.InverterNo),
+						zap.Float64("currentPower", currentPower),
+						zap.Float64("targetPower", targetPower),
+						zap.Error(err))
+					continue
+				}
 			}
 		} else {
 			// 其他品牌逆变器使用原有方式
@@ -594,7 +634,7 @@ func (s *agc) executeClosedLoopControl(bwdNo int, outputDeviation float64) error
 		}
 
 		// 获取逆变器当前功率
-		currentPower, err := DataStorage.GetDataAsFloat64(*inv.InverterNo, 2, cons.YC, "28")
+		currentPower, err := DataStorage.GetDataAsFloat64(1, *inv.InverterNo, cons.TYPE_NBQ, cons.YC, "28")
 		if err != nil {
 			currentPower = 0
 		}
@@ -684,6 +724,8 @@ func (s *agc) executeOpenLoopControl(bwdNo int, execVal float64) error {
 
 	// 平均分配目标功率
 	perInvPower := execVal / float64(len(inverters))
+	global.GVA_LOG.Debug("平均分配目标功率",
+		zap.Float64("perInvPower", perInvPower))
 
 	for _, inv := range inverters {
 		commands := map[int]interface{}{
@@ -727,7 +769,7 @@ func (s *agc) collectAGCData(bwdNo int) (map[string]interface{}, error) {
 		pointID = "10" // 使用默认值
 	}
 
-	systemFreq, err := DataStorage.GetDataAsFloat64(bwdNo, cons.TYPE_BWG, cons.YC, pointID)
+	systemFreq, err := DataStorage.GetDataAsFloat64(1, bwdNo, cons.TYPE_BWG, cons.YC, pointID)
 	if err != nil {
 		// 频率不是必须的，使用默认值
 		systemFreq = 50.0
@@ -926,7 +968,7 @@ func (s *agc) sendAGCResultToDispatch(bwdNo int, config agvc.AgvcBwdSetting, act
 	results["powerLowerLimit"] = powerLowerLimit
 
 	// 403: 有功执行值（当前实际输出功率）
-	pointID, _ = PointMapper.GetPointID(cons.TYPE_AGC, cons.AGC_YC_POWER_EXEC_VALUE)
+	pointID, _ = PointMapper.GetPointID(cons.TYPE_AGC, cons.AGC_YT_POWER_EXEC)
 	if pointID == "" {
 		pointID = "401"
 	}

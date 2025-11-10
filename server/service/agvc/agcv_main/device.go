@@ -105,7 +105,7 @@ func (s *device) GetInvertersByPSID(psid string) ([]agvc_main.Device, error) {
 func (s *device) GetOnlineInvertersByBwdNo(bwdNo int) ([]agvc.AgvcNbqSetting, error) {
 	var devices []agvc.AgvcNbqSetting
 	// status := 1
-	err := global.GVA_DB.Where("bwdNo = ? AND isParticipateAdjust = ? ", bwdNo, true).Find(&devices).Error
+	err := global.GVA_DB.Where("bwd_no = ? AND is_participate_adjust = ? ", bwdNo, 1).Find(&devices).Error
 	return devices, err
 }
 

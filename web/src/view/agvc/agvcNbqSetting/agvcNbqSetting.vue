@@ -4,7 +4,7 @@
     <div class="gva-search-box">
       <el-form ref="elSearchFormRef" :inline="true" :model="searchInfo" class="demo-form-inline" @keyup.enter="onSubmit">
             <el-form-item label="逆变器编号" prop="inverterNo">
-  <el-input v-model.number="searchInfo.inverterNo" placeholder="搜索条件" />
+  <el-input-number v-model="searchInfo.inverterNo" placeholder="搜索条件" :controls="false" style="width: 100%" />
 </el-form-item>
             
             <el-form-item label="逆变器名称" prop="name">
@@ -135,10 +135,10 @@
     <el-input-number v-model="formData.deadbandRange" style="width:100%" :precision="2" :clearable="true" />
 </el-form-item>
             <el-form-item label="升额优先级:" prop="upgradePriority">
-    <el-input-number v-model="formData.upgradePriority" style="width:100%" :precision="2" :clearable="true" />
+    <el-input-number v-model="formData.upgradePriority" style="width:100%" :precision="0" :clearable="true" />
 </el-form-item>
             <el-form-item label="降级优先级:" prop="downgradePriority">
-    <el-input-number v-model="formData.downgradePriority" style="width:100%" :precision="2" :clearable="true" />
+    <el-input-number v-model="formData.downgradePriority" style="width:100%" :precision="0" :clearable="true" />
 </el-form-item>
             <el-form-item label="参与调节:" prop="isParticipateAdjust">
     <el-switch v-model="formData.isParticipateAdjust" active-color="#13ce66" inactive-color="#ff4949" active-text="是" inactive-text="否" clearable ></el-switch>

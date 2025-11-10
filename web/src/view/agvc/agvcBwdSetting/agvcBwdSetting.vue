@@ -113,19 +113,19 @@
     <el-input-number v-model="formData.voltageLevel" style="width:100%" :precision="2" :clearable="true" />
 </el-form-item>
             <el-form-item label="AGC功能退出模式:" prop="agcFunctionExit">
-    <el-input v-model.number="formData.agcFunctionExit" :clearable="true" placeholder="请输入AGC功能退出模式" />
+    <el-input-number v-model="formData.agcFunctionExit" style="width:100%" :precision="0" :clearable="true" placeholder="请输入AGC功能退出模式" />
 </el-form-item>
             <el-form-item label="AGC调节步长(kW):" prop="agcStepSize">
     <el-input-number v-model="formData.agcStepSize" style="width:100%" :precision="2" :clearable="true" />
 </el-form-item>
             <el-form-item label="AGC步长周期(秒):" prop="agcStepPeriod">
-    <el-input v-model.number="formData.agcStepPeriod" :clearable="true" placeholder="请输入AGC步长周期(秒)" />
+    <el-input-number v-model="formData.agcStepPeriod" style="width:100%" :precision="0" :clearable="true" placeholder="请输入AGC步长周期(秒)" />
 </el-form-item>
             <el-form-item label="AGC抖动区间(kW):" prop="agcVibrationRange">
     <el-input-number v-model="formData.agcVibrationRange" style="width:100%" :precision="2" :clearable="true" />
 </el-form-item>
             <el-form-item label="AGC调控周期(秒):" prop="agcControlPeriod">
-    <el-input v-model.number="formData.agcControlPeriod" :clearable="true" placeholder="请输入AGC调控周期(秒)" />
+    <el-input-number v-model="formData.agcControlPeriod" style="width:100%" :precision="0" :clearable="true" placeholder="请输入AGC调控周期(秒)" />
 </el-form-item>
             <el-form-item label="AGC微调系数:" prop="agcMicroAdjustmentCoefficient">
     <el-input-number v-model="formData.agcMicroAdjustmentCoefficient" style="width:100%" :precision="2" :clearable="true" />
@@ -134,13 +134,13 @@
     <el-input-number v-model="formData.avcStepSize" style="width:100%" :precision="2" :clearable="true" />
 </el-form-item>
             <el-form-item label="AVC步长周期(秒):" prop="avcStepPeriod">
-    <el-input v-model.number="formData.avcStepPeriod" :clearable="true" placeholder="请输入AVC步长周期(秒)" />
+    <el-input-number v-model="formData.avcStepPeriod" style="width:100%" :precision="0" :clearable="true" placeholder="请输入AVC步长周期(秒)" />
 </el-form-item>
             <el-form-item label="AVC抖动区间(kV):" prop="avcVibrationRange">
     <el-input-number v-model="formData.avcVibrationRange" style="width:100%" :precision="2" :clearable="true" />
 </el-form-item>
             <el-form-item label="AVC调控周期(秒):" prop="avcControlPeriod">
-    <el-input v-model.number="formData.avcControlPeriod" :clearable="true" placeholder="请输入AVC调控周期(秒)" />
+    <el-input-number v-model="formData.avcControlPeriod" style="width:100%" :precision="0" :clearable="true" placeholder="请输入AVC调控周期(秒)" />
 </el-form-item>
             <el-form-item label="AVC系统阻抗:" prop="avcSystemImpedance">
     <el-input-number v-model="formData.avcSystemImpedance" style="width:100%" :precision="2" :clearable="true" />

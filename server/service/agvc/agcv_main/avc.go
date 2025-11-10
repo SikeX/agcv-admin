@@ -408,7 +408,7 @@ func (s *avc) executeRemoteReactiveControl(bwdNo int, requiredDeltaQ float64) er
 		}
 
 		// 获取设备当前无功
-		currentReactive, err := DataStorage.GetDataAsFloat64(bwdNo, cons.TYPE_BWG, cons.YC, "27")
+		currentReactive, err := DataStorage.GetDataAsFloat64(1, bwdNo, cons.TYPE_BWG, cons.YC, "27")
 		if err != nil {
 			currentReactive = 0
 		}
@@ -426,7 +426,7 @@ func (s *avc) executeRemoteReactiveControl(bwdNo int, requiredDeltaQ float64) er
 		if brand == cons.INVERTER_BRAND_HUAWEI {
 			// 计算目标Q/S比值
 			// 获取设备当前视在功率
-			apparentPower, err := DataStorage.GetDataAsFloat64(*dev.InverterNo, cons.TYPE_NBQ, cons.YC, "202")
+			apparentPower, err := DataStorage.GetDataAsFloat64(1, *dev.InverterNo, cons.TYPE_NBQ, cons.YC, "202")
 			if err != nil || apparentPower == 0 {
 				global.GVA_LOG.Warn("无法获取视在功率，跳过该逆变器",
 					zap.Int("inverterNo", *dev.InverterNo),
@@ -505,7 +505,7 @@ func (s *avc) collectAVCData(bwdNo int) (map[string]interface{}, error) {
 	if err != nil {
 		voltagePointID = "1" // 使用默认值
 	}
-	pointVoltage, err := DataStorage.GetDataAsFloat64(bwdNo, cons.TYPE_BWG, cons.YC, voltagePointID)
+	pointVoltage, err := DataStorage.GetDataAsFloat64(1, bwdNo, cons.TYPE_BWG, cons.YC, voltagePointID)
 	if err != nil {
 		return nil, fmt.Errorf("采集并网点电压失败: %v", err)
 	}
@@ -524,7 +524,7 @@ func (s *avc) collectAVCData(bwdNo int) (map[string]interface{}, error) {
 	if err != nil {
 		freqPointID = "10" // 使用默认值
 	}
-	systemFreq, err := DataStorage.GetDataAsFloat64(bwdNo, cons.TYPE_BWG, cons.YC, freqPointID)
+	systemFreq, err := DataStorage.GetDataAsFloat64(1, bwdNo, cons.TYPE_BWG, cons.YC, freqPointID)
 	if err != nil {
 		systemFreq = 50.0
 	}
@@ -585,7 +585,7 @@ func (s *avc) assignReactiveToDevices(nbqNo int, requiredQ float64, devices []ag
 		}
 
 		// 获取设备当前无功
-		currentReactive, err := DataStorage.GetDataAsFloat64(nbqNo, cons.TYPE_BWG, cons.YC, "27")
+		currentReactive, err := DataStorage.GetDataAsFloat64(1, nbqNo, cons.TYPE_BWG, cons.YC, "27")
 		if err != nil {
 			currentReactive = 0
 		}

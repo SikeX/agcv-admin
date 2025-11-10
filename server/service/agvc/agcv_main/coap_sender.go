@@ -171,12 +171,21 @@ func (s *coapSender) SendInverterCommand(host string, port, psid, eqid int, comm
 		var dataType int
 		var pointStr string
 		switch point {
-		case 401: // 开关机（遥控）或有功功率降额
-			dataType = cons.YC
-			pointStr = "401"
-		case 402: // 无功功率补偿
-			dataType = cons.YC
-			pointStr = "402"
+		case 501: // 有功功率固定值降额(kW)
+			dataType = cons.YT
+			pointStr = "501"
+		case 502: // 无功功率补偿(PF)
+			dataType = cons.YT
+			pointStr = "502"
+		case 503: // 无功功率补偿(Q/S)
+			dataType = cons.YT
+			pointStr = "503"
+		case 504: // 有功功率百分比降额(0.1%)
+			dataType = cons.YT
+			pointStr = "504"
+		case 505: // 有功功率固定值降额(W)
+			dataType = cons.YT
+			pointStr = "505"
 		default:
 			continue
 		}
@@ -218,6 +227,10 @@ func (s *coapSender) GetDispatchCoapHost() string {
 // GetDispatchCoapPort 获取调度CoAP返回端口（1189）
 func (s *coapSender) GetDispatchCoapPort() int {
 	return 1189
+}
+
+func (s *coapSender) GetDispatchBackCoapPort() int {
+	return 1187
 }
 
 // SendAGCResultToDispatch 发送AGC计算结果到调度（1189端口）

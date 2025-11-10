@@ -1,54 +1,240 @@
 
 <template>
   <div>
-    <div class="gva-search-box">
-      <el-form ref="elSearchFormRef" :inline="true" :model="searchInfo" class="demo-form-inline" @keyup.enter="onSubmit">
-        <template v-if="showAllQuery">
-          <!-- 将需要控制显示状态的查询条件添加到此范围内 -->
-        </template>
-
-        <el-form-item>
-          <el-button type="primary" icon="search" @click="onSubmit">查询</el-button>
-          <el-button icon="refresh" @click="onReset">重置</el-button>
-          <el-button link type="primary" icon="arrow-down" @click="showAllQuery=true" v-if="!showAllQuery">展开</el-button>
-          <el-button link type="primary" icon="arrow-up" @click="showAllQuery=false" v-else>收起</el-button>
-        </el-form-item>
-      </el-form>
-    </div>
-    <div class="gva-table-box">
-        <div class="gva-btn-list">
-            <el-button type="success" @click="generateTestData">生成测试数据</el-button>
-        </div>
-        <el-table
-        ref="multipleTable"
-        style="width: 100%"
-        tooltip-effect="dark"
-        :data="tableData"
-        row-key="ID"
+    <!-- 标签页主界面 -->
+    <div class="main-tabs">
+      <el-tabs v-model="mainActiveTab" type="border-card">
+        <!-- 并网点标签页 -->
+        <el-tab-pane 
+          v-for="device in deviceList" 
+          :key="device.number" 
+          :label="device.name" 
+          :name="device.number"
         >
-        
-            <el-table-column align="left" label="设备编号" prop="number" min-width="120" />
-
-            <el-table-column align="left" label="并网点名称" prop="name" min-width="150" />
-
-            <!-- 历史数据列 -->
-            <el-table-column align="left" label="历史数据" fixed="right" width="100">
-              <template #default="scope">
-                <el-button type="primary" link @click="showHistoryData(scope.row)">查询</el-button>
-              </template>
-            </el-table-column>
-        </el-table>
-        <div class="gva-pagination">
-            <el-pagination
-            layout="total, sizes, prev, pager, next, jumper"
-            :current-page="page"
-            :page-size="pageSize"
-            :page-sizes="[10, 30, 50, 100]"
-            :total="total"
-            @current-change="handleCurrentChange"
-            @size-change="handleSizeChange"
-            />
-        </div>
+          <!-- AGC/AVC控制标签页 -->
+          <el-tabs v-model="controlActiveTab" type="card" style="position: relative;">
+            <!-- 按钮组 - 绝对定位放在右上角 -->
+            <div style="position: absolute; right: 20px; top: 8px; display: flex; gap: 10px; z-index: 100;" @click.stop>
+              <el-button size="small" @click="showHistoryDataDialog">历史数据查看</el-button>
+              <el-button size="small" @click="generateTestData">生成测试数据</el-button>
+            </div>
+            <!-- AGC控制标签页 -->
+            <el-tab-pane label="AGC控制" name="agc">
+            <div class="control-content">
+                <!-- AGC折线图 - 放在最上面 -->
+                <div class="chart-section chart-top">
+                  <div class="section-title">电站出力曲线</div>
+                  <div class="chart-container">
+                    <div ref="agcChartContainer" class="chart-wrapper"></div>
+                  </div>
+                </div>
+                
+                <!-- AGC控制面板和参数设置 - 左右布局 -->
+                <div class="control-section">
+                  <el-row :gutter="20">
+                    <!-- 左侧：AGC控制面板 -->
+                    <el-col :span="16">
+                      <div class="section-title">AGC控制面板</div>
+                      <div class="control-grid">
+                        <!-- 电站AGC功能投退 -->
+                        <div class="control-item">
+                          <div class="item-label">电站AGC功能投退</div>
+                          <div class="radio-group">
+                            <el-radio-group v-model="agcFunctionState" size="small">
+                              <el-radio :label="1">投入</el-radio>
+                              <el-radio :label="0">退出</el-radio>
+                            </el-radio-group>
+                          </div>
+                        </div>
+                        
+                        <!-- 电站AGC调节方式 -->
+                        <div class="control-item">
+                          <div class="item-label">电站AGC调节方式</div>
+                          <div class="radio-group">
+                            <el-radio-group v-model="agcControlMode" size="small">
+                              <el-radio :label="1">闭环指导</el-radio>
+                              <el-radio :label="0">开环指导</el-radio>
+                            </el-radio-group>
+                          </div>
+                        </div>
+                        
+                        <!-- 电站AGC控制权限 -->
+                        <div class="control-item">
+                          <div class="item-label">电站AGC控制权限</div>
+                          <div class="radio-group">
+                            <el-radio-group v-model="agcControlAuthority" size="small">
+                              <el-radio :label="1">调度控制</el-radio>
+                              <el-radio :label="0">站内控制</el-radio>
+                            </el-radio-group>
+                          </div>
+                        </div>
+                      </div>
+                    </el-col>
+                    
+                    <!-- 右侧：AGC参数设置 -->
+                    <el-col :span="8">
+                      <div class="section-title">AGC参数设置</div>
+                      <div class="control-row" style="margin-top: 20px;">
+                        <el-button size="default" @click="openAgcParametersDialog" style="width: 100%; margin-bottom: 10px;">参数设置</el-button>
+                        <el-button size="default" @click="openAgcPlanCurvesDialog" style="width: 100%;">计划曲线</el-button>
+                      </div>
+                    </el-col>
+                  </el-row>
+                </div>
+                
+                <!-- 电站负荷 -->
+                <div class="control-section">
+                  <div class="section-title">电站负荷</div>
+                  <div class="control-grid load-grid">
+                    <!-- 目标有功 - 改为只读 -->
+                    <div class="control-item">
+                      <div class="item-label">目标有功(kW)</div>
+                      <div class="item-value readonly">{{ formatNumber(targetActivePower) }}</div>
+                    </div>
+                    
+                    <!-- 当前有功 -->
+                    <div class="control-item">
+                      <div class="item-label">当前有功(kW)</div>
+                      <div class="item-value readonly">{{ formatNumber(currentActivePower) }}</div>
+                    </div>
+                    
+                    <!-- 可调上限 -->
+                    <div class="control-item">
+                      <div class="item-label">可调上限(kW)</div>
+                      <div class="item-value readonly">{{ formatNumber(agcUpperLimit) }}</div>
+                    </div>
+                    
+                    <!-- 可调下限 -->
+                    <div class="control-item">
+                      <div class="item-label">可调下限(kW)</div>
+                      <div class="item-value readonly">{{ formatNumber(agcLowerLimit) }}</div>
+                    </div>
+                    
+                    <!-- 系统频率 -->
+                    <div class="control-item">
+                      <div class="item-label">系统频率(Hz)</div>
+                      <div class="item-value readonly">{{ formatNumber(systemFrequency) }}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </el-tab-pane>
+            
+            <!-- AVC控制标签页 -->
+            <el-tab-pane label="AVC控制" name="avc">
+              <div class="control-content">
+                <!-- AVC折线图 - 放在最上面 -->
+                <div class="chart-section chart-top">
+                  <div class="section-title">AVC曲线图</div>
+                  <div class="chart-container">
+                    <div ref="avcChartContainer" class="chart-wrapper"></div>
+                  </div>
+                </div>
+                
+                <!-- AVC控制面板、模式切换、参数设置 - 三列布局 -->
+                <div class="control-section">
+                  <el-row :gutter="20">
+                    <!-- 左侧：AVC控制面板 -->
+                    <el-col :span="10">
+                      <div class="section-title">AVC控制面板</div>
+                      <div class="control-grid">
+                        <!-- 电站AVC功能投退 -->
+                        <div class="control-item">
+                          <div class="item-label">电站AVC功能投退</div>
+                          <div class="radio-group">
+                            <el-radio-group v-model="avcFunctionState" size="small">
+                              <el-radio :label="1">投入</el-radio>
+                              <el-radio :label="0">退出</el-radio>
+                            </el-radio-group>
+                          </div>
+                        </div>
+                        
+                        <!-- 电站AVC调节方式 -->
+                        <div class="control-item">
+                          <div class="item-label">电站AVC调节方式</div>
+                          <div class="radio-group">
+                            <el-radio-group v-model="avcControlMode" size="small">
+                              <el-radio :label="1">开环指导</el-radio>
+                              <el-radio :label="0">闭环调节</el-radio>
+                            </el-radio-group>
+                          </div>
+                        </div>
+                        
+                        <!-- 电站AVC控制权限 -->
+                        <div class="control-item">
+                          <div class="item-label">电站AVC控制权限</div>
+                          <div class="radio-group">
+                            <el-radio-group v-model="avcControlAuthority" size="small">
+                              <el-radio :label="1">站内控制</el-radio>
+                              <el-radio :label="0">调度控制</el-radio>
+                            </el-radio-group>
+                          </div>
+                        </div>
+                      </div>
+                    </el-col>
+                    
+                    <!-- 中间：AVC模式切换 -->
+                    <el-col :span="7">
+                      <div class="section-title">AVC模式切换</div>
+                      <div class="avc-mode-switch" style="margin-top: 20px; text-align: center;">
+                        <el-radio-group v-model="avcMode" @change="onAvcModeChange">
+                          <el-radio-button label="voltage">电压模式</el-radio-button>
+                          <el-radio-button label="reactive">无功模式</el-radio-button>
+                        </el-radio-group>
+                      </div>
+                    </el-col>
+                    
+                    <!-- 右侧：AVC参数设置 -->
+                    <el-col :span="7">
+                      <div class="section-title">AVC参数设置</div>
+                      <div class="control-row" style="margin-top: 20px;">
+                        <el-button size="default" @click="openAvcParametersDialog" style="width: 100%; margin-bottom: 10px;">参数设置</el-button>
+                        <el-button size="default" @click="openAvcPlanCurvesDialog" style="width: 100%;">计划曲线</el-button>
+                      </div>
+                    </el-col>
+                  </el-row>
+                </div>
+                
+                <!-- 电站负荷 -->
+                <div class="control-section">
+                  <div class="section-title">电站负荷</div>
+                  <div class="control-grid load-grid">
+                    <!-- 目标电压 -->
+                    <div class="control-item">
+                      <div class="item-label">目标电压(kV)</div>
+                      <div class="item-value readonly">{{ formatNumber(targetVoltage) }}</div>
+                    </div>
+                    
+                    <!-- 当前电压 -->
+                    <div class="control-item">
+                      <div class="item-label">当前电压(kV)</div>
+                      <div class="item-value readonly">{{ formatNumber(currentVoltage) }}</div>
+                    </div>
+                    
+                    <!-- 目标无功 -->
+                    <div class="control-item">
+                      <div class="item-label">目标无功(kVar)</div>
+                      <div class="item-value readonly">{{ formatNumber(targetReactive) }}</div>
+                    </div>
+                    
+                    <!-- 当前无功 -->
+                    <div class="control-item">
+                      <div class="item-label">当前无功(kVar)</div>
+                      <div class="item-value readonly">{{ formatNumber(currentReactive) }}</div>
+                    </div>
+                    
+                    <!-- 系统阻抗 -->
+                    <div class="control-item">
+                      <div class="item-label">系统阻抗</div>
+                      <div class="item-value readonly">{{ formatNumber(systemImpedance) }}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </el-tab-pane>
+          </el-tabs>
+        </el-tab-pane>
+      </el-tabs>
     </div>
 
     <!-- 历史数据弹窗 -->
@@ -87,7 +273,112 @@
         </span>
       </template>
     </el-dialog>
-
+    
+    <!-- AGC参数设置弹窗 - 改为可编辑 -->
+    <el-dialog v-model="agcParametersDialogVisible" title="AGC参数设置" width="600px">
+      <el-form :model="agcParametersForm" label-width="140px" label-position="left">
+        <el-form-item label="AGC功能退出模式">
+          <el-input-number v-model="agcParametersForm.agcFunctionExit" :step="1" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="AGC调节步长(kW)">
+          <el-input-number v-model="agcParametersForm.agcStepSize" :step="0.1" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="AGC步长周期(秒)">
+          <el-input-number v-model="agcParametersForm.agcStepPeriod" :step="1" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="AGC抖动区间(kW)">
+          <el-input-number v-model="agcParametersForm.agcVibrationRange" :step="0.1" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="AGC调控周期(秒)">
+          <el-input-number v-model="agcParametersForm.agcControlPeriod" :step="1" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="AGC微调系数">
+          <el-input-number v-model="agcParametersForm.agcMicroAdjustmentCoefficient" :step="0.01" style="width: 100%" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="agcParametersDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="saveAgcParameters">保存</el-button>
+        </span>
+      </template>
+    </el-dialog>
+    
+    <!-- AVC参数设置弹窗 -->
+    <el-dialog v-model="avcParametersDialogVisible" title="AVC参数设置" width="600px">
+      <el-form :model="avcParametersForm" label-width="140px" label-position="left">
+        <el-form-item label="调节步长(kV)">
+          <el-input-number v-model="avcParametersForm.avcStepSize" :step="0.1" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="步长周期(秒)">
+          <el-input-number v-model="avcParametersForm.avcStepPeriod" :step="1" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="抖动区间(kV)">
+          <el-input-number v-model="avcParametersForm.avcVibrationRange" :step="0.1" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="调控周期(秒)">
+          <el-input-number v-model="avcParametersForm.avcControlPeriod" :step="1" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="系统阻抗">
+          <el-input-number v-model="avcParametersForm.avcSystemImpedance" :step="0.1" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="调节范围最小值(kV)">
+          <el-input-number v-model="avcParametersForm.avcAdjustmentRangeMin" :step="0.1" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="调节范围最大值(kV)">
+          <el-input-number v-model="avcParametersForm.avcAdjustmentRangeMax" :step="0.1" style="width: 100%" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="avcParametersDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="saveAvcParameters">保存</el-button>
+        </span>
+      </template>
+    </el-dialog>
+    
+    <!-- 计划曲线弹窗 -->
+    <el-dialog v-model="planCurvesDialogVisible" :title="getPlanCurveTitle()" width="800px">
+      <!-- 只保留本地曲线，去掉调度曲线 -->
+      <el-table :data="localCurveData" style="width: 100%" max-height="300">
+        <el-table-column prop="time" label="时间" width="150">
+          <template #default="scope">
+            <el-time-picker
+              v-model="scope.row.time"
+              format="HH:mm:ss"
+              value-format="HH:mm:ss"
+              placeholder="选择时间"
+              style="width: 100%"
+            />
+          </template>
+        </el-table-column>
+        <el-table-column prop="targetValue" :label="getPlanCurveValueLabel()" width="150">
+          <template #default="scope">
+            <el-input-number 
+              v-model="scope.row.targetValue" 
+              :step="getPlanCurveStep()" 
+              style="width: 100%" 
+              controls-position="right"
+            />
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="80">
+          <template #default="scope">
+            <el-button type="danger" link @click="removeLocalCurvePoint(scope.$index)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <div style="margin-top: 10px;">
+        <el-button type="primary" @click="addLocalCurvePoint">添加时间点</el-button>
+      </div>
+      
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="planCurvesDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="savePlanCurves">保存</el-button>
+        </span>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -100,8 +391,21 @@ import {
   findAgvcBwdHis,
   getAgvcBwdHisList,
   getAgvcBwdHistory,
-  generateAgvcBwdTestData
+  generateAgvcBwdTestData,
+  // 新增的API
+  updateAgcParameters,
+  updateAvcParameters,
+  updatePlanCurves,
+  getAgcParameters,
+  getAvcParameters,
+  getPlanCurves,
+  updateAgcStatus,
+  getAgcStatus,
+  updateAvcStatus,
+  getAvcStatus
 } from '@/api/agvc/agvcBwdHis'
+
+import { getAgvcBwdSettingList, updateAgvcBwdSetting } from '@/api/agvc/agvcBwdSetting'
 
 // 全量引入格式化工具 请按需保留
 import { getDictFunc, formatDate, formatBoolean, filterDict ,filterDataSource, returnArrImg, onDownloadFile } from '@/utils/format'
@@ -184,7 +488,614 @@ const getTableData = async() => {
 
 getTableData()
 
-// ============== 表格控制部分结束 ===============
+// =========== 实时控制面板相关 ===========
+// 设备列表
+const deviceList = ref([])
+
+// 获取并网点设备列表
+const getDeviceList = async () => {
+  console.log('========== getDeviceList 开始 ==========')
+  try {
+    const res = await getAgvcBwdSettingList({ page: 1, pageSize: 1000 })
+    console.log('1. 获取设备列表响应:', res)
+    
+    if (res.code === 0) {
+      deviceList.value = res.data.list.map(item => ({
+        ID: item.ID, // 保存ID用于更新
+        number: item.number,
+        name: item.name
+      }))
+      console.log('2. 设备列表长度:', deviceList.value.length)
+      
+      // 默认选择第一个设备
+      if (deviceList.value.length > 0) {
+        mainActiveTab.value = deviceList.value[0].number
+        console.log('3. 默认选中设备:', deviceList.value[0])
+        
+        // 等待DOM渲染完成
+        console.log('4. 等待DOM渲染...')
+        await nextTick()
+        console.log('5. DOM渲染完成')
+        
+        // 1. 先初始化图表（确保图表实例存在）
+        console.log('6. 开始初始化图表...')
+        console.log('   controlActiveTab.value:', controlActiveTab.value)
+        if (controlActiveTab.value === 'agc') {
+          console.log('7. 初始化AGC图表')
+          initAgcChart()
+        } else {
+          console.log('7. 初始化AVC图表')
+          initAvcChart()
+        }
+        
+        // 2. 再加载数据（数据加载后会自动调用updateAgcChart更新图表）
+        console.log('8. 开始加载设备参数...')
+        await loadDeviceParameters(deviceList.value[0].number)
+        console.log('9. 设备参数加载完成')
+        
+        console.log('10. 开始加载计划曲线...')
+        await loadDevicePlanCurves(deviceList.value[0].number)
+        console.log('11. 计划曲线加载完成')
+      }
+    }
+    console.log('========== getDeviceList 结束 ==========')
+  } catch (error) {
+    console.error('❌ 获取并网点设备列表失败:', error)
+    console.error('错误堆栈:', error.stack)
+  }
+}
+
+// 选择设备
+const selectDevice = async (device) => {
+  // 设置主标签页为当前设备
+  mainActiveTab.value = device.number
+  
+  // 等待DOM更新
+  await nextTick()
+  
+  // 1. 先初始化图表
+  initAgcChart()
+  initAvcChart()
+  
+  // 2. 再加载该设备的参数和曲线
+  await loadDeviceParameters(device.number)
+  await loadDevicePlanCurves(device.number)
+}
+
+// 加载设备参数
+const loadDeviceParameters = async (number) => {
+  if (!number) {
+    console.error('设备编号为空')
+    return
+  }
+  
+  console.log('========== loadDeviceParameters 开始 ==========')
+  console.log('设备编号:', number)
+  try {
+    isLoadingAgcStatus = true
+    
+    // 加载AGC配置参数
+    console.log('1. 加载AGC配置参数...')
+    const agcRes = await getAgcParameters({ number })
+    console.log('AGC配置参数响应:', agcRes)
+    if (agcRes.code === 0 && agcRes.data) {
+      agcParametersForm.value = {...agcParametersForm.value, ...agcRes.data, number}
+    }
+    
+    // 加载AVC配置参数
+    console.log('2. 加载AVC配置参数...')
+    const avcRes = await getAvcParameters({ number })
+    console.log('AVC配置参数响应:', avcRes)
+    if (avcRes.code === 0 && avcRes.data) {
+      avcParametersForm.value = {...avcParametersForm.value, ...avcRes.data, number}
+    }
+    
+    // 加载AGC状态
+    console.log('3. 加载AGC状态...')
+    const statusRes = await getAgcStatus({ number })
+    console.log('AGC状态响应:', statusRes)
+    if (statusRes.code === 0 && statusRes.data) {
+      agcFunctionState.value = statusRes.data.agcFunctionState || 1
+      agcControlMode.value = statusRes.data.agcControlMode || 1
+      agcControlAuthority.value = statusRes.data.agcControlAuthority || 1
+    }
+    
+    // 加载AVC状态（从agvc_bwd_his表）
+    console.log('3.5. 加载AVC状态...')
+    const avcStatusRes = await getAvcStatus({ number })
+    console.log('AVC状态响应:', avcStatusRes)
+    if (avcStatusRes.code === 0 && avcStatusRes.data) {
+      avcFunctionState.value = avcStatusRes.data.avcFunctionState || 1
+      avcControlMode.value = avcStatusRes.data.avcControlMode || 1
+      avcControlAuthority.value = avcStatusRes.data.avcControlAuthority || 1
+    }
+    
+    // 加载电站负荷实时数据从最上一小时数据
+    console.log('4. 加载历史数据...')
+    const now = new Date()
+    const endTime = now.toISOString().split('T')[0]
+    const startTime = new Date(now.getTime() - 3600000).toISOString().split('T')[0]
+    console.log('时间范围:', startTime, '到', endTime)
+    
+    const historyRes = await getAgvcBwdHistory({ eqid: number, startTime, endTime })
+    console.log('历史数据响应:', historyRes)
+    console.log('历史数据长度:', historyRes.data ? historyRes.data.length : 'null')
+    if (historyRes.code === 0 && historyRes.data && historyRes.data.length > 0) {
+      // 更新historyData并刷新AGC图表
+      console.log('5. 处理历史数据...')
+      historyData.value = historyRes.data.map(item => ({
+        timestamp: new Date(item.time),
+        point: item.point,
+        pointName: item.pointName || `点号${item.point}`,
+        value: item.value,
+        time: item.time
+      }))
+      historyData.value.sort((a, b) => new Date(a.time) - new Date(b.time))
+      console.log('historyData更新后长度:', historyData.value.length)
+      
+      // 提取最新数据更新电站负荷字段
+      console.log('6. 提取最新数据...')
+      const sortedData = historyRes.data.sort((a, b) => new Date(a.time) - new Date(b.time))
+      const latestData = {}
+      sortedData.forEach(item => {
+        latestData[item.point] = item.value
+      })
+      currentActivePower.value = latestData['100'] || 0
+      systemFrequency.value = latestData['10'] || 50
+      agcUpperLimit.value = latestData['401'] || 0
+      agcLowerLimit.value = latestData['402'] || 0
+      console.log('最新数据:', latestData)
+    } else {
+      console.log('⚠️ 未获取到历史数据，初始化为空数组')
+      // 即使没有数据，也要初始化为空数组，这样图表可以显示底图
+      historyData.value = []
+    }
+    
+    // 无论是否有数据，都更新AGC图表（显示底图）
+    console.log('7. 调用 updateAgcChart...')
+    updateAgcChart()
+    
+    isLoadingAgcStatus = false
+    console.log('========== loadDeviceParameters 完成 ==========')
+  } catch (error) {
+    console.error('❌ 加载设备参数失败:', error)
+    console.error('错误堆栈:', error.stack)
+    isLoadingAgcStatus = false
+  }
+}
+
+// 加载设备计划曲线
+const loadDevicePlanCurves = async (number) => {
+  try {
+    const res = await getPlanCurves({ number })
+    if (res.code === 0) {
+      // AGC和AVC分开存储，根据当前模式加载
+      if (controlActiveTab.value === 'agc' && res.data.agc) {
+        localCurveData.value = res.data.agc.localCurve || []
+      } else if (controlActiveTab.value === 'avc') {
+        // 根据AVC模式加载对应的计划曲线
+        if (avcMode.value === 'voltage' && res.data['avc-voltage']) {
+          localCurveData.value = res.data['avc-voltage'].localCurve || []
+        } else if (avcMode.value === 'reactive' && res.data['avc-reactive']) {
+          localCurveData.value = res.data['avc-reactive'].localCurve || []
+        }
+      }
+    }
+  } catch (error) {
+    console.error('加载计划曲线失败:', error)
+  }
+}
+
+// 活动标签页
+
+// 当前显示值（模拟数据，TODO:pengchen 后续算法更新后补上）
+const currentActivePower = ref(100.5)
+const currentVoltage = ref(10.2)
+const systemFrequency = ref(50.0)
+const systemImpedance = ref(0.8)
+const targetReactive = ref(0) // 目标无功
+const currentReactive = ref(0) // 当前无功
+
+// AGC状态值
+const agcFunctionState = ref(1) // 1: 投入, 0: 退出
+const agcControlMode = ref(1) // 1: 闭环指导, 0: 开环指导
+const agcControlAuthority = ref(1) // 1: 调度控制, 0: 站内控制
+
+// AVC状态值
+const avcFunctionState = ref(1) // 1: 投入, 0: 退出
+const avcControlMode = ref(1) // 1: 开环指导, 0: 闭环调节
+const avcControlAuthority = ref(1) // 1: 站内控制, 0: 调度控制
+
+// 盡量不在雪花梯操作中一次年推动更新
+let isLoadingAgcStatus = false
+
+// 监听AGC状态变化并自动保存
+watch([agcFunctionState, agcControlMode, agcControlAuthority], async () => {
+  // 平殊加载状态，跳过次级更新
+  if (isLoadingAgcStatus) return
+  
+  // 获取当前选中的设备
+  const currentDevice = deviceList.value.find(device => device.number === mainActiveTab.value)
+  if (!currentDevice) return
+  
+  try {
+    const res = await updateAgcStatus({
+      number: currentDevice.number,
+      agcFunctionState: agcFunctionState.value,
+      agcControlMode: agcControlMode.value,
+      agcControlAuthority: agcControlAuthority.value
+    })
+    if (res.code !== 0) {
+      console.error('保存AGC状态失败:', res.msg)
+    }
+  } catch (error) {
+    console.error('保存AGC状态失败:', error)
+  }
+})
+
+// 监听AVC状态变化并自动保存
+watch([avcFunctionState, avcControlMode, avcControlAuthority], async () => {
+  // 平殊加载状态，跳过次级更新
+  if (isLoadingAgcStatus) return
+  
+  // 获取当前选中的设备
+  const currentDevice = deviceList.value.find(device => device.number === mainActiveTab.value)
+  if (!currentDevice) return
+  
+  try {
+    // 更新AVC状态（与agvc_bwd_his表）
+    const res = await updateAvcStatus({
+      number: currentDevice.number,
+      avcFunctionState: avcFunctionState.value,
+      avcControlMode: avcControlMode.value,
+      avcControlAuthority: avcControlAuthority.value
+    })
+    if (res.code !== 0) {
+      console.error('保存AVC状态失败:', res.msg)
+    }
+  } catch (error) {
+    console.error('保存AVC状态失败:', error)
+  }
+})
+
+// 目标值
+const targetActivePower = ref(120)
+const targetVoltage = ref(10.5)
+
+// 格式化数字显示
+const formatNumber = (value) => {
+  if (value === null || value === undefined) return '--'
+  return value.toFixed(2)
+}
+
+// AGC需要从数据库读取的字段（TODO:pengchen 后续由窗接口提供）
+const agcUpperLimit = ref(0) // 可调上限(kW) - TODO:pengchen
+const agcLowerLimit = ref(0) // 可调下限(kW) - TODO:pengchen
+
+// 目标值变化处理
+const onTargetActivePowerChange = (value) => {
+  console.log('目标有功变化:', value)
+  // TODO: 发送控制指令
+}
+
+const onTargetVoltageChange = (value) => {
+  console.log('目标电压变化:', value)
+  // TODO: 发送控制指令
+}
+
+// AGC参数设置弹窗
+const agcParametersDialogVisible = ref(false)
+const agcParametersForm = ref({
+  ID: null,
+  number: '',
+  name: '',
+  voltageLevel: 0,
+  agcFunctionExit: 0, // 改为数字类型
+  agcStepSize: 0,
+  agcStepPeriod: 0,
+  agcVibrationRange: 0,
+  agcControlPeriod: 0,
+  agcMicroAdjustmentCoefficient: 0
+})
+
+// 打开AGC参数设置弹窗
+const openAgcParametersDialog = async () => {
+  // 获取当前选中的设备
+  const currentDevice = deviceList.value.find(device => device.number === mainActiveTab.value)
+  if (!currentDevice) {
+    ElMessage.warning('请先选择设备')
+    return
+  }
+  
+  // 从并网点配置中获取数据
+  try {
+    const res = await getAgvcBwdSettingList({ number: currentDevice.number })
+    if (res.code === 0 && res.data.list.length > 0) {
+      const setting = res.data.list[0]
+      agcParametersForm.value = {
+        ID: setting.ID, // 保存ID用于更新
+        number: setting.number || '',
+        name: setting.name || '',
+        voltageLevel: setting.voltageLevel || '',
+        agcFunctionExit: setting.agcFunctionExit || '',
+        agcStepSize: setting.agcStepSize || 0,
+        agcStepPeriod: setting.agcStepPeriod || 0,
+        agcVibrationRange: setting.agcVibrationRange || 0,
+        agcControlPeriod: setting.agcControlPeriod || 0,
+        agcMicroAdjustmentCoefficient: setting.agcMicroAdjustmentCoefficient || 0
+      }
+      agcParametersDialogVisible.value = true
+    } else {
+      ElMessage.error('未找到并网点配置数据')
+    }
+  } catch (error) {
+    ElMessage.error('获取并网点配置数据失败: ' + error.message)
+  }
+}
+
+// 保存AGC参数（同时更新并网点配置）
+const saveAgcParameters = async () => {
+  try {
+    // 直接更新并网点配置
+    const res = await updateAgvcBwdSetting({
+      ID: agcParametersForm.value.ID, // 需要ID
+      number: agcParametersForm.value.number,
+      agcFunctionExit: agcParametersForm.value.agcFunctionExit,
+      agcStepSize: agcParametersForm.value.agcStepSize,
+      agcStepPeriod: agcParametersForm.value.agcStepPeriod,
+      agcVibrationRange: agcParametersForm.value.agcVibrationRange,
+      agcControlPeriod: agcParametersForm.value.agcControlPeriod,
+      agcMicroAdjustmentCoefficient: agcParametersForm.value.agcMicroAdjustmentCoefficient
+    })
+    
+    if (res.code === 0) {
+      ElMessage.success('AGC参数保存成功')
+      agcParametersDialogVisible.value = false
+    } else {
+      ElMessage.error('保存失败: ' + res.msg)
+    }
+  } catch (error) {
+    ElMessage.error('保存失败: ' + error.message)
+  }
+}
+
+// AVC参数设置弹窗
+const avcParametersDialogVisible = ref(false)
+const avcParametersForm = ref({
+  ID: null,
+  number: '',
+  name: '',
+  voltageLevel: 0,
+  avcStepSize: 0,
+  avcStepPeriod: 0,
+  avcVibrationRange: 0,
+  avcControlPeriod: 0,
+  avcSystemImpedance: 0,
+  avcAdjustmentRangeMin: 0,
+  avcAdjustmentRangeMax: 0
+})
+
+// 打开AVC参数设置弹窗
+const openAvcParametersDialog = async () => {
+  // 获取当前选中的设备
+  const currentDevice = deviceList.value.find(device => device.number === mainActiveTab.value)
+  if (!currentDevice) {
+    ElMessage.warning('请先选择设备')
+    return
+  }
+  
+  // 从并网点配置中获取数据
+  try {
+    const res = await getAgvcBwdSettingList({ number: currentDevice.number })
+    if (res.code === 0 && res.data.list.length > 0) {
+      const setting = res.data.list[0]
+      avcParametersForm.value = {
+        ID: setting.ID, // 保存ID用于更新
+        number: setting.number || '',
+        name: setting.name || '',
+        voltageLevel: setting.voltageLevel || '',
+        avcStepSize: setting.avcStepSize || 0,
+        avcStepPeriod: setting.avcStepPeriod || 0,
+        avcVibrationRange: setting.avcVibrationRange || 0,
+        avcControlPeriod: setting.avcControlPeriod || 0,
+        avcSystemImpedance: setting.avcSystemImpedance || 0,
+        avcAdjustmentRangeMin: setting.avcAdjustmentRangeMin || 0,
+        avcAdjustmentRangeMax: setting.avcAdjustmentRangeMax || 0
+      }
+      avcParametersDialogVisible.value = true
+    } else {
+      ElMessage.error('未找到并网点配置数据')
+    }
+  } catch (error) {
+    ElMessage.error('获取并网点配置数据失败: ' + error.message)
+  }
+}
+
+// 保存AVC参数（同时更新并网点配置）
+const saveAvcParameters = async () => {
+  try {
+    // 直接更新并网点配置
+    const res = await updateAgvcBwdSetting({
+      ID: avcParametersForm.value.ID, // 需要ID
+      number: avcParametersForm.value.number,
+      avcStepSize: avcParametersForm.value.avcStepSize,
+      avcStepPeriod: avcParametersForm.value.avcStepPeriod,
+      avcVibrationRange: avcParametersForm.value.avcVibrationRange,
+      avcControlPeriod: avcParametersForm.value.avcControlPeriod,
+      avcSystemImpedance: avcParametersForm.value.avcSystemImpedance,
+      avcAdjustmentRangeMin: avcParametersForm.value.avcAdjustmentRangeMin,
+      avcAdjustmentRangeMax: avcParametersForm.value.avcAdjustmentRangeMax
+    })
+    
+    if (res.code === 0) {
+      ElMessage.success('AVC参数保存成功')
+      avcParametersDialogVisible.value = false
+    } else {
+      ElMessage.error('保存失败: ' + res.msg)
+    }
+  } catch (error) {
+    ElMessage.error('保存失败: ' + error.message)
+  }
+}
+
+// 计划曲线弹窗
+const planCurvesDialogVisible = ref(false)
+const planCurvesType = ref('agc') // agc, avc-voltage, avc-reactive
+const localCurveData = ref([])
+// 不再需要调度曲线数据
+
+// 获取计划曲线弹窗标题
+const getPlanCurveTitle = () => {
+  if (planCurvesType.value === 'agc') return 'AGC计划曲线'
+  if (planCurvesType.value === 'avc-voltage') return 'AVC电压计划曲线'
+  if (planCurvesType.value === 'avc-reactive') return 'AVC无功计划曲线'
+  return '计划曲线'
+}
+
+// 获取计划曲线值标签
+const getPlanCurveValueLabel = () => {
+  if (planCurvesType.value === 'agc') return '目标有功(kW)'
+  if (planCurvesType.value === 'avc-voltage') return '目标电压(kV)'
+  if (planCurvesType.value === 'avc-reactive') return '目标无功(kVar)'
+  return '目标值'
+}
+
+// 获取计划曲线步长
+const getPlanCurveStep = () => {
+  if (planCurvesType.value === 'agc') return 1
+  return 0.1 // 电压和无功都用 0.1
+}
+
+// 打开AGC计划曲线弹窗
+const openAgcPlanCurvesDialog = async () => {
+  // 获取当前选中的设备
+  const currentDevice = deviceList.value.find(device => device.number === mainActiveTab.value)
+  if (!currentDevice) {
+    ElMessage.warning('请先选择设备')
+    return
+  }
+  planCurvesType.value = 'agc'
+  
+  // 加载AGC计划曲线
+  try {
+    const res = await getPlanCurves({ number: currentDevice.number, curveType: 'agc' })
+    if (res.code === 0 && res.data) {
+      localCurveData.value = res.data.localCurve || []
+    }
+  } catch (error) {
+    console.error('加载AGC计划曲线失败:', error)
+  }
+  
+  planCurvesDialogVisible.value = true
+}
+
+// 打开AVC计划曲线弹窗
+const openAvcPlanCurvesDialog = async () => {
+  // 获取当前选中的设备
+  const currentDevice = deviceList.value.find(device => device.number === mainActiveTab.value)
+  if (!currentDevice) {
+    ElMessage.warning('请先选择设备')
+    return
+  }
+  
+  // 根据AVC模式设置曲线类型
+  planCurvesType.value = avcMode.value === 'voltage' ? 'avc-voltage' : 'avc-reactive'
+  
+  // 加载AVC计划曲线
+  try {
+    const res = await getPlanCurves({ number: currentDevice.number, curveType: planCurvesType.value })
+    if (res.code === 0 && res.data) {
+      localCurveData.value = res.data.localCurve || []
+    }
+  } catch (error) {
+    console.error('加载AVC计划曲线失败:', error)
+  }
+  
+  planCurvesDialogVisible.value = true
+}
+
+// 添加本地曲线点
+const addLocalCurvePoint = () => {
+  localCurveData.value.push({
+    time: '',
+    targetValue: 0
+  })
+}
+
+// 删除本地曲线点
+const removeLocalCurvePoint = (index) => {
+  localCurveData.value.splice(index, 1)
+}
+
+// 保存计划曲线
+const savePlanCurves = async () => {
+  try {
+    const currentDevice = deviceList.value.find(device => device.number === mainActiveTab.value)
+    if (!currentDevice) {
+      ElMessage.warning('请先选择设备')
+      return
+    }
+    
+    console.log('保存计划曲线:', {
+      number: currentDevice.number,
+      curveType: planCurvesType.value,
+      localCurveData: localCurveData.value
+    })
+    
+    const res = await updatePlanCurves({
+      number: currentDevice.number,
+      curveType: planCurvesType.value,
+      planCurves: {
+        localCurve: localCurveData.value
+      }
+    })
+    
+    if (res.code === 0) {
+      ElMessage.success('计划曲线保存成功')
+      planCurvesDialogVisible.value = false
+      
+      // 保存成功后重新加载计划曲线
+      loadDevicePlanCurves(currentDevice.number)
+    } else {
+      ElMessage.error('保存失败: ' + res.msg)
+    }
+  } catch (error) {
+    ElMessage.error('保存失败: ' + error.message)
+  }
+}
+
+// 显示历史数据弹窗（从主标签右侧按钮进入）
+const showHistoryDataDialog = async () => {
+  // 获取当前选中的设备
+  const current = deviceList.value.find(device => device.number === mainActiveTab.value)
+  if (!current) {
+    ElMessage.warning('请先选择设备')
+    return
+  }
+  
+  // 设置当前设备
+  currentDevice.value = current
+  
+  // 设置默认日期范围为最近7天
+  const end = new Date()
+  const start = new Date()
+  start.setTime(start.getTime() - 3600 * 1000 * 24 * 7)
+  historyDateRange.value = [start, end]
+  
+  // 显示弹窗
+  historyDialogVisible.value = true
+  
+  // 在DOM更新后初始化图表并加载数据
+  await nextTick()
+  
+  // 先初始化图表
+  initChart()
+  
+  // 再加载历史数据（加载完成后会自动调用updateChart）
+  await loadHistoryData()
+}
+
+// =========== 表格控制部分结束 ===============
 
 // 获取需要的字典 可能为空 按需保留
 const setOptions = async () =>{
@@ -200,23 +1111,28 @@ const historyDateRange = ref([])
 const chartContainer = ref(null)
 const currentDevice = ref(null)
 
-// 图表实例
-let chartInstance = null
+// 历史数据图表实例（独立命名，避免与AGC/AVC图表冲突）
+let historyChartInstance = null
 
 // 生成测试数据
 const generateTestData = async () => {
-  ElMessageBox.prompt('请输入设备编号', '生成测试数据', {
+  // 获取当前选中的设备
+  const current = deviceList.value.find(device => device.number === mainActiveTab.value)
+  if (!current) {
+    ElMessage.warning('请先选择设备')
+    return
+  }
+  
+  ElMessageBox.confirm(`确认为并网点【${current.name}】生成100条测试数据？`, '生成测试数据', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
-    inputPlaceholder: '请输入设备编号',
-  }).then(async ({ value }) => {
-    if (!value) {
-      ElMessage.warning('请输入设备编号')
-      return
-    }
-    const res = await generateAgvcBwdTestData({ eqid: value, count: 100 })
+    type: 'warning'
+  }).then(async () => {
+    const res = await generateAgvcBwdTestData({ eqid: current.number, count: 100 })
     if (res.code === 0) {
       ElMessage.success('测试数据生成成功')
+      // 重新加载当前设备的数据
+      loadDeviceParameters(current.number)
     } else {
       ElMessage.error('生成失败: ' + res.msg)
     }
@@ -283,11 +1199,19 @@ const loadHistoryData = async () => {
 
 // 初始化图表
 const initChart = () => {
-  if (!chartContainer.value) return
+  console.log('initChart 被调用')
+  console.log('chartContainer.value:', chartContainer.value)
+  console.log('historyChartInstance:', historyChartInstance)
+  
+  if (!chartContainer.value) {
+    console.warn('chartContainer.value 为空，等待DOM渲染')
+    return
+  }
   
   // 使用 echarts 绘制图表
-  if (!chartInstance) {
-    chartInstance = echarts.init(chartContainer.value)
+  if (!historyChartInstance) {
+    console.log('创建新的echarts实例')
+    historyChartInstance = echarts.init(chartContainer.value)
   }
   
   updateChart()
@@ -295,7 +1219,19 @@ const initChart = () => {
 
 // 更新图表
 const updateChart = () => {
-  if (!chartInstance || !historyData.value.length) return
+  console.log('updateChart 被调用')
+  console.log('historyChartInstance:', historyChartInstance)
+  console.log('historyData.value.length:', historyData.value.length)
+  
+  if (!historyChartInstance) {
+    console.warn('historyChartInstance 为空，无法更新图表')
+    return
+  }
+  
+  if (!historyData.value.length) {
+    console.warn('历史数据为空，不更新图表')
+    return
+  }
   
   // 按点号分组数据
   const dataByPoint = {}
@@ -425,33 +1361,583 @@ const updateChart = () => {
   }
   
   // 设置图表选项
-  chartInstance.setOption(option, true)
+  historyChartInstance.setOption(option, true)
 }
-
-// 监听窗口大小变化，重置图表大小
-const handleResize = () => {
-  if (chartInstance) {
-    chartInstance.resize()
-  }
-}
-
-// 在组件挂载时添加窗口大小监听
-onMounted(() => {
-  window.addEventListener('resize', handleResize)
-})
 
 // 在组件卸载时移除监听
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
-  if (chartInstance) {
-    chartInstance.dispose()
-    chartInstance = null
+  // 清理历史数据图表实例
+  if (historyChartInstance) {
+    historyChartInstance.dispose()
+    historyChartInstance = null
+  }
+  // 清理AGC和AVC图表实例
+  if (agcChartInstance) {
+    agcChartInstance.dispose()
+  }
+  if (avcChartInstance) {
+    avcChartInstance.dispose()
   }
 })
+
+// ======== 大屏幕图表相关 =========
+// 主标签页
+const mainActiveTab = ref('')
+// 控制标签页
+const controlActiveTab = ref('agc')
+// AVC模式切换
+const avcMode = ref('voltage') // voltage 或 reactive
+
+// 图表实例
+let agcChartInstance = null
+let avcChartInstance = null
+
+// AGC图表容器引用
+const agcChartContainer = ref(null)
+// AVC图表容器引用
+const avcChartContainer = ref(null)
+
+// AVC模式切换处理
+const onAvcModeChange = (mode) => {
+  console.log('AVC模式切换到:', mode)
+  // 重新加载AVC图表数据
+  loadAvcChartData()
+}
+
+// 初始化AGC图表
+const initAgcChart = () => {
+  console.log('========== initAgcChart 开始 ==========')
+  console.log('1. agcChartContainer ref存在:', !!agcChartContainer)
+  console.log('2. agcChartContainer.value:', agcChartContainer.value)
+  console.log('3. controlActiveTab值:', controlActiveTab.value)
+  console.log('4. agcChartInstance存在:', !!agcChartInstance)
+  console.log('5. mainActiveTab值:', mainActiveTab.value)
+  
+  // 使用 nextTick 确保 DOM 已更新
+  nextTick(() => {
+    console.log('6. nextTick回调执行')
+    // 获取实际的DOM元素（处理ref在v-for中的情况）
+    let chartDom = agcChartContainer.value
+    
+    // 如果是数组，获取当前激活设备对应的索引
+    if (Array.isArray(chartDom)) {
+      console.log('7. agcChartContainer是数组，长度:', chartDom.length)
+      // 找到当前激活设备的索引
+      const currentIndex = deviceList.value.findIndex(d => d.number === mainActiveTab.value)
+      console.log('8. 当前设备索引:', currentIndex, '设备编号:', mainActiveTab.value)
+      chartDom = chartDom[currentIndex >= 0 ? currentIndex : 0]
+    }
+    
+    console.log('9. 最终DOM元素:', chartDom)
+    console.log('10. DOM类型:', chartDom ? chartDom.constructor.name : 'null')
+    console.log('11. DOM标签名:', chartDom ? chartDom.tagName : 'null')
+    
+    if (!chartDom) {
+      console.error('❌ AGC chart container not found')
+      return
+    }
+    
+    console.log('12. 准备初始化echarts实例')
+    // 使用 echarts 绘制图表
+    try {
+      // 销毁旧的图表实例，确保每次都重新创建
+      if (agcChartInstance) {
+        console.log('13. 销毁旧的echarts实例')
+        agcChartInstance.dispose()
+        agcChartInstance = null
+      }
+      
+      console.log('14. 创建新的echarts实例')
+      agcChartInstance = echarts.init(chartDom)
+      console.log('15. echarts实例创建成功:', !!agcChartInstance)
+      
+      console.log('16. 调用 updateAgcChart')
+      updateAgcChart()
+      console.log('========== initAgcChart 完成 ==========')
+    } catch (error) {
+      console.error('❌ initAgcChart 错误:', error)
+      console.error('错误堆栈:', error.stack)
+    }
+  })
+}
+
+// 更新AGC图表
+const updateAgcChart = () => {
+  console.log('========== updateAgcChart 开始 ==========')
+  console.log('1. agcChartInstance存在:', !!agcChartInstance)
+  
+  if (!agcChartInstance) {
+    console.warn('❌ agcChartInstance不存在，无法更新图表')
+    return
+  }
+  
+  console.log('2. historyData.value长度:', historyData.value.length)
+  console.log('3. historyData样本（前3条）:', historyData.value.slice(0, 3))
+  
+  // 从历史数据中提取点位100和101的数据
+  const realPowerData = historyData.value.filter(d => d.point === '100').sort((a, b) => new Date(a.time) - new Date(b.time))
+  const dispatchPowerData = historyData.value.filter(d => d.point === '101').sort((a, b) => new Date(a.time) - new Date(b.time))
+  
+  console.log('4. 点位100（实时出力）数据量:', realPowerData.length)
+  console.log('5. 点位101（调度出力）数据量:', dispatchPowerData.length)
+  console.log('6. realPowerData样本:', realPowerData.slice(0, 3))
+  
+  // 格式化时间：显示 HH:mm:ss
+  const timeData = realPowerData.map(d => {
+    const time = new Date(d.time)
+    return time.toLocaleTimeString('zh-CN', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })
+  })
+  const realPower = realPowerData.map(d => d.value)
+  const dispatchPower = dispatchPowerData.length > 0 ? dispatchPowerData.map(d => d.value) : []
+  
+  console.log('7. timeData样本（前5个）:', timeData.slice(0, 5))
+  console.log('8. realPower样本（前5个）:', realPower.slice(0, 5))
+  
+  const option = {
+    title: {
+      text: '电站出力曲线',
+      left: 'center'
+    },
+    tooltip: {
+      trigger: 'axis'
+    },
+    legend: {
+      data: ['电站实时出力', '调度下发出力'],
+      top: 30
+    },
+    xAxis: {
+      type: 'category',
+      data: timeData.length > 0 ? timeData : [],
+      name: '时间',
+      axisLabel: {
+        rotate: 45,
+        interval: 'auto'
+      }
+    },
+    yAxis: {
+      type: 'value',
+      name: '功率(kW)'
+    },
+    series: [
+      {
+        name: '电站实时出力',
+        type: 'line',
+        data: realPower,
+        smooth: true,
+        connectNulls: true
+      },
+      {
+        name: '调度下发出力',
+        type: 'line',
+        data: dispatchPower,
+        smooth: true,
+        connectNulls: true
+      }
+    ],
+    grid: {
+      left: '3%',
+      right: '2%',
+      top: '20%',
+      bottom: '15%',
+      containLabel: true
+    }
+  }
+  
+  console.log('9. 准备setOption')
+  agcChartInstance.setOption(option, true)
+  console.log('10. setOption完成')
+  console.log('========== updateAgcChart 结束 ==========')
+}
+
+// 初始化AVC图表
+const initAvcChart = () => {
+  // 使用 nextTick 确保 DOM 已更新
+  nextTick(() => {
+    // 获取实际的DOM元素（处理ref在v-for中的情况）
+    let chartDom = avcChartContainer.value
+    
+    // 如果是数组，获取当前激活设备对应的索引
+    if (Array.isArray(chartDom)) {
+      const currentIndex = deviceList.value.findIndex(d => d.number === mainActiveTab.value)
+      chartDom = chartDom[currentIndex >= 0 ? currentIndex : 0]
+    }
+    
+    if (!chartDom) {
+      console.log('AVC chart container not found')
+      return
+    }
+    
+    // 销毁旧的图表实例，确保每次都重新创建
+    if (avcChartInstance) {
+      avcChartInstance.dispose()
+      avcChartInstance = null
+    }
+    
+    // 使用 echarts 绘制图表
+    avcChartInstance = echarts.init(chartDom)
+    
+    updateAvcChart()
+  })
+}
+
+// 更新AVC图表（使用实际数据）
+const updateAvcChart = () => {
+  if (!avcChartInstance) return
+  
+  console.log('updateAvcChart called, avcMode:', avcMode.value, 'historyData:', historyData.value)
+  
+  let title, point1, point2, seriesName1, seriesName2, yAxisName
+  
+  if (avcMode.value === 'voltage') {
+    // 电压模式
+    title = 'AVC电压曲线'
+    point1 = '102' // 目标电压
+    point2 = '103' // 当前电压
+    seriesName1 = '目标电压'
+    seriesName2 = '当前电压'
+    yAxisName = '电压(kV)'
+  } else {
+    // 无功模式
+    title = 'AVC无功曲线'
+    point1 = '104' // 目标无功
+    point2 = '105' // 当前无功
+    seriesName1 = '目标无功'
+    seriesName2 = '当前无功'
+    yAxisName = '无功(kVar)'
+  }
+  
+  // 从历史数据中辐取对应点位的数据
+  const data1 = historyData.value.filter(d => d.point === point1).sort((a, b) => new Date(a.time) - new Date(b.time))
+  const data2 = historyData.value.filter(d => d.point === point2).sort((a, b) => new Date(a.time) - new Date(b.time))
+  
+  const timeData = data1.map(d => {
+    const time = new Date(d.time)
+    return time.toLocaleTimeString('zh-CN', { hour12: false, hour: '2-digit', minute: '2-digit' })
+  })
+  const seriesData1 = data1.map(d => d.value)
+  const seriesData2 = data2.length > 0 ? data2.map(d => d.value) : []
+  
+  const option = {
+    title: {
+      text: title,
+      left: 'center'
+    },
+    tooltip: {
+      trigger: 'axis'
+    },
+    legend: {
+      data: [seriesName1, seriesName2],
+      top: 30
+    },
+    xAxis: {
+      type: 'category',
+      data: timeData.length > 0 ? timeData : [],
+      name: '时间'
+    },
+    yAxis: {
+      type: 'value',
+      name: yAxisName
+    },
+    series: [
+      {
+        name: seriesName1,
+        type: 'line',
+        data: seriesData1,
+        smooth: true,
+        connectNulls: true
+      },
+      {
+        name: seriesName2,
+        type: 'line',
+        data: seriesData2,
+        smooth: true,
+        connectNulls: true
+      }
+    ],
+    grid: {
+      left: '3%',
+      right: '2%',
+      top: '20%',
+      bottom: '15%',
+      containLabel: true
+    }
+  }
+  
+  avcChartInstance.setOption(option, true)
+}
+
+// 加载AVC图表数据
+const loadAvcChartData = () => {
+  updateAvcChart()
+}
+
+// 在组件挂载时初始化图表
+onMounted(() => {
+  window.addEventListener('resize', handleResize)
+  // 加载并网点设备列表
+  getDeviceList()
+})
+
+// 监听主标签页变化（并网点切换）
+watch(mainActiveTab, (newNumber, oldNumber) => {
+  if (!newNumber || newNumber === oldNumber) return
+  
+  console.log('并网点切换:', oldNumber, '->', newNumber)
+  
+  // 加载新设备的参数和曲线
+  loadDeviceParameters(newNumber)
+  loadDevicePlanCurves(newNumber)
+  
+  // 延迟初始化图表
+  nextTick(() => {
+    if (controlActiveTab.value === 'agc') {
+      initAgcChart()
+    } else {
+      initAvcChart()
+    }
+  })
+})
+
+// 监听控制标签页变化，重新初始化对应图表
+watch(controlActiveTab, (newTab) => {
+  // 在下次DOM更新后初始化图表
+  nextTick(() => {
+    if (newTab === 'agc') {
+      initAgcChart()
+    } else if (newTab === 'avc') {
+      initAvcChart()
+    }
+  })
+})
+
+// 监听窗口大小变化，重置图表大小
+const handleResize = () => {
+  // 历史数据图表
+  if (historyChartInstance) {
+    historyChartInstance.resize()
+  }
+  // AGC图表
+  if (agcChartInstance) {
+    agcChartInstance.resize()
+  }
+  // AVC图表
+  if (avcChartInstance) {
+    avcChartInstance.resize()
+  }
+}
 
 
 </script>
 
-<style>
+<style scoped>
+/* 实时控制面板 */
+.realtime-control-panel {
+  background: #f5f7fa;
+  border: 1px solid #e4e7ed;
+  border-radius: 4px;
+  padding: 15px;
+  margin-bottom: 20px;
+}
 
+/* 设备选择器 */
+.device-selector {
+  margin-bottom: 15px;
+}
+
+.selector-title {
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 10px;
+  color: #303133;
+}
+
+.device-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.device-button {
+  margin-bottom: 5px;
+}
+
+/* 控制标签页 */
+.control-tabs {
+  margin-top: 15px;
+}
+
+/* 未选择设备提示 */
+.no-device-selected {
+  padding: 20px;
+  text-align: center;
+}
+
+/* 主标签页 */
+.main-tabs {
+  background: #ffffff;
+  border: 1px solid #e4e7ed;
+  border-radius: 4px;
+  padding: 15px;
+  margin-bottom: 20px;
+}
+
+/* 控制内容 */
+.control-content {
+  padding: 15px 0;
+}
+
+/* 控制区域 */
+.control-section {
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.control-section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.section-title {
+  font-size: 14px;
+  font-weight: bold;
+  margin-bottom: 10px;
+  color: #606266;
+  display: flex;
+  align-items: center;
+}
+
+.section-title::before {
+  content: '';
+  width: 4px;
+  height: 16px;
+  background: #409eff;
+  border-radius: 2px;
+  margin-right: 8px;
+}
+
+.control-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+/* 控制网格 */
+.control-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 15px;
+}
+
+/* 电站负荷特殊网格（整整增大） */
+.control-grid.load-grid {
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 20px;
+  padding: 15px 0;
+}
+
+/* 控制项 */
+.control-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.item-label {
+  font-size: 12px;
+  color: #606266;
+  margin-bottom: 5px;
+}
+
+.item-value {
+  font-size: 14px;
+  font-weight: bold;
+  color: #303133;
+}
+
+.item-value.readonly {
+  color: #909399;
+  font-weight: normal;
+}
+
+.radio-group {
+  display: flex;
+  align-items: center;
+}
+
+.radio-group .el-radio {
+  margin-right: 15px;
+}
+
+/* 图表区域 */
+.chart-section {
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 2px solid #f0f0f0;
+}
+
+/* 图表区域 - 位于最上面 */
+.chart-section.chart-top {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+/* AVC模式切换 */
+.avc-mode-switch {
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+/* 图表容器 */
+.chart-container {
+  height: 400px;
+  margin-top: 15px;
+  border: 1px solid #e4e7ed;
+  border-radius: 4px;
+  width: 100%;
+  margin: 15px 0 0 0;
+  padding: 0;
+}
+
+.chart-wrapper {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  margin: 0;
+}
+
+/* 优化控制项样式 */
+.control-item :deep(.el-input-number) {
+  width: 100%;
+}
+
+.control-item :deep(.el-input-number .el-input__wrapper) {
+  padding: 0 8px;
+  height: 32px;
+}
+
+.control-item :deep(.el-input-number input) {
+  text-align: center;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .control-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .control-row {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .device-buttons {
+    flex-direction: column;
+  }
+}
 </style>

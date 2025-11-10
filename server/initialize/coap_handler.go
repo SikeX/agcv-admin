@@ -3,6 +3,7 @@ package initialize
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/flipped-aurora/gin-vue-admin/server/global"
 	"github.com/flipped-aurora/gin-vue-admin/server/model/agvc"
@@ -34,6 +35,8 @@ func handleHealthCheck(ctx context.Context, msg coapMessage) (code byte, payload
 func handleAgvcData(ctx context.Context, msg coapMessage) (code byte, payload []byte) {
 	// 解析JSON数据
 	var dataBatch agvc.AgvcDataBatch
+	// 查看原始JSON数据
+	fmt.Println("cccccccc", string(msg.payload))
 	if err := json.Unmarshal(msg.payload, &dataBatch); err != nil {
 		global.GVA_LOG.Error("Failed to parse AGVC data", zap.Error(err))
 		return coapCodeBadRequest, []byte(`{"error":"invalid json"}`)
@@ -57,6 +60,8 @@ func handleAgvcData(ctx context.Context, msg coapMessage) (code byte, payload []
 			Value:    item.Value,
 		}
 	}
+	//查看转换后的数据
+	global.GVA_LOG.Debug("Converted AGVC data", zap.Any("data", convertedData))
 
 	// 存储到内存，由DataStorage每5分钟定时保存到InfluxDB
 	agvcMainService.DataStorage.StoreAgvcDataBatch(convertedData)
