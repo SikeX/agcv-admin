@@ -52,8 +52,8 @@ const (
 	// 遥测(YC)
 	AVC_YC_REACTIVE_INC_CAP    = "无功可增容量" // 点标识: 401
 	AVC_YC_REACTIVE_DEC_CAP    = "无功可减容量" // 点标识: 402
-	AVC_YC_VOLTAGE_EXEC_VALUE  = "电压执行值"  // 点标识: 401
-	AVC_YC_REACTIVE_EXEC_VALUE = "无功执行值"  // 点标识: 402
+	AVC_YC_VOLTAGE_EXEC_VALUE  = "电压执行值"  // 点标识: 403
+	AVC_YC_REACTIVE_EXEC_VALUE = "无功执行值"  // 点标识: 404
 
 	// 遥控(YK)
 	AVC_YK_SIGNAL         = "AVC功能投退信号"     // 点标识: 401

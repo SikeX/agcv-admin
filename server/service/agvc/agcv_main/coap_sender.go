@@ -315,8 +315,8 @@ func (s *coapSender) SendAVCResultToDispatch(bwdNo int, results map[string]inter
 	ycPoints := map[string]string{
 		// "401": "reactiveIncreaseCap", // 无功可增容量
 		// "402": "reactiveDecreaseCap", // 无功可减容量
-		"401": "voltageExecValue",  // 电压执行值
-		"402": "reactiveExecValue", // 无功执行值
+		"403": "voltageExecValue",  // 电压执行值
+		"404": "reactiveExecValue", // 无功执行值
 	}
 
 	// 添加遥信点

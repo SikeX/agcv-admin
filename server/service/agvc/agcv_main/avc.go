@@ -191,7 +191,7 @@ func (s *avc) executeAVCCycle(bwdNo int) error {
 		}()
 
 		// 执行远程调控逻辑
-		return s.executeRemoteAVCControl(bwdNo, config, &actualVoltage, &actualReactive)
+		return s.executeRemoteAVCControl(bwdNo, config)
 	}
 
 	// 执行就地调控逻辑
@@ -199,14 +199,14 @@ func (s *avc) executeAVCCycle(bwdNo int) error {
 }
 
 // executeRemoteAVCControl 执行远程AVC调控逻辑
-func (s *avc) executeRemoteAVCControl(bwdNo int, config agvc.AgvcBwdSetting, actualVoltage, actualReactive *float64) error {
+func (s *avc) executeRemoteAVCControl(bwdNo int, config agvc.AgvcBwdSetting) error {
 	// 步骤1：检查AVC投退信号（从内存读取）
 	var avcEnabled bool
 	pointID, err := PointMapper.GetPointID(cons.TYPE_AVC, cons.AVC_YX_SIGNAL)
 	if err != nil {
 		pointID = "401" // 使用默认点标识
 	}
-	signalVal, err := DataStorage.GetDataAsFloat64(1, bwdNo, cons.TYPE_AGC, cons.YX, pointID)
+	signalVal, err := DataStorage.GetDataAsFloat64(1, bwdNo, cons.TYPE_AVC, cons.YX, pointID)
 	if err != nil {
 		global.GVA_LOG.Debug("从调度存储读取AVC投退信号失败，使用数据库配置", zap.Error(err))
 		avcEnabled = config.AvcIsEnabled != nil && *config.AvcIsEnabled == 1
@@ -226,7 +226,7 @@ func (s *avc) executeRemoteAVCControl(bwdNo int, config agvc.AgvcBwdSetting, act
 	// 步骤2：检查AVC就地远方控制模式
 	pointID, err = PointMapper.GetPointID(cons.TYPE_AVC, cons.AVC_YX_CONTROL_MODE)
 	if err == nil {
-		controlMode, err := DispatchStorage.GetDataAsFloat64(1, bwdNo, cons.TYPE_BWG, cons.YX, pointID)
+		controlMode, err := DataStorage.GetDataAsFloat64(1, bwdNo, cons.TYPE_AVC, cons.YX, pointID)
 		if err == nil && controlMode != 1 {
 			global.GVA_LOG.Debug("AVC控制模式不是远程模式，跳过调控",
 				zap.Int("bwdNo", bwdNo),
@@ -235,24 +235,41 @@ func (s *avc) executeRemoteAVCControl(bwdNo int, config agvc.AgvcBwdSetting, act
 		}
 	}
 
+	actualVoltage := 0.0
+	actualReactive := 0.0
+
 	// 步骤3：采集并网点数据
-	collectData, err := s.collectAVCData(bwdNo)
+	// collectData, err := s.collectAVCData(bwdNo)
+	// if err != nil {
+	// 	global.GVA_LOG.Warn("采集AVC数据失败，使用默认值",
+	// 		zap.Int("bwdNo", bwdNo),
+	// 		zap.Error(err))
+
+	// }
+
+	//从内存获取电压执行值和无功执行值
+	pointID, err = PointMapper.GetPointID(cons.TYPE_AVC, cons.AVC_YC_VOLTAGE_EXEC_VALUE)
 	if err != nil {
-		global.GVA_LOG.Warn("采集AVC数据失败，使用默认值",
-			zap.Int("bwdNo", bwdNo),
-			zap.Error(err))
-		*actualVoltage = 0.0
-		*actualReactive = 0.0
-	} else {
-		*actualVoltage = collectData["pointVoltage"].(float64)
-		*actualReactive = collectData["totalReactive"].(float64)
+		pointID = "403" // 使用默认点标识
+	}
+	voltageExec, err := DataStorage.GetDataAsFloat64(1, bwdNo, cons.TYPE_AVC, cons.YX, pointID)
+	if err == nil {
+		actualVoltage = voltageExec
+	}
+	pointID, err = PointMapper.GetPointID(cons.TYPE_AVC, cons.AVC_YC_REACTIVE_EXEC_VALUE)
+	if err != nil {
+		pointID = "404" // 使用默认点标识
+	}
+	reactiveExec, err := DataStorage.GetDataAsFloat64(1, bwdNo, cons.TYPE_AVC, cons.YX, pointID)
+	if err == nil {
+		actualReactive = reactiveExec
 	}
 
 	// 步骤4：检查AVC开/闭环状态
 	var isOpenLoop bool
-	pointID, err = PointMapper.GetPointID(cons.TYPE_BWG, cons.AVC_YX_LOOP_STATUS)
+	pointID, err = PointMapper.GetPointID(cons.TYPE_AVC, cons.AVC_YX_LOOP_STATUS)
 	if err == nil {
-		loopStatus, err := DispatchStorage.GetDataAsFloat64(1, bwdNo, cons.TYPE_BWG, cons.YX, pointID)
+		loopStatus, err := DataStorage.GetDataAsFloat64(1, bwdNo, cons.TYPE_AVC, cons.YX, pointID)
 		if err == nil {
 			isOpenLoop = loopStatus == 1
 		} else {
@@ -265,27 +282,27 @@ func (s *avc) executeRemoteAVCControl(bwdNo int, config agvc.AgvcBwdSetting, act
 	global.GVA_LOG.Debug("AVC数据采集（远程模式）",
 		zap.Int("bwdNo", bwdNo),
 		zap.Bool("isOpenLoop", isOpenLoop),
-		zap.Float64("并网点电压", *actualVoltage),
-		zap.Float64("总无功", *actualReactive))
+		zap.Float64("并网点电压", actualVoltage),
+		zap.Float64("总无功", actualReactive))
 
 	// 步骤5：获取目标电压范围
 	targetLow := config.AvcAdjustmentRangeMin
 	targetHigh := config.AvcAdjustmentRangeMax
 
 	// 步骤6：判断电压是否在合格范围
-	if *actualVoltage >= *targetLow && *actualVoltage <= *targetHigh {
+	if actualVoltage >= *targetLow && actualVoltage <= *targetHigh {
 		global.GVA_LOG.Debug("电压在合格范围，无需调节（远程模式）",
 			zap.Int("bwdNo", bwdNo),
-			zap.Float64("电压", *actualVoltage))
+			zap.Float64("电压", actualVoltage))
 		return nil
 	}
 
 	// 步骤7：计算电压偏差
 	var deltaV float64
-	if *actualVoltage < *targetLow {
-		deltaV = *targetLow - *actualVoltage
+	if actualVoltage < *targetLow {
+		deltaV = *targetLow - actualVoltage
 	} else {
-		deltaV = *targetHigh - *actualVoltage
+		deltaV = *targetHigh - actualVoltage
 	}
 
 	// 判断是否在死区内
@@ -323,7 +340,7 @@ func (s *avc) executeRemoteAVCControl(bwdNo int, config agvc.AgvcBwdSetting, act
 	}
 
 	// 步骤9：计算所需无功调节量
-	requiredDeltaQ := s.calcRequiredReactive(deltaV, *actualVoltage, *config.AvcSystemImpedance)
+	requiredDeltaQ := s.calcRequiredReactive(deltaV, actualVoltage, *config.AvcSystemImpedance)
 
 	// 步骤10：执行无功调节
 	return s.executeRemoteReactiveControl(bwdNo, requiredDeltaQ)
@@ -850,7 +867,7 @@ func (s *avc) sendAVCResultToDispatch(bwdNo int, config agvc.AgvcBwdSetting, act
 	// 403: 电压执行值（当前并网点电压）
 	pointID, _ = PointMapper.GetPointID(cons.TYPE_AVC, cons.AVC_YC_VOLTAGE_EXEC_VALUE)
 	if pointID == "" {
-		pointID = "401"
+		pointID = "403"
 	}
 	voltageExecValue, err := DispatchStorage.GetDataAsFloat64(1, bwdNo, cons.TYPE_AVC, cons.YT, pointID)
 	if err != nil {
@@ -861,7 +878,7 @@ func (s *avc) sendAVCResultToDispatch(bwdNo int, config agvc.AgvcBwdSetting, act
 	// 404: 无功执行值（当前总无功）
 	pointID, _ = PointMapper.GetPointID(cons.TYPE_AVC, cons.AVC_YC_REACTIVE_EXEC_VALUE)
 	if pointID == "" {
-		pointID = "402"
+		pointID = "404"
 	}
 	reactiveExecValue, err := DispatchStorage.GetDataAsFloat64(1, bwdNo, cons.TYPE_AVC, cons.YT, pointID)
 	if err != nil {
