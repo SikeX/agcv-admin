@@ -1,4 +1,4 @@
-package agcv_main
+package inverter_brands
 
 import (
     "github.com/flipped-aurora/gin-vue-admin/server/global"
