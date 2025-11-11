@@ -108,3 +108,10 @@ const (
 	HUAWEI_REACTIVE_EXEC_VALUE = "505" //无功执行值
 
 )
+
+const (
+	HUAWEI_WG_MODE_PF       = 40122 //功率因数
+	HUAWEI_WG_MODE_QS       = 40123 //Q/S调节
+	HUAWEI_WG_MODE_NIGHT    = 40129 //夜间无功功率
+	HUAWEI_WG_MODE_NIGHT_QS = 42809 //夜间无功Q/S
+)

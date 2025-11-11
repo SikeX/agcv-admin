@@ -46,15 +46,15 @@ func (a *avc) GetAVCConfig(c *gin.Context) {
 	response.OkWithData(config, c)
 }
 
-// UpdateAVCConfig 更新AVC配置
-// @Tags     AGVC_AVC
-// @Summary  更新AVC配置
-// @Security ApiKeyAuth
-// @accept   application/json
-// @Produce  application/json
-// @Param    data body request.AVCConfigUpdate true "配置信息"
-// @Success  200  {object} response.Response{msg=string} "更新成功"
-// @Router   /agvc/avc/config [put]
+// // UpdateAVCConfig 更新AVC配置
+// // @Tags     AGVC_AVC
+// // @Summary  更新AVC配置
+// // @Security ApiKeyAuth
+// // @accept   application/json
+// // @Produce  application/json
+// // @Param    data body request.AVCConfigUpdate true "配置信息"
+// // @Success  200  {object} response.Response{msg=string} "更新成功"
+// // @Router   /agvc/avc/config [put]
 func (a *avc) UpdateAVCConfig(c *gin.Context) {
 	var req request.AVCConfigUpdate
 	err := c.ShouldBindJSON(&req)
@@ -73,15 +73,15 @@ func (a *avc) UpdateAVCConfig(c *gin.Context) {
 	response.OkWithMessage("更新成功", c)
 }
 
-// CreateAVCConfig 创建AVC配置
-// @Tags     AGVC_AVC
-// @Summary  创建AVC配置
-// @Security ApiKeyAuth
-// @accept   application/json
-// @Produce  application/json
-// @Param    data body model.AVCConfig true "配置信息"
-// @Success  200  {object} response.Response{msg=string} "创建成功"
-// @Router   /agvc/avc/config [post]
+// // CreateAVCConfig 创建AVC配置
+// // @Tags     AGVC_AVC
+// // @Summary  创建AVC配置
+// // @Security ApiKeyAuth
+// // @accept   application/json
+// // @Produce  application/json
+// // @Param    data body model.AVCConfig true "配置信息"
+// // @Success  200  {object} response.Response{msg=string} "创建成功"
+// // @Router   /agvc/avc/config [post]
 func (a *avc) CreateAVCConfig(c *gin.Context) {
 	var config agvc.AgvcBwdSetting
 	err := c.ShouldBindJSON(&config)

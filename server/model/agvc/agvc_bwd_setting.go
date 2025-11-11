@@ -24,12 +24,16 @@ type AgvcBwdSetting struct {
 	AvcSystemImpedance            *float64 `json:"avcSystemImpedance" form:"avcSystemImpedance" gorm:"column:avc_system_impedance;"`                                   //AVC系统阻抗
 	AvcAdjustmentRangeMin         *float64 `json:"avcAdjustmentRangeMin" form:"avcAdjustmentRangeMin" gorm:"column:avc_adjustment_range_min;"`                         //AVC调节范围最小值(kV)
 	AvcAdjustmentRangeMax         *float64 `json:"avcAdjustmentRangeMax" form:"avcAdjustmentRangeMax" gorm:"column:avc_adjustment_range_max;"`                         //AVC调节范围最大值(kV)
-	AgcIsEnabled                  *int64   `json:"agcIsEnabled" form:"agcIsEnabled" gorm:"column:agc_is_enabled;"`
-	AvcIsEnabled                  *int64   `json:"avcIsEnabled" form:"avcIsEnabled" gorm:"column:avc_is_enabled;"`
-	ControlAuth                   *int64   `json:"controlAuth" form:"controlAuth" gorm:"column:control_auth;"`
-	DispatchExecValue             *float64 `json:"dispatchExecValue" form:"dispatchExecValue" gorm:"column:dispatch_exec_value;"`
-	StationExecValue              *float64 `json:"stationExecValue" form:"stationExecValue" gorm:"column:station_exec_value;"`
-	RunMode                       *int64   `json:"runMode" form:"runMode" gorm:"column:run_mode;"` // 运行模式,1-开环，2-闭环
+	AgcIsEnabled                  *int64   `json:"agcIsEnabled" form:"agcIsEnabled" gorm:"column:agc_is_enabled;"`                                                     //AGC是否启用
+	AvcIsEnabled                  *int64   `json:"avcIsEnabled" form:"avcIsEnabled" gorm:"column:avc_is_enabled;"`                                                     //AVC是否启用
+	AgcRemoteMode                 *int64   `json:"agcRemoteMode" form:"agcRemoteMode" gorm:"column:agc_remote_mode;"`                                                  //AGC远程模式
+	AvcRemoteMode                 *int64   `json:"avcRemoteMode" form:"avcRemoteMode" gorm:"column:avc_remote_mode;"`                                                  //AVC远程模式
+	AgcDispatchExecValue          *float64 `json:"agcDispatchExecValue" form:"agcDispatchExecValue" gorm:"column:agc_dispatch_exec_value;"`                            //agc度执行值(kW)
+	StationExecValue              *float64 `json:"stationExecValue" form:"stationExecValue" gorm:"column:station_exec_value;"`                                         //站点执行值(kW)
+	AgcLoopStatus                 *int64   `json:"agcLoopStatus" form:"agcLoopStatus" gorm:"column:agc_loop_status;"`
+	AvcLoopStatus                 *int64   `json:"avcLoopStatus" form:"avcLoopStatus" gorm:"column:avc_loop_status;"`              // avc运行模式,1-开环，2-闭环
+	AvcVolteExecValue             *float64 `json:"avcVolteExecValue" form:"avcVolteExecValue" gorm:"column:avc_volte_exec_value;"` //avc电压执行值(kV)
+	AvcWGExecValue                *float64 `json:"avcWGExecValue" form:"avcWGExecValue" gorm:"column:avc_wg_exec_value;"`          //avc无功执行值
 }
 
 // TableName 并网点配置 AgvcBwdSetting自定义表名 agvc_bwd_setting

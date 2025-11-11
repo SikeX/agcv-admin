@@ -27,9 +27,9 @@ func (f *InverterBrandFactory) RegisterBrand(brand InverterBrandInterface) {
 	brandCode := brand.GetBrandCode()
 	f.brands[brandCode] = brand
 
-	global.GVA_LOG.Info("注册逆变器品牌",
-		zap.Int("brandCode", brandCode),
-		zap.String("brandName", brand.GetBrandName()))
+	//global.GVA_LOG.Info("注册逆变器品牌",
+	//	zap.Int("brandCode", brandCode),
+	//	zap.String("brandName", brand.GetBrandName()))
 }
 
 // GetBrand 获取品牌实现
@@ -100,7 +100,7 @@ func init() {
 	// BrandFactory.RegisterBrand(&SungrowInverterBrand{})
 	// BrandFactory.RegisterBrand(&GoodweInverterBrand{})
 
-	global.GVA_LOG.Info("逆变器品牌工厂初始化完成")
+	//global.GVA_LOG.Info("逆变器品牌工厂初始化完成")
 }
 
 // GetDefaultBrand 获取默认品牌（华为）

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/flipped-aurora/gin-vue-admin/server/model/agvc/agvc_main"
 	"github.com/flipped-aurora/gin-vue-admin/server/model/agvc/agvc_main/request"
 	"github.com/flipped-aurora/gin-vue-admin/server/service/agvc/cons"
 
@@ -233,9 +234,87 @@ func (s *coapSender) GetDispatchBackCoapPort() int {
 	return 1187
 }
 
+func (s *coapSender) SavaDataToMemAndDB(bwdNo int, messages []request.CoAPDataMessage) error {
+	//获取并网点最新配置
+	config, err := AGC.GetAGCConfig(bwdNo)
+	if err != nil {
+		global.GVA_LOG.Error("获取AGC配置失败", zap.Error(err))
+		return err
+	}
+
+	for _, message := range messages {
+		DataStorage.StoreData(&agvc_main.RealtimeData{
+			PSID:     message.PSID,
+			EQID:     message.EQID,
+			EQType:   message.EQType,
+			DataType: message.DataType,
+			Point:    message.Point,
+			Value:    message.Value,
+		})
+		if message.EQType == cons.TYPE_AGC {
+			if message.DataType == cons.YX {
+				switch message.Point {
+				case "401":
+					val := int64(message.Value.(float64))
+					config.AgcIsEnabled = &val
+				case "402":
+					val := int64(message.Value.(float64))
+					config.AgcRemoteMode = &val
+				case "404":
+					val := int64(message.Value.(float64))
+					config.AgcLoopStatus = &val
+				}
+			}
+			if message.DataType == cons.YC {
+				switch message.Point {
+				case "403":
+					val := message.Value.(float64)
+					config.AgcDispatchExecValue = &val
+				}
+
+			}
+		}
+		if message.EQType == cons.TYPE_AVC {
+			if message.DataType == cons.YX {
+				switch message.Point {
+				case "401":
+					val := int64(message.Value.(float64))
+					config.AvcIsEnabled = &val
+				case "402":
+					val := int64(message.Value.(float64))
+					config.AvcRemoteMode = &val
+				case "404":
+					val := int64(message.Value.(float64))
+					config.AvcLoopStatus = &val
+				}
+			}
+			if message.DataType == cons.YC {
+				switch message.Point {
+				case "403":
+					val := message.Value.(float64)
+					config.AvcVolteExecValue = &val
+				case "404":
+					val := message.Value.(float64)
+					config.AvcWGExecValue = &val
+				}
+			}
+		}
+	}
+	//更新数据库
+	global.GVA_DB.Save(&config)
+	return nil
+}
+
 // SendAGCResultToDispatch 发送AGC计算结果到调度（1189端口）
 func (s *coapSender) SendAGCResultToDispatch(bwdNo int, results map[string]interface{}) error {
 	messages := make([]request.CoAPDataMessage, 0)
+
+	//发送给调度后更新内存和数据库
+	defer func() {
+		if err := s.SavaDataToMemAndDB(bwdNo, messages); err != nil {
+			global.GVA_LOG.Error("保存AGC数据到内存和数据库失败", zap.Error(err))
+		}
+	}()
 
 	// AGC遥信标准点
 	yxPoints := map[string]string{
@@ -300,6 +379,13 @@ func (s *coapSender) SendAGCResultToDispatch(bwdNo int, results map[string]inter
 // SendAVCResultToDispatch 发送AVC计算结果到调度（1189端口）
 func (s *coapSender) SendAVCResultToDispatch(bwdNo int, results map[string]interface{}) error {
 	messages := make([]request.CoAPDataMessage, 0)
+
+	//发送给调度后更新内存和数据库
+	defer func() {
+		if err := s.SavaDataToMemAndDB(bwdNo, messages); err != nil {
+			global.GVA_LOG.Error("保存AGC数据到内存和数据库失败", zap.Error(err))
+		}
+	}()
 
 	// AVC遥信标准点
 	yxPoints := map[string]string{

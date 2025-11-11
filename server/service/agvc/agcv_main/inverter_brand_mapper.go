@@ -2,16 +2,18 @@ package agcv_main
 
 import (
 	"fmt"
+
 	"github.com/flipped-aurora/gin-vue-admin/server/service/agvc/cons"
 )
 
 // InverterBrandPointMapping 逆变器品牌点位映射
 type InverterBrandPointMapping struct {
-	Brand              int    // 品牌代码
-	BrandName          string // 品牌名称
-	PowerSwitchYK      string // 开关机遥控点位
-	ActivePowerLimitYT string // 有功功率降额遥调点位
-	ReactivePowerYT    string // 无功功率补偿遥调点位
+	Brand                    int    // 品牌代码
+	BrandName                string // 品牌名称
+	PowerSwitchYK            string // 开关机遥控点位
+	ActivePowerLimitYT       string // 有功功率降额遥调点位
+	ReactivePowerYT          string // 无功功率补偿遥调点位
+	ActivePowerLimitPercetYT string // 有功功率降额百分比遥调点位
 }
 
 // inverterBrandMapper 逆变器品牌映射器
@@ -27,11 +29,12 @@ var InverterBrandMapper = &inverterBrandMapper{
 func (m *inverterBrandMapper) Initialize() {
 	// 华为逆变器点位映射
 	m.mappings[cons.INVERTER_BRAND_HUAWEI] = InverterBrandPointMapping{
-		Brand:              cons.INVERTER_BRAND_HUAWEI,
-		BrandName:          "华为",
-		PowerSwitchYK:      "401", // 开关机
-		ActivePowerLimitYT: "401", // 有功功率降额执行值
-		ReactivePowerYT:    "402", // 无功功率补偿执行值
+		Brand:                    cons.INVERTER_BRAND_HUAWEI,
+		BrandName:                "华为",
+		PowerSwitchYK:            "401", // 开关机
+		ActivePowerLimitYT:       "501", // 有功功率降额执行值
+		ReactivePowerYT:          "503", // 无功功率补偿执行值
+		ActivePowerLimitPercetYT: "503", // 有功功率降额百分比遥调点位
 	}
 
 	// 阳光逆变器点位映射

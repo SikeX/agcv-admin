@@ -101,10 +101,10 @@ func (c *BwdSettingCache) UpdateFromRemote(bwdNo int, updates map[string]interfa
 
 	// 应用更新
 	if val, ok := updates["dispatch_exec_value"].(float64); ok {
-		currentSetting.DispatchExecValue = &val
+		currentSetting.AgcDispatchExecValue = &val
 	}
 	if val, ok := updates["control_auth"].(int64); ok {
-		currentSetting.ControlAuth = &val
+		currentSetting.AgcRemoteMode = &val
 	}
 	if val, ok := updates["agc_is_enabled"].(int64); ok {
 		currentSetting.AgcIsEnabled = &val
@@ -113,7 +113,7 @@ func (c *BwdSettingCache) UpdateFromRemote(bwdNo int, updates map[string]interfa
 		currentSetting.AvcIsEnabled = &val
 	}
 	if val, ok := updates["run_mode"].(int64); ok {
-		currentSetting.RunMode = &val
+		currentSetting.AgcLoopStatus = &val
 	}
 
 	// 更新数据库
@@ -140,14 +140,14 @@ func (c *BwdSettingCache) syncToDispatch(bwdNo int, setting agvc.AgvcBwdSetting)
 	if setting.AgcIsEnabled != nil {
 		results["agcSignal"] = *setting.AgcIsEnabled
 	}
-	if setting.ControlAuth != nil {
-		results["agcControlMode"] = *setting.ControlAuth
+	if setting.AgcRemoteMode != nil {
+		results["agcControlMode"] = *setting.AgcRemoteMode
 	}
-	if setting.RunMode != nil {
-		results["agcLoopStatus"] = *setting.RunMode
+	if setting.AgcLoopStatus != nil {
+		results["agcLoopStatus"] = *setting.AgcLoopStatus
 	}
-	if setting.DispatchExecValue != nil {
-		results["powerExecValue"] = *setting.DispatchExecValue
+	if setting.AgcDispatchExecValue != nil {
+		results["powerExecValue"] = *setting.AgcDispatchExecValue
 	}
 
 	// AVC相关配置
