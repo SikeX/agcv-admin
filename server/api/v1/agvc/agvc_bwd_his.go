@@ -531,3 +531,30 @@ func (agvcBwdHisApi *AgvcBwdHisApi) GetAvcStatus(c *gin.Context) {
 	}
 	response.OkWithData(data, c)
 }
+
+// GetBwdRealtimeData 获取并网点实时数据
+// @Tags AgvcBwdHis
+// @Summary 获取并网点实时数据
+// @Security ApiKeyAuth
+// @Accept application/json
+// @Produce application/json
+// @Param number query string true "并网点编号"
+// @Success 200 {object} response.Response{data=object,msg=string} "获取成功"
+// @Router /agvcBwdHis/getBwdRealtimeData [get]
+func (agvcBwdHisApi *AgvcBwdHisApi) GetBwdRealtimeData(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	number := c.Query("number")
+	if number == "" {
+		response.FailWithMessage("参数不完整", c)
+		return
+	}
+
+	realtimeData, err := agvcBwdHisService.GetBwdRealtimeData(ctx, number)
+	if err != nil {
+		global.GVA_LOG.Error("获取并网点实时数据失败!", zap.Error(err))
+		response.FailWithMessage("获取并网点实时数据失败:"+err.Error(), c)
+		return
+	}
+	response.OkWithData(realtimeData, c)
+}

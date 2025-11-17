@@ -1,6 +1,8 @@
 package agcv_main
 
 import (
+	"strconv"
+
 	"github.com/flipped-aurora/gin-vue-admin/server/global"
 	"github.com/flipped-aurora/gin-vue-admin/server/model/agvc/agvc_main"
 	"github.com/flipped-aurora/gin-vue-admin/server/model/agvc/agvc_main/request"
@@ -169,12 +171,28 @@ func (a *device) GetDeviceRealtimeData(c *gin.Context) {
 	eqid := c.Query("eqid")
 	eqType := c.Query("eqType")
 
-	if psid == "" || eqid == "" || eqType == "" {
+	psidInt, err := strconv.Atoi(psid)
+	if err != nil {
+		response.FailWithMessage("电站ID无效", c)
+		return
+	}
+	eqidInt, err := strconv.Atoi(eqid)
+	if err != nil {
+		response.FailWithMessage("设备ID无效", c)
+		return
+	}
+	eqTypeInt, err := strconv.Atoi(eqType)
+	if err != nil {
+		response.FailWithMessage("设备类型无效", c)
+		return
+	}
+
+	if psidInt == 0 || eqidInt == 0 || eqTypeInt == 0 {
 		response.FailWithMessage("参数不完整", c)
 		return
 	}
 
-	data, err := serviceDevice.GetDeviceRealtimeData(psid, eqid, eqType)
+	data, err := serviceDevice.GetDeviceRealtimeData(psidInt, eqidInt, eqTypeInt)
 	if err != nil {
 		global.GVA_LOG.Error("获取设备实时数据失败", zap.Error(err))
 		response.FailWithMessage("获取设备实时数据失败", c)

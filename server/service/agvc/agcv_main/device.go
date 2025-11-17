@@ -47,7 +47,7 @@ func (s *device) GetDeviceByCode(deviceCode string) (agvc_main.Device, error) {
 }
 
 // GetDeviceByPSIDAndEQID 根据PSID和EQID获取设备
-func (s *device) GetDeviceByPSIDAndEQID(psid, eqid, eqType string) (agvc_main.Device, error) {
+func (s *device) GetDeviceByPSIDAndEQID(psid, eqid, eqType int) (agvc_main.Device, error) {
 	var dev agvc_main.Device
 	err := global.GVA_DB.Where("psid = ? AND eqid = ? AND eq_type = ?", psid, eqid, eqType).First(&dev).Error
 	return dev, err
@@ -149,7 +149,7 @@ func (s *device) BatchCreatePointMappings(mappings []agvc_main.PointMapping) err
 }
 
 // GetDeviceRealtimeData 获取设备实时数据（结合实时数据和测点映射）
-func (s *device) GetDeviceRealtimeData(psid, eqid, eqType string) (map[string]interface{}, error) {
+func (s *device) GetDeviceRealtimeData(psid, eqid, eqType int) (map[string]interface{}, error) {
 	result := make(map[string]interface{})
 
 	// 获取设备基本信息

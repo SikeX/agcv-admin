@@ -448,10 +448,10 @@ func (s *agc) executeRemoteOpenLoopControl(bwdNo int, execVal float64) error {
 
 			// 0:百分比模式 1:绝对值模式
 			if mode == 0 {
-				// 百分比模式：需要将目标功率转换为百分比（基于额定功率）
+				// 百分比模式：百分比降额 = （额定有功功率 - 实际有功功率） / 额定有功功率 × 100%
 				var targetPercentage float64
 				if inv.RatedActivePower != nil && *inv.RatedActivePower > 0 {
-					targetPercentage = (perInvPower / *inv.RatedActivePower) * 100.0
+					targetPercentage = (*inv.RatedActivePower - perInvPower) / *inv.RatedActivePower * 100
 				} else {
 					global.GVA_LOG.Warn("逆变器额定功率未配置，无法计算百分比",
 						zap.Int("inverterNo", *inv.InverterNo))
@@ -964,6 +964,11 @@ func (s *agc) GetAGCConfig(bwdNo int) (agvc.AgvcBwdSetting, error) {
 	//SettingCache.Set(bwdNo, config)
 	return config, nil
 }
+
+// func (s *agc) GetAGCConfigFromMem(bwdNo int) (agvc.AgvcBwdSetting, error) {
+// 	config, err := DataStorage.GetData(bwdNo, cons.TYPE_BWG, cons.YC, "10", agvc.AgvcBwdSetting{})
+// 	return config, nil
+// }
 
 // UpdateAGCConfig 更新AGC配置
 func (s *agc) UpdateAGCConfig(req request.AGCConfigUpdate) error {

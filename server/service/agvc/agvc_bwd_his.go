@@ -6,12 +6,16 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+	"strconv"
 	"time"
 
 	"github.com/flipped-aurora/gin-vue-admin/server/global"
 	"github.com/flipped-aurora/gin-vue-admin/server/model/agvc"
 	agvcReq "github.com/flipped-aurora/gin-vue-admin/server/model/agvc/request"
+	agcvMain "github.com/flipped-aurora/gin-vue-admin/server/service/agvc/agcv_main"
+	"github.com/flipped-aurora/gin-vue-admin/server/service/agvc/cons"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
+	"go.uber.org/zap"
 )
 
 type AgvcBwdHisService struct{}
@@ -165,9 +169,10 @@ func (agvcBwdHisService *AgvcBwdHisService) GetAgvcBwdHistory(ctx context.Contex
 	flux := fmt.Sprintf(`
 	from(bucket: "%s")
 		|> range(start: %s, stop: %s)
-		|> filter(fn: (r) => r["_measurement"] == "agvc")
+		|> filter(fn: (r) => r["_measurement"] == "agvc_data")
 		|> filter(fn: (r) => r["eqid"] == "%s")
 		|> filter(fn: (r) => r["eqType"] == "5")
+		|> filter(fn: (r) => r["psid"] == "1")
 	`, global.GVA_CONFIG.InfluxDB.Bucket, startTime, endTime, eqid)
 
 	// 执行查询
@@ -182,8 +187,10 @@ func (agvcBwdHisService *AgvcBwdHisService) GetAgvcBwdHistory(ctx context.Contex
 		record := result.Record()
 		point := fmt.Sprintf("%v", record.ValueByKey("point"))
 
+		timestamp := record.Time().Truncate(time.Minute) // 向下取整到秒，确保同一秒的数据能正确聚合
+
 		data := map[string]interface{}{
-			"time":      record.Time().Format(time.RFC3339),
+			"time":      timestamp,
 			"psid":      record.ValueByKey("psid"),
 			"eqid":      record.ValueByKey("eqid"),
 			"eqType":    record.ValueByKey("eqType"),
@@ -354,44 +361,42 @@ func (agvcBwdHisService *AgvcBwdHisService) UpdateAgcStatus(ctx context.Context,
 }
 
 // GetAgcStatus 获取AGC状态
-func (agvcBwdHisService *AgvcBwdHisService) GetAgcStatus(ctx context.Context, number string) (map[string]interface{}, error) {
-	var bwdHis agvc.AgvcBwdHis
-	err := global.GVA_DB.Where("number = ?", number).First(&bwdHis).Error
+func (agvcBwdHisService *AgvcBwdHisService) GetAgcStatus(ctx context.Context, numberStr string) (map[string]interface{}, error) {
 
+	number, err := strconv.Atoi(numberStr)
 	if err != nil {
-		// 如果没有记录，返回默认值
-		defaultState := int64(1) // 默认投入
-		return map[string]interface{}{
-			"agcFunctionState":    defaultState,
-			"agcControlMode":      defaultState,
-			"agcControlAuthority": defaultState,
-		}, nil
+		return nil, fmt.Errorf("无效的数字：%v", err)
 	}
 
-	// 返回实际值或默认值
-	functionState := int64(1)
-	controlMode := int64(1)
-	controlAuthority := int64(1)
+	agcDatas := agcvMain.DataStorage.GetDeviceData(1, number, AGC_DEVICE_TYPE, cons.YX)
+	if agcDatas == nil {
+		return nil, fmt.Errorf("未找到数据")
+	}
+	global.GVA_LOG.Info("AGC数据：", zap.Any("agcDatas", agcDatas))
+	agcStatus := make(map[string]interface{})
+	for point, data := range agcDatas {
+		switch point {
+		case AGC_YX_CONTROL_MODE:
+			agcStatus["agcControlMode"] = data.Value
+		case AGC_YX_SIGNAL:
+			agcStatus["agcFunctionState"] = data.Value
+		case AGC_YX_LOOP_STATUS:
+			agcStatus["agcControlAuthority"] = data.Value
+		}
+	}
 
-	if bwdHis.AgcFunctionState != nil {
-		functionState = *bwdHis.AgcFunctionState
-	}
-	if bwdHis.AgcControlMode != nil {
-		controlMode = *bwdHis.AgcControlMode
-	}
-	if bwdHis.AgcControlAuthority != nil {
-		controlAuthority = *bwdHis.AgcControlAuthority
-	}
-
-	return map[string]interface{}{
-		"agcFunctionState":    functionState,
-		"agcControlMode":      controlMode,
-		"agcControlAuthority": controlAuthority,
-	}, nil
+	return agcStatus, nil
 }
 
 // GetAgcParameters 获取AGC参数设置
 func (agvcBwdHisService *AgvcBwdHisService) GetAgcParameters(ctx context.Context, number string) (map[string]interface{}, error) {
+
+	// number, err := strconv.Atoi(numberStr)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("转换设备编号失败: %v", err)
+	// }
+	// //从datastore中获取AGC参数
+	// agcParameters, err := agcv_main.AGC.GetAGCConfigFromMem(number)
 	var bwdHis agvc.AgvcBwdHis
 	err := global.GVA_DB.Where("number = ?", number).First(&bwdHis).Error
 
@@ -652,38 +657,110 @@ func (agvcBwdHisService *AgvcBwdHisService) UpdateAvcStatus(ctx context.Context,
 }
 
 // GetAvcStatus 获取AVC状态
-func (agvcBwdHisService *AgvcBwdHisService) GetAvcStatus(ctx context.Context, number string) (map[string]interface{}, error) {
-	var bwdHis agvc.AgvcBwdHis
-	err := global.GVA_DB.Where("number = ?", number).First(&bwdHis).Error
-
+func (agvcBwdHisService *AgvcBwdHisService) GetAvcStatus(ctx context.Context, numberStr string) (map[string]interface{}, error) {
+	number, err := strconv.Atoi(numberStr)
 	if err != nil {
-		// 如果没有记录，返回默认值
-		defaultState := int64(1) // 默认投入
-		return map[string]interface{}{
-			"avcFunctionState":    defaultState,
-			"avcControlMode":      defaultState,
-			"avcControlAuthority": defaultState,
-		}, nil
+		return nil, fmt.Errorf("无效的数字：%v", err)
 	}
 
-	// 返回实际值或默认值
-	functionState := int64(1)
-	controlMode := int64(1)
-	controlAuthority := int64(1)
+	avcDatas := agcvMain.DataStorage.GetDeviceData(1, number, AVC_DEVICE_TYPE, cons.YX)
+	if avcDatas == nil {
+		return nil, fmt.Errorf("未找到数据")
+	}
+	global.GVA_LOG.Info("AVC数据：", zap.Any("avcDatas", avcDatas))
+	avcStatus := make(map[string]interface{})
+	for point, data := range avcDatas {
+		switch point {
+		case AVC_YX_CONTROL_MODE:
+			avcStatus["avcControlMode"] = data.Value
+		case AVC_YX_SIGNAL:
+			avcStatus["avcFunctionState"] = data.Value
+		case AVC_YX_LOOP_STATUS:
+			avcStatus["avcControlAuthority"] = data.Value
+		}
+	}
 
-	if bwdHis.AvcFunctionState != nil {
-		functionState = *bwdHis.AvcFunctionState
-	}
-	if bwdHis.AvcControlMode != nil {
-		controlMode = *bwdHis.AvcControlMode
-	}
-	if bwdHis.AvcControlAuthority != nil {
-		controlAuthority = *bwdHis.AvcControlAuthority
+	return avcStatus, nil
+}
+
+// GetBwdRealtimeData 获取并网点实时数据
+func (agvcBwdHisService *AgvcBwdHisService) GetBwdRealtimeData(ctx context.Context, number string) (map[string][]map[string]interface{}, error) {
+	// 检查InfluxDB客户端是否已初始化
+	if global.GVA_INFLUXDB == nil {
+		return nil, fmt.Errorf("InfluxDB客户端未初始化")
 	}
 
-	return map[string]interface{}{
-		"avcFunctionState":    functionState,
-		"avcControlMode":      controlMode,
-		"avcControlAuthority": controlAuthority,
-	}, nil
+	//开始时间今天00:00:00
+	startTime := time.Now().Truncate(24 * time.Hour)
+	// 结束时间今天23:59:59
+	endTime := startTime.Add(24 * time.Hour).Add(-1 * time.Second)
+
+	// 获取查询API
+	queryAPI := global.GVA_INFLUXDB.QueryAPI(global.GVA_CONFIG.InfluxDB.Org)
+
+	// 构建Flux查询语句 - 获取最近1分钟的数据
+	flux := fmt.Sprintf(`
+	from(bucket: "%s")
+		|> range(start: %s, stop: %s)
+		|> filter(fn: (r) => r["_measurement"] == "agvc_data")
+		|> filter(fn: (r) => r["eqid"] == "%s")
+		|> filter(fn: (r) => r["psid"] == "1")
+		|> filter(fn: (r) => r["dataType"] == "2")
+		|> filter(fn: (r) => r["_field"] == "value")
+	`, global.GVA_CONFIG.InfluxDB.Bucket, startTime.Format(time.RFC3339), endTime.Format(time.RFC3339), number)
+
+	// 执行查询
+	result, err := queryAPI.Query(ctx, flux)
+	if err != nil {
+		return nil, fmt.Errorf("查询InfluxDB失败: %v", err)
+	}
+
+	// 解析结果
+	totalData := make(map[string][]map[string]interface{}, 0)
+	realtimeData := make([]map[string]interface{}, 0)
+	dispatchData := make([]map[string]interface{}, 0)
+	for result.Next() {
+		record := result.Record()
+		eqType := fmt.Sprintf("%v", record.ValueByKey("eqType"))
+		point := fmt.Sprintf("%v", record.ValueByKey("point"))
+
+		timestamp := record.Time().Truncate(time.Minute) // 向下取整到秒，确保同一秒的数据能正确聚合
+
+		//获取实际出力
+		if eqType != "5" {
+			if point == BWD_YC_POWER_REAL {
+				data := map[string]interface{}{
+					"time":      timestamp,
+					"psid":      record.ValueByKey("psid"),
+					"eqid":      record.ValueByKey("eqid"),
+					"eqType":    record.ValueByKey("eqType"),
+					"dataType":  record.ValueByKey("dataType"),
+					"point":     point,
+					"pointName": agvc.GetBwdPointName(point), // 添加点位名称
+					"value":     record.Value(),
+				}
+				realtimeData = append(realtimeData, data)
+			}
+		}
+		//采集调度出力
+		if eqType == "60" {
+			if point == AGC_YC_POWER_EXEC_VALUE {
+				data := map[string]interface{}{
+					"time":      timestamp,
+					"psid":      record.ValueByKey("psid"),
+					"eqid":      record.ValueByKey("eqid"),
+					"eqType":    record.ValueByKey("eqType"),
+					"dataType":  record.ValueByKey("dataType"),
+					"point":     point,
+					"pointName": agvc.GetBwdPointName(point), // 添加点位名称
+					"value":     record.Value(),
+				}
+				dispatchData = append(dispatchData, data)
+			}
+		}
+
+	}
+	totalData["realtimeData"] = realtimeData
+	totalData["dispatchData"] = dispatchData
+	return totalData, nil
 }

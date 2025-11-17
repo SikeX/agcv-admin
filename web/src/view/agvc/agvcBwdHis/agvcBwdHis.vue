@@ -402,7 +402,8 @@ import {
   updateAgcStatus,
   getAgcStatus,
   updateAvcStatus,
-  getAvcStatus
+  getAvcStatus,
+  getBwdRealtimeData
 } from '@/api/agvc/agvcBwdHis'
 
 import { getAgvcBwdSettingList, updateAgvcBwdSetting } from '@/api/agvc/agvcBwdSetting'
@@ -529,13 +530,13 @@ const getDeviceList = async () => {
         }
         
         // 2. 再加载数据（数据加载后会自动调用updateAgcChart更新图表）
-        console.log('8. 开始加载设备参数...')
-        await loadDeviceParameters(deviceList.value[0].number)
-        console.log('9. 设备参数加载完成')
+        // console.log('8. 开始加载设备参数...')
+        // await loadDeviceParameters(deviceList.value[0].number)
+        // console.log('9. 设备参数加载完成')
         
-        console.log('10. 开始加载计划曲线...')
-        await loadDevicePlanCurves(deviceList.value[0].number)
-        console.log('11. 计划曲线加载完成')
+        // console.log('10. 开始加载计划曲线...')
+        // await loadDevicePlanCurves(deviceList.value[0].number)
+        // console.log('11. 计划曲线加载完成')
       }
     }
     console.log('========== getDeviceList 结束 ==========')
@@ -559,7 +560,7 @@ const selectDevice = async (device) => {
   
   // 2. 再加载该设备的参数和曲线
   await loadDeviceParameters(device.number)
-  await loadDevicePlanCurves(device.number)
+  //await loadDevicePlanCurves(device.number)
 }
 
 // 加载设备参数
@@ -572,32 +573,32 @@ const loadDeviceParameters = async (number) => {
   console.log('========== loadDeviceParameters 开始 ==========')
   console.log('设备编号:', number)
   try {
-    isLoadingAgcStatus = true
+    // isLoadingAgcStatus = true
     
     // 加载AGC配置参数
-    console.log('1. 加载AGC配置参数...')
-    const agcRes = await getAgcParameters({ number })
-    console.log('AGC配置参数响应:', agcRes)
-    if (agcRes.code === 0 && agcRes.data) {
-      agcParametersForm.value = {...agcParametersForm.value, ...agcRes.data, number}
-    }
+    // console.log('1. 加载AGC配置参数...')
+    // const agcRes = await getAgcParameters({ number })
+    // console.log('AGC配置参数响应:', agcRes)
+    // if (agcRes.code === 0 && agcRes.data) {
+    //   agcParametersForm.value = {...agcParametersForm.value, ...agcRes.data, number}
+    // }
     
     // 加载AVC配置参数
-    console.log('2. 加载AVC配置参数...')
-    const avcRes = await getAvcParameters({ number })
-    console.log('AVC配置参数响应:', avcRes)
-    if (avcRes.code === 0 && avcRes.data) {
-      avcParametersForm.value = {...avcParametersForm.value, ...avcRes.data, number}
-    }
+    // console.log('2. 加载AVC配置参数...')
+    // const avcRes = await getAvcParameters({ number })
+    // console.log('AVC配置参数响应:', avcRes)
+    // if (avcRes.code === 0 && avcRes.data) {
+    //   avcParametersForm.value = {...avcParametersForm.value, ...avcRes.data, number}
+    // }
     
     // 加载AGC状态
     console.log('3. 加载AGC状态...')
     const statusRes = await getAgcStatus({ number })
     console.log('AGC状态响应:', statusRes)
     if (statusRes.code === 0 && statusRes.data) {
-      agcFunctionState.value = statusRes.data.agcFunctionState || 1
-      agcControlMode.value = statusRes.data.agcControlMode || 1
-      agcControlAuthority.value = statusRes.data.agcControlAuthority || 1
+      agcFunctionState.value = statusRes.data.agcFunctionState
+      agcControlMode.value = statusRes.data.agcControlMode
+      agcControlAuthority.value = statusRes.data.agcControlAuthority
     }
     
     // 加载AVC状态（从agvc_bwd_his表）
@@ -605,9 +606,31 @@ const loadDeviceParameters = async (number) => {
     const avcStatusRes = await getAvcStatus({ number })
     console.log('AVC状态响应:', avcStatusRes)
     if (avcStatusRes.code === 0 && avcStatusRes.data) {
-      avcFunctionState.value = avcStatusRes.data.avcFunctionState || 1
-      avcControlMode.value = avcStatusRes.data.avcControlMode || 1
-      avcControlAuthority.value = avcStatusRes.data.avcControlAuthority || 1
+      avcFunctionState.value = avcStatusRes.data.avcFunctionState
+      avcControlMode.value = avcStatusRes.data.avcControlMode
+      avcControlAuthority.value = avcStatusRes.data.avcControlAuthority
+    }
+    
+    // 加载并网点实时数据
+    console.log('3.6. 加载并网点实时数据...')
+    const realtimeRes = await getBwdRealtimeData({ number })
+    console.log('实时数据响应:', realtimeRes)
+    if (realtimeRes.code === 0 && realtimeRes.data) {
+      // 更新AGC相关实时数据
+      currentActivePower.value = realtimeRes.data.currentActivePower || 0
+      targetActivePower.value = realtimeRes.data.targetActivePower || 0
+      agcUpperLimit.value = realtimeRes.data.agcUpperLimit || 0
+      agcLowerLimit.value = realtimeRes.data.agcLowerLimit || 0
+      systemFrequency.value = realtimeRes.data.systemFrequency || 50
+      
+      // 更新AVC相关实时数据
+      targetVoltage.value = realtimeRes.data.targetVoltage || 0
+      currentVoltage.value = realtimeRes.data.currentVoltage || 0
+      targetReactive.value = realtimeRes.data.targetReactive || 0
+      currentReactive.value = realtimeRes.data.currentReactive || 0
+      systemImpedance.value = realtimeRes.data.systemImpedance || 0
+      
+      console.log('实时数据更新完成')
     }
     
     // 加载电站负荷实时数据从最上一小时数据
@@ -633,18 +656,20 @@ const loadDeviceParameters = async (number) => {
       historyData.value.sort((a, b) => new Date(a.time) - new Date(b.time))
       console.log('historyData更新后长度:', historyData.value.length)
       
-      // 提取最新数据更新电站负荷字段
-      console.log('6. 提取最新数据...')
-      const sortedData = historyRes.data.sort((a, b) => new Date(a.time) - new Date(b.time))
-      const latestData = {}
-      sortedData.forEach(item => {
-        latestData[item.point] = item.value
-      })
-      currentActivePower.value = latestData['100'] || 0
-      systemFrequency.value = latestData['10'] || 50
-      agcUpperLimit.value = latestData['401'] || 0
-      agcLowerLimit.value = latestData['402'] || 0
-      console.log('最新数据:', latestData)
+      // 如果实时数据中没有获取到某些值，则从历史数据中提取最新值
+      if (!realtimeRes || realtimeRes.code !== 0 || !realtimeRes.data) {
+        console.log('6. 提取最新数据...')
+        const sortedData = historyRes.data.sort((a, b) => new Date(a.time) - new Date(b.time))
+        const latestData = {}
+        sortedData.forEach(item => {
+          latestData[item.point] = item.value
+        })
+        currentActivePower.value = currentActivePower.value || latestData['100'] || 0
+        systemFrequency.value = systemFrequency.value || latestData['10'] || 50
+        agcUpperLimit.value = agcUpperLimit.value || latestData['401'] || 0
+        agcLowerLimit.value = agcLowerLimit.value || latestData['402'] || 0
+        console.log('最新数据:', latestData)
+      }
     } else {
       console.log('⚠️ 未获取到历史数据，初始化为空数组')
       // 即使没有数据，也要初始化为空数组，这样图表可以显示底图
@@ -653,9 +678,9 @@ const loadDeviceParameters = async (number) => {
     
     // 无论是否有数据，都更新AGC图表（显示底图）
     console.log('7. 调用 updateAgcChart...')
-    updateAgcChart()
+    updateAgcChart(number)
     
-    isLoadingAgcStatus = false
+    // isLoadingAgcStatus = false
     console.log('========== loadDeviceParameters 完成 ==========')
   } catch (error) {
     console.error('❌ 加载设备参数失败:', error)
@@ -706,14 +731,11 @@ const avcFunctionState = ref(1) // 1: 投入, 0: 退出
 const avcControlMode = ref(1) // 1: 开环指导, 0: 闭环调节
 const avcControlAuthority = ref(1) // 1: 站内控制, 0: 调度控制
 
-// 盡量不在雪花梯操作中一次年推动更新
+// 已禁用loading状态，不再显示loading动画和遮罩
 let isLoadingAgcStatus = false
 
 // 监听AGC状态变化并自动保存
 watch([agcFunctionState, agcControlMode, agcControlAuthority], async () => {
-  // 平殊加载状态，跳过次级更新
-  if (isLoadingAgcStatus) return
-  
   // 获取当前选中的设备
   const currentDevice = deviceList.value.find(device => device.number === mainActiveTab.value)
   if (!currentDevice) return
@@ -735,9 +757,6 @@ watch([agcFunctionState, agcControlMode, agcControlAuthority], async () => {
 
 // 监听AVC状态变化并自动保存
 watch([avcFunctionState, avcControlMode, avcControlAuthority], async () => {
-  // 平殊加载状态，跳过次级更新
-  if (isLoadingAgcStatus) return
-  
   // 获取当前选中的设备
   const currentDevice = deviceList.value.find(device => device.number === mainActiveTab.value)
   if (!currentDevice) return
@@ -757,6 +776,99 @@ watch([avcFunctionState, avcControlMode, avcControlAuthority], async () => {
     console.error('保存AVC状态失败:', error)
   }
 })
+
+// 定时刷新实时数据
+let realtimeTimer = null
+
+// 刷新实时数据
+const refreshRealtimeData = async () => {
+  const currentDevice = deviceList.value.find(device => device.number === mainActiveTab.value)
+  if (!currentDevice) {
+    return
+  }
+  
+  try {
+    // 从历史数据中获取最新数据作为实时数据
+    const now = new Date()
+    const endTime = now.toISOString().split('T')[0]
+    const startTime = new Date(now.getTime() - 60000).toISOString().split('T')[0] // 最近1分钟
+    
+    const realtimeRes = await getAgvcBwdHistory({ eqid: currentDevice.number, startTime, endTime })
+    if (realtimeRes.code === 0 && realtimeRes.data && realtimeRes.data.length > 0) {
+      // 提取最新数据更新电站负荷字段
+      const sortedData = realtimeRes.data.sort((a, b) => new Date(a.time) - new Date(b.time))
+      const latestData = {}
+      sortedData.forEach(item => {
+        latestData[item.point] = item.value
+      })
+      
+      // 更新AGC相关实时数据
+      currentActivePower.value = latestData['100'] || currentActivePower.value
+      targetActivePower.value = latestData['101'] || targetActivePower.value
+      agcUpperLimit.value = latestData['401'] || agcUpperLimit.value
+      agcLowerLimit.value = latestData['402'] || agcLowerLimit.value
+      systemFrequency.value = latestData['10'] || systemFrequency.value
+      
+      // 更新AVC相关实时数据
+      targetVoltage.value = latestData['102'] || targetVoltage.value
+      currentVoltage.value = latestData['103'] || currentVoltage.value
+      targetReactive.value = latestData['104'] || targetReactive.value
+      currentReactive.value = latestData['105'] || currentReactive.value
+      systemImpedance.value = latestData['106'] || systemImpedance.value
+      
+      console.log('实时数据刷新完成')
+    }
+  } catch (error) {
+    console.error('刷新实时数据失败:', error)
+  }
+}
+
+// 启动定时刷新
+const startRealtimeTimer = () => {
+  // 清除现有定时器
+  if (realtimeTimer) {
+    clearInterval(realtimeTimer)
+  }
+  
+  // 设置30秒刷新一次
+  realtimeTimer = setInterval(refreshRealtimeData, 30000)
+  console.log('实时数据定时刷新已启动，间隔30秒')
+}
+
+// 停止定时刷新
+const stopRealtimeTimer = () => {
+  if (realtimeTimer) {
+    clearInterval(realtimeTimer)
+    realtimeTimer = null
+    console.log('实时数据定时刷新已停止')
+  }
+}
+
+// 监听主标签页变化（并网点切换）
+// watch(mainActiveTab, (newNumber, oldNumber) => {
+//   if (!newNumber || newNumber === oldNumber) return
+  
+//   console.log('并网点切换:', oldNumber, '->', newNumber)
+  
+//   // 停止旧的定时器
+//   stopRealtimeTimer()
+  
+//   // 加载新设备的参数和曲线
+//   loadDeviceParameters(newNumber)
+//   // loadDevicePlanCurves(newNumber)
+  
+//   // 延迟初始化图表
+//   nextTick(() => {
+//     if (controlActiveTab.value === 'agc') {
+//       initAgcChart()
+//     } else {
+//       initAvcChart()
+//     }
+//   })
+  
+//   // 启动新的定时器
+//   startRealtimeTimer()
+// })
 
 // 目标值
 const targetActivePower = ref(120)
@@ -1367,6 +1479,11 @@ const updateChart = () => {
 // 在组件卸载时移除监听
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
+  // 清除定时器
+  if (refreshTimer) {
+    clearInterval(refreshTimer)
+    refreshTimer = null
+  }
   // 清理历史数据图表实例
   if (historyChartInstance) {
     historyChartInstance.dispose()
@@ -1452,8 +1569,8 @@ const initAgcChart = () => {
       agcChartInstance = echarts.init(chartDom)
       console.log('15. echarts实例创建成功:', !!agcChartInstance)
       
-      console.log('16. 调用 updateAgcChart')
-      updateAgcChart()
+      // console.log('16. 调用 updateAgcChart')
+      // updateAgcChart(bwdNumber)
       console.log('========== initAgcChart 完成 ==========')
     } catch (error) {
       console.error('❌ initAgcChart 错误:', error)
@@ -1463,7 +1580,7 @@ const initAgcChart = () => {
 }
 
 // 更新AGC图表
-const updateAgcChart = () => {
+const updateAgcChart = async(bwdNumber) => {
   console.log('========== updateAgcChart 开始 ==========')
   console.log('1. agcChartInstance存在:', !!agcChartInstance)
   
@@ -1474,14 +1591,33 @@ const updateAgcChart = () => {
   
   console.log('2. historyData.value长度:', historyData.value.length)
   console.log('3. historyData样本（前3条）:', historyData.value.slice(0, 3))
+
+  let dispatchPowerData = []
+  let realPowerData = []
+
+  try{
+    const res = await getBwdRealtimeData({number: bwdNumber})
+    if (res.code === 0) {
+      console.log('4. 获取实时数据成功:', res.data.dispatchData)
+      realPowerData = res.data.realtimeData
+      dispatchPowerData = res.data.dispatchData
+
+    } else {
+      ElMessage.error('获取实时数据失败: ' + res.msg)
+    }
+  }catch (error) {
+    console.error('获取实时数据失败:', error)
+  }
   
   // 从历史数据中提取点位100和101的数据
-  const realPowerData = historyData.value.filter(d => d.point === '100').sort((a, b) => new Date(a.time) - new Date(b.time))
-  const dispatchPowerData = historyData.value.filter(d => d.point === '101').sort((a, b) => new Date(a.time) - new Date(b.time))
+  // const realPowerData = historyData.value.filter(d => d.point === '100').sort((a, b) => new Date(a.time) - new Date(b.time))
+  // const dispatchPowerData = historyData.value.filter(d => d.point === '101').sort((a, b) => new Date(a.time) - new Date(b.time))
   
   console.log('4. 点位100（实时出力）数据量:', realPowerData.length)
   console.log('5. 点位101（调度出力）数据量:', dispatchPowerData.length)
   console.log('6. realPowerData样本:', realPowerData.slice(0, 3))
+
+  //
   
   // 格式化时间：显示 HH:mm:ss
   const timeData = realPowerData.map(d => {
@@ -1672,11 +1808,21 @@ const loadAvcChartData = () => {
   updateAvcChart()
 }
 
+// 定时器变量
+let refreshTimer = null
+
 // 在组件挂载时初始化图表
 onMounted(() => {
   window.addEventListener('resize', handleResize)
   // 加载并网点设备列表
   getDeviceList()
+  
+  // 设置定时器，每秒刷新一次设备参数
+  refreshTimer = setInterval(() => {
+    if (mainActiveTab.value) {
+      loadDeviceParameters(mainActiveTab.value)
+    }
+  }, 5000)
 })
 
 // 监听主标签页变化（并网点切换）
@@ -1685,9 +1831,10 @@ watch(mainActiveTab, (newNumber, oldNumber) => {
   
   console.log('并网点切换:', oldNumber, '->', newNumber)
   
+  
   // 加载新设备的参数和曲线
   loadDeviceParameters(newNumber)
-  loadDevicePlanCurves(newNumber)
+  // loadDevicePlanCurves(newNumber)
   
   // 延迟初始化图表
   nextTick(() => {

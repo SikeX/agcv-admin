@@ -105,7 +105,7 @@ export const getAgvcBwdHisList = (params) => {
 export const getAgvcBwdHisPublic = () => {
   return service({
     url: '/agvcBwdHis/getAgvcBwdHisPublic',
-    method: 'get',
+    method: 'get'
   })
 }
 
@@ -122,6 +122,7 @@ export const getAgvcBwdHistory = (params) => {
   return service({
     url: '/agvcBwdHis/getAgvcBwdHistory',
     method: 'get',
+    donNotShowLoading: true,
     params
   })
 }
@@ -202,6 +203,7 @@ export const getAgcParameters = (params) => {
   return service({
     url: '/agvcBwdHis/getAgcParameters',
     method: 'get',
+    donNotShowLoading: true,
     params
   })
 }
@@ -250,6 +252,7 @@ export const updateAgcStatus = (data) => {
   return service({
     url: '/agvcBwdHis/updateAgcStatus',
     method: 'put',
+    donNotShowLoading: true,
     data
   })
 }
@@ -266,6 +269,7 @@ export const getAgcStatus = (params) => {
   return service({
     url: '/agvcBwdHis/getAgcStatus',
     method: 'get',
+    donNotShowLoading: true,
     params
   })
 }
@@ -282,6 +286,7 @@ export const updateAvcStatus = (data) => {
   return service({
     url: '/agvcBwdHis/updateAvcStatus',
     method: 'put',
+    donNotShowLoading: true,
     data
   })
 }
@@ -298,6 +303,24 @@ export const getAvcStatus = (params) => {
   return service({
     url: '/agvcBwdHis/getAvcStatus',
     method: 'get',
+    donNotShowLoading: true,
+    params
+  })
+}
+
+// @Tags AgvcBwdHis
+// @Summary 获取并网点实时数据
+// @Security ApiKeyAuth
+// @Accept application/json
+// @Produce application/json
+// @Param number query string true "并网点编号"
+// @Success 200 {object} response.Response{data=object,msg=string} "获取成功"
+// @Router /agvcBwdHis/getBwdRealtimeData [get]
+export const getBwdRealtimeData = (params) => {
+  return service({
+    url: '/agvcBwdHis/getBwdRealtimeData',
+    method: 'get',
+    donNotShowLoading: true,
     params
   })
 }

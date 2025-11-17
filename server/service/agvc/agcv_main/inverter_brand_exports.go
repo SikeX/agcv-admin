@@ -24,21 +24,21 @@ var (
 func InitInverterBrands() {
 	// 注入CoAP发送器适配器
 	inverter_brands.SetCoapAdapter(CoapSender)
-	
+
 	// 初始化品牌映射器
 	InverterBrandMapper.Initialize()
 }
 
 // CoapSender 实现 CoapSenderInterface 接口
 // 这个结构体已经在 coap_sender.go 中定义，这里只需要确保它实现了接口
-func (s *coapSender) GetDefaultCoapHost() string {
-	return "127.0.0.1"
-}
-
-func (s *coapSender) GetDefaultCoapPort() int {
-	return 5683
-}
-
-func (s *coapSender) GetDispatchBackCoapPort() int {
-	return 1189
-}
+//func (s *coapSender) GetDefaultCoapHost() string {
+//	return "127.0.0.1"
+//}
+//
+//func (s *coapSender) GetDefaultCoapPort() int {
+//	return 5683
+//}
+//
+//func (s *coapSender) GetDispatchBackCoapPort() int {
+//	return 1189
+//}

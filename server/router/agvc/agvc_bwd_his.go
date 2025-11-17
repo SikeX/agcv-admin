@@ -25,14 +25,15 @@ func (s *AgvcBwdHisRouter) InitAgvcBwdHisRouter(Router *gin.RouterGroup, PublicR
 		agvcBwdHisRouter.PUT("updateAvcStatus", agvcBwdHisApi.UpdateAvcStatus)                // 更新AVC状态
 	}
 	{
-		agvcBwdHisRouterWithoutRecord.GET("findAgvcBwdHis", agvcBwdHisApi.FindAgvcBwdHis)       // 根据ID获取agvcBwdHis表
-		agvcBwdHisRouterWithoutRecord.GET("getAgvcBwdHisList", agvcBwdHisApi.GetAgvcBwdHisList) // 获取agvcBwdHis表列表
-		agvcBwdHisRouterWithoutRecord.GET("getAgvcBwdHistory", agvcBwdHisApi.GetAgvcBwdHistory) // 获取并网点历史数据
-		agvcBwdHisRouterWithoutRecord.GET("getAgcParameters", agvcBwdHisApi.GetAgcParameters)   // 获取AGC参数
-		agvcBwdHisRouterWithoutRecord.GET("getAvcParameters", agvcBwdHisApi.GetAvcParameters)   // 获取AVC参数
-		agvcBwdHisRouterWithoutRecord.GET("getPlanCurves", agvcBwdHisApi.GetPlanCurves)         // 获取计划曲线
-		agvcBwdHisRouterWithoutRecord.GET("getAgcStatus", agvcBwdHisApi.GetAgcStatus)           // 获取AGC状态
-		agvcBwdHisRouterWithoutRecord.GET("getAvcStatus", agvcBwdHisApi.GetAvcStatus)           // 获取AVC状态
+		agvcBwdHisRouterWithoutRecord.GET("findAgvcBwdHis", agvcBwdHisApi.FindAgvcBwdHis)         // 根据ID获取agvcBwdHis表
+		agvcBwdHisRouterWithoutRecord.GET("getAgvcBwdHisList", agvcBwdHisApi.GetAgvcBwdHisList)   // 获取agvcBwdHis表列表
+		agvcBwdHisRouterWithoutRecord.GET("getAgvcBwdHistory", agvcBwdHisApi.GetAgvcBwdHistory)   // 获取并网点历史数据
+		agvcBwdHisRouterWithoutRecord.GET("getAgcParameters", agvcBwdHisApi.GetAgcParameters)     // 获取AGC参数
+		agvcBwdHisRouterWithoutRecord.GET("getAvcParameters", agvcBwdHisApi.GetAvcParameters)     // 获取AVC参数
+		agvcBwdHisRouterWithoutRecord.GET("getPlanCurves", agvcBwdHisApi.GetPlanCurves)           // 获取计划曲线
+		agvcBwdHisRouterWithoutRecord.GET("getAgcStatus", agvcBwdHisApi.GetAgcStatus)             // 获取AGC状态
+		agvcBwdHisRouterWithoutRecord.GET("getAvcStatus", agvcBwdHisApi.GetAvcStatus)             // 获取AVC状态
+		agvcBwdHisRouterWithoutRecord.GET("getBwdRealtimeData", agvcBwdHisApi.GetBwdRealtimeData) // 获取并网点实时数据
 	}
 	{
 		agvcBwdHisRouterWithoutAuth.GET("getAgvcBwdHisPublic", agvcBwdHisApi.GetAgvcBwdHisPublic) // agvcBwdHis表开放接口
