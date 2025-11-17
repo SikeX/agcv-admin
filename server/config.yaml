@@ -38,6 +38,11 @@ coap:
   enable: true
   host: 0.0.0.0
   port: 1188
+  # CoAP客户端轮询配置（主动从CoAP服务器请求数据）
+  client-enable: true
+  client-host: 127.0.0.1
+  client-port: 5589
+  poll-interval: 5  # 轮询间隔（秒）
 cors:
   mode: strict-whitelist
   whitelist:
