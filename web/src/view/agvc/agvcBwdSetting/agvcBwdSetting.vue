@@ -3,6 +3,9 @@
   <div>
     <div class="gva-search-box">
       <el-form ref="elSearchFormRef" :inline="true" :model="searchInfo" class="demo-form-inline" @keyup.enter="onSubmit">
+      <el-form-item label="电站编号" prop="psid">
+        <el-input-number v-model="searchInfo.psid" placeholder="请输入电站编号" :controls="false" style="width: 100%" />
+      </el-form-item>
       <el-form-item label="并网点名称" prop="name">
         <el-input v-model="searchInfo.name" placeholder="请输入并网点名称" />
       </el-form-item>
@@ -39,6 +42,8 @@
         >
         <el-table-column type="selection" width="55" />
         
+            <el-table-column align="left" label="电站编号" prop="psid" width="100" />
+
             <el-table-column align="left" label="名称" prop="name" width="120" />
 
             <el-table-column align="left" label="编号" prop="number" width="100" />
@@ -103,6 +108,9 @@
             </template>
 
           <el-form :model="formData" label-position="top" ref="elFormRef" :rules="rule" label-width="80px">
+            <el-form-item label="电站编号:" prop="psid">
+    <el-input-number v-model="formData.psid" style="width:100%" :precision="0" :clearable="true" placeholder="请输入电站编号" />
+</el-form-item>
             <el-form-item label="并网点名称:" prop="name">
     <el-input v-model="formData.name" :clearable="true" placeholder="请输入并网点名称" />
 </el-form-item>
@@ -156,6 +164,9 @@
 
     <el-drawer destroy-on-close :size="appStore.drawerSize" v-model="detailShow" :show-close="true" :before-close="closeDetailShow" title="查看">
             <el-descriptions :column="1" border>
+                    <el-descriptions-item label="电站编号">
+    {{ detailForm.psid }}
+</el-descriptions-item>
                     <el-descriptions-item label="并网点名称">
     {{ detailForm.name }}
 </el-descriptions-item>
@@ -242,6 +253,7 @@ const showAllQuery = ref(false)
 
 // 自动化生成的字典（可能为空）以及字段
 const formData = ref({
+            psid: undefined,
             name: '',
             number: '',
             voltageLevel: 0,
@@ -424,6 +436,7 @@ const openDialog = () => {
 const closeDialog = () => {
     dialogFormVisible.value = false
     formData.value = {
+        psid: undefined,
         name: '',
         number: '',
         voltageLevel: 0,

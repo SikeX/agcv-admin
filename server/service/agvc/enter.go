@@ -9,4 +9,6 @@ type ServiceGroup struct {
     AgvcBwdHisService
     AgvcQxyHisService
     AgvcDataService
+    AgvcAgcHisService
+    AgvcAvcHisService
 }
