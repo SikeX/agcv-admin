@@ -210,6 +210,10 @@ const tableData = ref([])
 const searchInfo = ref({})
 const loading = ref(false)
 
+// 实时刷新相关
+const refreshInterval = ref(5000) // 默认5秒刷新
+let refreshTimer = null
+
 // 格式化数值显示
 const formatValue = (value) => {
   if (value === null || value === undefined) {
@@ -266,7 +270,28 @@ const getTableData = async() => {
   }
 }
 
+// 启动自动刷新
+const startAutoRefresh = () => {
+  // 清除已存在的定时器
+  if (refreshTimer) {
+    clearInterval(refreshTimer)
+  }
+  // 设置新的定时器
+  refreshTimer = setInterval(() => {
+    getTableData()
+  }, refreshInterval.value)
+}
+
+// 停止自动刷新
+const stopAutoRefresh = () => {
+  if (refreshTimer) {
+    clearInterval(refreshTimer)
+    refreshTimer = null
+  }
+}
+
 getTableData()
+startAutoRefresh() // 启动自动刷新
 
 // 历史数据相关变量
 const historyDialogVisible = ref(false)
@@ -281,6 +306,9 @@ let chartInstance = null
 
 // 显示历史数据图表
 const showHistoryChart = async (row, field) => {
+  // 清空之前的历史数据
+  historyData.value = []
+  
   // 保存当前设备和字段信息
   currentDevice.value = row
   currentField.value = field
@@ -514,6 +542,7 @@ onMounted(() => {
 
 // 在组件卸载时移除监听
 onUnmounted(() => {
+  stopAutoRefresh() // 停止自动刷新
   window.removeEventListener('resize', handleResize)
   if (chartInstance) {
     chartInstance.dispose()
