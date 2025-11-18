@@ -1,13 +1,5 @@
 <template>
   <div>
-    <el-alert
-      title="提示：此页面已废弃，请使用新的逆变器监控页面和逆变器历史数据页面"
-      type="warning"
-      show-icon
-      :closable="false"
-      style="margin-bottom: 20px;"
-    />
-    
     <div class="gva-search-box">
       <el-form ref="elSearchFormRef" :inline="true" :model="searchInfo" class="demo-form-inline" @keyup.enter="onSubmit">
         <el-form-item label="电站编号">
@@ -63,7 +55,7 @@
                 @click="showHistoryChart(scope.row, field)"
                 class="history-btn"
               >
-                历史
+                查看历史
               </el-button>
             </div>
           </template>
@@ -131,11 +123,11 @@ import {
 } from '@/api/agvc/agvcNbqHis'
 
 import { ElMessage } from 'element-plus'
-import { ref, reactive, nextTick, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, nextTick, onMounted } from 'vue'
 import * as echarts from 'echarts'
 
 defineOptions({
-  name: 'AgvcNbqHis'
+  name: 'AgvcNbqHistory'
 })
 
 // 定义数据字段配置（根据AgvcNbqHis结构体的point标签生成）
@@ -217,10 +209,6 @@ const tableData = ref([])
 const searchInfo = ref({})
 const loading = ref(false)
 
-// 实时刷新相关
-const refreshInterval = ref(5000) // 默认5秒刷新
-let refreshTimer = null
-
 // 格式化数值显示
 const formatValue = (value) => {
   if (value === null || value === undefined) {
@@ -276,29 +264,6 @@ const getTableData = async() => {
     loading.value = false
   }
 }
-
-// 启动自动刷新
-const startAutoRefresh = () => {
-  // 清除已存在的定时器
-  if (refreshTimer) {
-    clearInterval(refreshTimer)
-  }
-  // 设置新的定时器
-  refreshTimer = setInterval(() => {
-    getTableData()
-  }, refreshInterval.value)
-}
-
-// 停止自动刷新
-const stopAutoRefresh = () => {
-  if (refreshTimer) {
-    clearInterval(refreshTimer)
-    refreshTimer = null
-  }
-}
-
-getTableData()
-startAutoRefresh() // 启动自动刷新
 
 // 历史数据相关变量
 const historyDialogVisible = ref(false)
@@ -522,9 +487,8 @@ const updateChart = () => {
   chartInstance.setOption(option)
 }
 
-// 组件卸载时停止刷新
-onUnmounted(() => {
-  stopAutoRefresh()
+onMounted(() => {
+  getTableData()
 })
 </script>
 

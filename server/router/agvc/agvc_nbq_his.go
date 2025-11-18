@@ -23,6 +23,7 @@ func (s *AgvcNbqHisRouter) InitAgvcNbqHisRouter(Router *gin.RouterGroup, PublicR
         agvcNbqHisRouterWithoutRecord.GET("findAgvcNbqHis", agvcNbqHisApi.FindAgvcNbqHis)         // 根据ID获取agvcNbqHis表
         agvcNbqHisRouterWithoutRecord.GET("getAgvcNbqHisList", agvcNbqHisApi.GetAgvcNbqHisList)   // 获取agvcNbqHis表列表
         agvcNbqHisRouterWithoutRecord.POST("getAgvcNbqHistory", agvcNbqHisApi.GetAgvcNbqHistory)  // 获取逆变器历史数据
+        agvcNbqHisRouterWithoutRecord.GET("getNbqRealData", agvcNbqHisApi.GetNbqRealData)         // 获取逆变器实时数据
     }
     {
         agvcNbqHisRouterWithoutAuth.GET("getAgvcNbqHisPublic", agvcNbqHisApi.GetAgvcNbqHisPublic) // agvcNbqHis表开放接口

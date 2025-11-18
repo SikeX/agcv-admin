@@ -114,13 +114,29 @@ export const getAgvcNbqHisPublic = () => {
 // @Accept application/json
 // @Produce application/json
 // @Param data body agvcReq.AgvcNbqHistoryRequest true "包含AgvcNbqHis结构体和时间范围"
-// @Success 200 {object} response.Response{data=[]map[string]interface{},msg=string} "获取成功"
+// @Success 200 {object} response.Response{data=[]agvc.AgvcNbqHis,msg=string} "获取成功"
 // @Router /agvcNbqHis/getAgvcNbqHistory [post]
 export const getAgvcNbqHistory = (data) => {
   return service({
     url: '/agvcNbqHis/getAgvcNbqHistory',
     method: 'post',
     data
+  })
+}
+
+// @Tags AgvcNbqHis
+// @Summary 获取逆变器实时数据
+// @Accept application/json
+// @Produce application/json
+// @Param psid query int true "电站编号"
+// @Param inverterNo query int true "逆变器编号"
+// @Success 200 {object} response.Response{data=agvc.AgvcNbqHis,msg=string} "获取成功"
+// @Router /agvcNbqHis/getNbqRealData [get]
+export const getNbqRealData = (params) => {
+  return service({
+    url: '/agvcNbqHis/getNbqRealData',
+    method: 'get',
+    params
   })
 }
 
