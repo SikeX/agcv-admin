@@ -9,7 +9,6 @@ import (
 	"syscall"
 	"time"
 
-	agvcMain "github.com/flipped-aurora/gin-vue-admin/server/service/agvc/agcv_main"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
@@ -49,7 +48,7 @@ func initServer(address string, router *gin.Engine, readTimeout, writeTimeout ti
 	zap.L().Info("关闭WEB服务...")
 
 	// 停止数据存储服务（保存数据到InfluxDB）
-	agvcMain.DataStorage.Stop()
+	//agvcMain.DataStorage.Stop()
 
 	// 设置5秒的超时时间
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
