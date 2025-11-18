@@ -101,11 +101,11 @@ func (agvcNbqHisService *AgvcNbqHisService) GetAgvcNbqHisInfoList(ctx context.Co
         flux := fmt.Sprintf(`
         from(bucket: "%s")
             |> range(start: -1h)
-            |> filter(fn: (r) => r["_measurement"] == "agvc")
+            |> filter(fn: (r) => r["_measurement"] == "%s")
             |> filter(fn: (r) => r["eqid"] == "%d")
             |> filter(fn: (r) => r["eqType"] == "%s")
             |> filter(fn: (r) => r["dataType"] == "%d")`, 
-            global.GVA_CONFIG.InfluxDB.Bucket, *setting.InverterNo, agvc.EqTypeNBQ, cons.YC)
+            global.GVA_CONFIG.InfluxDB.Bucket, global.GVA_CONFIG.InfluxDB.GetMeasurement(), *setting.InverterNo, agvc.EqTypeNBQ, cons.YC)
         
         // 如果设置中有psid，添加psid过滤
         if setting.Psid != nil {
@@ -246,7 +246,7 @@ func (agvcNbqHisService *AgvcNbqHisService) GetAgvcNbqHistory(ctx context.Contex
         flux := fmt.Sprintf(`
         from(bucket: "%s")
             |> range(start: %s, stop: %s)
-            |> filter(fn: (r) => r["_measurement"] == "agvc")
+            |> filter(fn: (r) => r["_measurement"] == "%s")
             |> filter(fn: (r) => r["eqid"] == "%d")
             |> filter(fn: (r) => r["eqType"] == "%s")
             |> filter(fn: (r) => r["dataType"] == "%d")
@@ -254,6 +254,7 @@ func (agvcNbqHisService *AgvcNbqHisService) GetAgvcNbqHistory(ctx context.Contex
             global.GVA_CONFIG.InfluxDB.Bucket, 
             startTime, 
             endTime, 
+            global.GVA_CONFIG.InfluxDB.GetMeasurement(),
             *nbqHis.InverterNo, 
             agvc.EqTypeNBQ, 
             cons.YC, 
@@ -298,6 +299,12 @@ func (agvcNbqHisService *AgvcNbqHisService) GetAgvcNbqHistory(ctx context.Contex
         if result.Err() != nil {
             global.GVA_LOG.Error(fmt.Sprintf("解析点位%s的InfluxDB结果失败: %v", pointValue, result.Err()))
         }
+    }
+
+    // 如果没有查询到数据，返回空数组而不是错误
+    if len(historyData) == 0 {
+        global.GVA_LOG.Info(fmt.Sprintf("逆变器%d在时间范围%s到%s内没有历史数据", *nbqHis.InverterNo, startTime, endTime))
+        return []map[string]interface{}{}, nil
     }
 
     return historyData, nil
@@ -355,7 +362,7 @@ func (agvcNbqHisService *AgvcNbqHisService) WriteAgvcNbqDataToInfluxDB(ctx conte
 
     // 创建数据点
     p := influxdb2.NewPoint(
-        "agvc",
+        global.GVA_CONFIG.InfluxDB.GetMeasurement(),
         map[string]string{
             "psid":     strconv.Itoa(psid),
             "eqType":   agvc.EqTypeNBQ,
