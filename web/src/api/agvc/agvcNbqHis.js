@@ -114,6 +114,7 @@ export const getAgvcNbqHisPublic = () => {
 // @Accept application/json
 // @Produce application/json
 // @Param eqid query string true "设备编号"
+// @Param point query string false "点位标识(可选)"
 // @Param startTime query string true "开始时间"
 // @Param endTime query string true "结束时间"
 // @Success 200 {object} response.Response{data=[]map[string]interface{},msg=string} "获取成功"
