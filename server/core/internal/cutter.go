@@ -123,27 +123,10 @@ func (c *Cutter) getRotatedFilename(baseFilename string) string {
         return baseFilename
     }
     
-    // 文件达到最大大小，需要切割
-    // 生成新的文件名：原文件名.1, 原文件名.2 等
-    ext := filepath.Ext(baseFilename)
-    nameWithoutExt := baseFilename[:len(baseFilename)-len(ext)]
-    
-    // 找到可用的文件编号
-    i := 1
-    for {
-        newFilename := nameWithoutExt + "." + time.Now().Format("20060102150405") + ext
-        if _, err := os.Stat(newFilename); os.IsNotExist(err) {
-            // 将旧文件重命名
-            os.Rename(baseFilename, newFilename)
-            return baseFilename
-        }
-        i++
-        if i > 1000 {
-            // 防止无限循环
-            return baseFilename
-        }
-        time.Sleep(time.Millisecond)
-    }
+    // 文件达到最大大小，删除旧文件并重新创建
+    // 这样可以确保只有一个日志文件，超过大小后覆盖旧内容
+    os.Remove(baseFilename)
+    return baseFilename
 }
 
 // 增加日志目录文件清理 小于等于零的值默认忽略不再处理

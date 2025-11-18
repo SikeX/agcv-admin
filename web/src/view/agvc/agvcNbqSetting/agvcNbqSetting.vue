@@ -3,6 +3,9 @@
   <div>
     <div class="gva-search-box">
       <el-form ref="elSearchFormRef" :inline="true" :model="searchInfo" class="demo-form-inline" @keyup.enter="onSubmit">
+            <el-form-item label="电站编号" prop="psid">
+  <el-input-number v-model="searchInfo.psid" placeholder="搜索条件" :controls="false" style="width: 100%" />
+</el-form-item>
             <el-form-item label="逆变器编号" prop="inverterNo">
   <el-input-number v-model="searchInfo.inverterNo" placeholder="搜索条件" :controls="false" style="width: 100%" />
 </el-form-item>
@@ -57,6 +60,8 @@
         >
         <el-table-column type="selection" width="55" />
         
+            <el-table-column sortable align="left" label="电站编号" prop="psid" width="100" />
+
             <el-table-column sortable align="left" label="编号" prop="inverterNo" width="100" />
 
             <el-table-column align="left" label="并网点编号" prop="bwdNo" width="120" />

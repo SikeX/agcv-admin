@@ -3,6 +3,9 @@
   <div>
     <div class="gva-search-box">
       <el-form ref="elSearchFormRef" :inline="true" :model="searchInfo" class="demo-form-inline" @keyup.enter="onSubmit">
+        <el-form-item label="电站编号">
+          <el-input v-model.number="searchInfo.psid" placeholder="请输入电站编号" clearable />
+        </el-form-item>
         <el-form-item label="逆变器编号">
           <el-input v-model="searchInfo.inverter_no" placeholder="请输入逆变器编号" clearable />
         </el-form-item>
@@ -28,6 +31,7 @@
         :max-height="600"
       >
         <!-- 固定列 -->
+        <el-table-column align="center" label="电站编号" prop="psid" width="100" fixed="left" />
         <el-table-column align="center" label="逆变器编号" prop="inverterNo" width="120" fixed="left" />
         <el-table-column align="center" label="逆变器名称" prop="name" width="150" fixed="left" />
         
@@ -304,14 +308,22 @@ const loadHistoryData = async () => {
   
   loading.value = true
   try {
-    const params = {
-      eqid: currentDevice.value.inverterNo,
-      point: currentField.value.point,
+    // 构建AgvcNbqHis结构体，只设置需要查询的字段
+    const agvcNbqHis = {
+      psid: currentDevice.value.psid,
+      inverterNo: currentDevice.value.inverterNo,
+      name: currentDevice.value.name,
+      // 根据当前字段设置对应的值为一个非空值，触发查询
+      [currentField.value.prop]: 0
+    }
+    
+    const requestData = {
+      agvcNbqHis: agvcNbqHis,
       startTime: historyDateRange.value[0],
       endTime: historyDateRange.value[1]
     }
     
-    const res = await getAgvcNbqHistory(params)
+    const res = await getAgvcNbqHistory(requestData)
     if (res.code === 0) {
       // 处理从 InfluxDB获取的历史数据
       historyData.value = res.data.map(item => {
