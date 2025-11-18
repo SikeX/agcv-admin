@@ -21,4 +21,6 @@ var (
     agvcNbqHisService     = service.ServiceGroupApp.AgvcServiceGroup.AgvcNbqHisService
     agvcBwdHisService     = service.ServiceGroupApp.AgvcServiceGroup.AgvcBwdHisService
     agvcQxyHisService     = service.ServiceGroupApp.AgvcServiceGroup.AgvcQxyHisService
+    agvcAgcHisService     = service.ServiceGroupApp.AgvcServiceGroup.AgvcAgcHisService
+    agvcAvcHisService     = service.ServiceGroupApp.AgvcServiceGroup.AgvcAvcHisService
 )

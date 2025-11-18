@@ -297,6 +297,23 @@ const showHistoryChart = async (row, field) => {
   // 在下次DOM更新后初始化图表并加载数据
   nextTick(() => {
     initChart()
+    // 先清空图表，显示暂无数据
+    if (chartInstance) {
+      chartInstance.setOption({
+        title: {
+          text: '暂无数据',
+          left: 'center',
+          top: 'center',
+          textStyle: {
+            fontSize: 20,
+            color: '#999'
+          }
+        },
+        xAxis: { show: false },
+        yAxis: { show: false },
+        series: []
+      })
+    }
     loadHistoryData()
   })
 }
@@ -379,20 +396,26 @@ const initChart = () => {
 
 // 更新图表
 const updateChart = () => {
-  if (!chartInstance || !historyData.value.length) {
-    if (chartInstance) {
-      chartInstance.setOption({
-        title: {
-          text: '暂无数据',
-          left: 'center',
-          top: 'center',
-          textStyle: {
-            fontSize: 20,
-            color: '#999'
-          }
+  if (!chartInstance) return
+  
+  // 如果没有数据，显示空图表
+  if (!historyData.value.length) {
+    chartInstance.setOption({
+      title: {
+        text: '暂无数据',
+        left: 'center',
+        top: 'center',
+        textStyle: {
+          fontSize: 20,
+          color: '#999'
         }
-      })
-    }
+      },
+      xAxis: { show: false },
+      yAxis: { show: false },
+      series: [],
+      grid: { show: false },
+      dataZoom: []
+    }, true) // 使用 true 参数清空之前的配置
     return
   }
   
@@ -432,7 +455,8 @@ const updateChart = () => {
       right: '4%',
       top: 60,
       bottom: 80,
-      containLabel: true
+      containLabel: true,
+      show: false
     },
     xAxis: {
       type: 'category',
@@ -441,14 +465,16 @@ const updateChart = () => {
       axisLabel: {
         rotate: 45,
         fontSize: 11
-      }
+      },
+      show: true
     },
     yAxis: {
       type: 'value',
       name: currentField.value?.label || '',
       axisLabel: {
         fontSize: 11
-      }
+      },
+      show: true
     },
     series: [{
       name: currentField.value?.label,
@@ -484,7 +510,7 @@ const updateChart = () => {
     }]
   }
   
-  chartInstance.setOption(option)
+  chartInstance.setOption(option, true) // 使用 true 参数清空之前的配置
 }
 
 onMounted(() => {
