@@ -95,6 +95,7 @@ influxdb:
   bucket: test
   username: admin
   password: "12345678"
+  measurement: agvc_data
 jwt:
   signing-key: bbe5b265-7f40-4277-a597-0de9b121d347
   expires-time: 7d
