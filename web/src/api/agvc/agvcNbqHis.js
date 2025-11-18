@@ -113,17 +113,14 @@ export const getAgvcNbqHisPublic = () => {
 // @Summary 获取逆变器历史数据
 // @Accept application/json
 // @Produce application/json
-// @Param eqid query string true "设备编号"
-// @Param point query string false "点位标识(可选)"
-// @Param startTime query string true "开始时间"
-// @Param endTime query string true "结束时间"
+// @Param data body agvcReq.AgvcNbqHistoryRequest true "包含AgvcNbqHis结构体和时间范围"
 // @Success 200 {object} response.Response{data=[]map[string]interface{},msg=string} "获取成功"
-// @Router /agvcNbqHis/getAgvcNbqHistory [get]
-export const getAgvcNbqHistory = (params) => {
+// @Router /agvcNbqHis/getAgvcNbqHistory [post]
+export const getAgvcNbqHistory = (data) => {
   return service({
     url: '/agvcNbqHis/getAgvcNbqHistory',
-    method: 'get',
-    params
+    method: 'post',
+    data
   })
 }
 

@@ -3,6 +3,9 @@
   <div>
     <div class="gva-form-box">
       <el-form :model="formData" ref="elFormRef" label-position="right" :rules="rule" label-width="80px">
+        <el-form-item label="电站编号:" prop="psid">
+    <el-input v-model.number="formData.psid" :clearable="true" placeholder="请输入电站编号" />
+</el-form-item>
         <el-form-item label="逆变器编号:" prop="inverterNo">
     <el-input v-model="formData.inverterNo" :clearable="true" placeholder="请输入逆变器编号" />
 </el-form-item>
@@ -71,6 +74,7 @@ const btnLoading = ref(false)
 
 const type = ref('')
 const formData = ref({
+            psid: undefined,
             inverterNo: '',
             bwdNo: '',
             name: '',

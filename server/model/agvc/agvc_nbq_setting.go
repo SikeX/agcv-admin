@@ -8,6 +8,7 @@ import (
 // 逆变器配置 结构体  AgvcNbqSetting
 type AgvcNbqSetting struct {
     global.GVA_MODEL
+    Psid                *int     `json:"psid" form:"psid" gorm:"column:psid;"`                                                //电站编号
     InverterNo          *int     `json:"inverterNo" form:"inverterNo" gorm:"column:inverter_no;"`                             //逆变器编号
     Name                *string  `json:"name" form:"name" gorm:"column:name;"`                                                //逆变器名称
     InverterBrand       *int     `json:"inverterBrand" form:"inverterBrand" gorm:"column:inverter_brand;"`                    //逆变器品牌(1-华为,2-阳光,3-固德威)
