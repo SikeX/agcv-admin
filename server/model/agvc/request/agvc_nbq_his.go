@@ -21,3 +21,9 @@ type AgvcNbqHistoryRequest struct {
     StartTime  string           `json:"startTime" form:"startTime" binding:"required"`
     EndTime    string           `json:"endTime" form:"endTime" binding:"required"`
 }
+
+// AgvcNbqRealDataRequest 实时数据查询请求
+type AgvcNbqRealDataRequest struct {
+    Psid       int `json:"psid" form:"psid" binding:"required"`
+    InverterNo int `json:"inverterNo" form:"inverterNo" binding:"required"`
+}

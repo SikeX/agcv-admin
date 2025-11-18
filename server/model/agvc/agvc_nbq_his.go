@@ -1,9 +1,16 @@
 // 自动生成模板AgvcNbqHis
 package agvc
 
+import (
+    "reflect"
+    "strings"
+    "sync"
+)
+
 // agvcNbqHis表 结构体  AgvcNbqHis
 // 用于存储和展示逆变器实时数据和历史数据
 type AgvcNbqHis struct {
+    Ctime      *string `json:"ctime" form:"ctime" point:"name:采集时间"`
     Psid       *int    `json:"psid" form:"psid" point:"name:电站编号"`
     InverterNo *int    `json:"inverterNo" form:"inverterNo" point:"name:逆变器编号"`
     Name       *string `json:"name" form:"name" point:"name:逆变器名称"`
@@ -106,4 +113,54 @@ type AgvcNbqHis struct {
 // TableName agvcNbqHis表 AgvcNbqHis自定义表名 agvc_nbq_his
 func (AgvcNbqHis) TableName() string {
     return "agvc_nbq_his"
+}
+
+// PointToFieldMapping point值到字段名的映射缓存
+var pointToFieldMapping map[string]string
+var pointMappingOnce sync.Once
+
+// InitPointMapping 初始化point标签映射，在系统启动时调用
+func InitPointMapping() {
+    pointMappingOnce.Do(func() {
+        pointToFieldMapping = make(map[string]string)
+        
+        // 使用反射解析AgvcNbqHis结构体的point标签
+        t := reflect.TypeOf(AgvcNbqHis{})
+        for i := 0; i < t.NumField(); i++ {
+            field := t.Field(i)
+            tag := field.Tag.Get("point")
+            
+            if tag == "" {
+                continue
+            }
+            
+            // 解析point标签，提取value值
+            if strings.Contains(tag, "value:") {
+                parts := strings.Split(tag, ",")
+                for _, part := range parts {
+                    part = strings.TrimSpace(part)
+                    if strings.HasPrefix(part, "value:") {
+                        pointValue := strings.TrimPrefix(part, "value:")
+                        pointToFieldMapping[pointValue] = field.Name
+                        break
+                    }
+                }
+            }
+        }
+    })
+}
+
+// GetFieldNameByPoint 根据point值获取字段名
+func GetFieldNameByPoint(point string) (string, bool) {
+    fieldName, ok := pointToFieldMapping[point]
+    return fieldName, ok
+}
+
+// GetAllPointValues 获取所有point值列表
+func GetAllPointValues() []string {
+    points := make([]string, 0, len(pointToFieldMapping))
+    for point := range pointToFieldMapping {
+        points = append(points, point)
+    }
+    return points
 }
