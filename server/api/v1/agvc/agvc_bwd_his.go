@@ -93,24 +93,24 @@ func (agvcBwdHisApi *AgvcBwdHisApi) DeleteAgvcBwdHisByIds(c *gin.Context) {
 // @Param data body agvc.AgvcBwdHis true "更新agvcBwdHis表"
 // @Success 200 {object} response.Response{msg=string} "更新成功"
 // @Router /agvcBwdHis/updateAgvcBwdHis [put]
-func (agvcBwdHisApi *AgvcBwdHisApi) UpdateAgvcBwdHis(c *gin.Context) {
-	// 从ctx获取标准context进行业务行为
-	ctx := c.Request.Context()
+// func (agvcBwdHisApi *AgvcBwdHisApi) UpdateAgvcBwdHis(c *gin.Context) {
+// 	// 从ctx获取标准context进行业务行为
+// 	ctx := c.Request.Context()
 
-	var agvcBwdHis agvc.AgvcBwdHis
-	err := c.ShouldBindJSON(&agvcBwdHis)
-	if err != nil {
-		response.FailWithMessage(err.Error(), c)
-		return
-	}
-	err = agvcBwdHisService.UpdateAgvcBwdHis(ctx, agvcBwdHis)
-	if err != nil {
-		global.GVA_LOG.Error("更新失败!", zap.Error(err))
-		response.FailWithMessage("更新失败:"+err.Error(), c)
-		return
-	}
-	response.OkWithMessage("更新成功", c)
-}
+// 	var agvcBwdHis agvc.AgvcBwdHis
+// 	err := c.ShouldBindJSON(&agvcBwdHis)
+// 	if err != nil {
+// 		response.FailWithMessage(err.Error(), c)
+// 		return
+// 	}
+// 	err = agvcBwdHisService.UpdateAgvcBwdHis(ctx, agvcBwdHis)
+// 	if err != nil {
+// 		global.GVA_LOG.Error("更新失败!", zap.Error(err))
+// 		response.FailWithMessage("更新失败:"+err.Error(), c)
+// 		return
+// 	}
+// 	response.OkWithMessage("更新成功", c)
+// }
 
 // FindAgvcBwdHis 用id查询agvcBwdHis表
 // @Tags AgvcBwdHis
@@ -263,24 +263,24 @@ func (agvcBwdHisApi *AgvcBwdHisApi) GenerateAgvcBwdTestData(c *gin.Context) {
 // @Param data body agvcReq.PlanCurvesRequest true "计划曲线数据"
 // @Success 200 {object} response.Response{msg=string} "更新成功"
 // @Router /agvcBwdHis/updatePlanCurves [put]
-func (agvcBwdHisApi *AgvcBwdHisApi) UpdatePlanCurves(c *gin.Context) {
-	ctx := c.Request.Context()
+// func (agvcBwdHisApi *AgvcBwdHisApi) UpdatePlanCurves(c *gin.Context) {
+// 	ctx := c.Request.Context()
 
-	var req agvcReq.PlanCurvesRequest
-	err := c.ShouldBindJSON(&req)
-	if err != nil {
-		response.FailWithMessage(err.Error(), c)
-		return
-	}
+// 	var req agvcReq.PlanCurvesRequest
+// 	err := c.ShouldBindJSON(&req)
+// 	if err != nil {
+// 		response.FailWithMessage(err.Error(), c)
+// 		return
+// 	}
 
-	err = agvcBwdHisService.UpdatePlanCurves(ctx, req)
-	if err != nil {
-		global.GVA_LOG.Error("更新计划曲线失败!", zap.Error(err))
-		response.FailWithMessage("更新计划曲线失败:"+err.Error(), c)
-		return
-	}
-	response.OkWithMessage("更新计划曲线成功", c)
-}
+// 	err = agvcBwdHisService.UpdatePlanCurves(ctx, req)
+// 	if err != nil {
+// 		global.GVA_LOG.Error("更新计划曲线失败!", zap.Error(err))
+// 		response.FailWithMessage("更新计划曲线失败:"+err.Error(), c)
+// 		return
+// 	}
+// 	response.OkWithMessage("更新计划曲线成功", c)
+// }
 
 // UpdateAgcParameters 更新AGC参数设置
 // @Tags AgvcBwdHis
@@ -291,24 +291,24 @@ func (agvcBwdHisApi *AgvcBwdHisApi) UpdatePlanCurves(c *gin.Context) {
 // @Param data body agvcReq.AgcParametersRequest true "AGC参数数据"
 // @Success 200 {object} response.Response{msg=string} "更新成功"
 // @Router /agvcBwdHis/updateAgcParameters [put]
-func (agvcBwdHisApi *AgvcBwdHisApi) UpdateAgcParameters(c *gin.Context) {
-	ctx := c.Request.Context()
+// func (agvcBwdHisApi *AgvcBwdHisApi) UpdateAgcParameters(c *gin.Context) {
+// 	ctx := c.Request.Context()
 
-	var req agvcReq.AgcParametersRequest
-	err := c.ShouldBindJSON(&req)
-	if err != nil {
-		response.FailWithMessage(err.Error(), c)
-		return
-	}
+// 	var req agvcReq.AgcParametersRequest
+// 	err := c.ShouldBindJSON(&req)
+// 	if err != nil {
+// 		response.FailWithMessage(err.Error(), c)
+// 		return
+// 	}
 
-	err = agvcBwdHisService.UpdateAgcParameters(ctx, req)
-	if err != nil {
-		global.GVA_LOG.Error("更新AGC参数失败!", zap.Error(err))
-		response.FailWithMessage("更新AGC参数失败:"+err.Error(), c)
-		return
-	}
-	response.OkWithMessage("更新AGC参数成功", c)
-}
+// 	err = agvcBwdHisService.UpdateAgcParameters(ctx, req)
+// 	if err != nil {
+// 		global.GVA_LOG.Error("更新AGC参数失败!", zap.Error(err))
+// 		response.FailWithMessage("更新AGC参数失败:"+err.Error(), c)
+// 		return
+// 	}
+// 	response.OkWithMessage("更新AGC参数成功", c)
+// }
 
 // UpdateAvcParameters 更新AVC参数设置
 // @Tags AgvcBwdHis
@@ -319,24 +319,24 @@ func (agvcBwdHisApi *AgvcBwdHisApi) UpdateAgcParameters(c *gin.Context) {
 // @Param data body agvcReq.AvcParametersRequest true "AVC参数数据"
 // @Success 200 {object} response.Response{msg=string} "更新成功"
 // @Router /agvcBwdHis/updateAvcParameters [put]
-func (agvcBwdHisApi *AgvcBwdHisApi) UpdateAvcParameters(c *gin.Context) {
-	ctx := c.Request.Context()
+// func (agvcBwdHisApi *AgvcBwdHisApi) UpdateAvcParameters(c *gin.Context) {
+// 	ctx := c.Request.Context()
 
-	var req agvcReq.AvcParametersRequest
-	err := c.ShouldBindJSON(&req)
-	if err != nil {
-		response.FailWithMessage(err.Error(), c)
-		return
-	}
+// 	var req agvcReq.AvcParametersRequest
+// 	err := c.ShouldBindJSON(&req)
+// 	if err != nil {
+// 		response.FailWithMessage(err.Error(), c)
+// 		return
+// 	}
 
-	err = agvcBwdHisService.UpdateAvcParameters(ctx, req)
-	if err != nil {
-		global.GVA_LOG.Error("更新AVC参数失败!", zap.Error(err))
-		response.FailWithMessage("更新AVC参数失败:"+err.Error(), c)
-		return
-	}
-	response.OkWithMessage("更新AVC参数成功", c)
-}
+// 	err = agvcBwdHisService.UpdateAvcParameters(ctx, req)
+// 	if err != nil {
+// 		global.GVA_LOG.Error("更新AVC参数失败!", zap.Error(err))
+// 		response.FailWithMessage("更新AVC参数失败:"+err.Error(), c)
+// 		return
+// 	}
+// 	response.OkWithMessage("更新AVC参数成功", c)
+// }
 
 // GetAgcParameters 获取AGC参数设置
 // @Tags AgvcBwdHis
@@ -347,23 +347,23 @@ func (agvcBwdHisApi *AgvcBwdHisApi) UpdateAvcParameters(c *gin.Context) {
 // @Param number query string true "并网点编号"
 // @Success 200 {object} response.Response{data=object,msg=string} "获取成功"
 // @Router /agvcBwdHis/getAgcParameters [get]
-func (agvcBwdHisApi *AgvcBwdHisApi) GetAgcParameters(c *gin.Context) {
-	ctx := c.Request.Context()
+// func (agvcBwdHisApi *AgvcBwdHisApi) GetAgcParameters(c *gin.Context) {
+// 	ctx := c.Request.Context()
 
-	number := c.Query("number")
-	if number == "" {
-		response.FailWithMessage("参数不完整", c)
-		return
-	}
+// 	number := c.Query("number")
+// 	if number == "" {
+// 		response.FailWithMessage("参数不完整", c)
+// 		return
+// 	}
 
-	data, err := agvcBwdHisService.GetAgcParameters(ctx, number)
-	if err != nil {
-		global.GVA_LOG.Error("获取AGC参数失败!", zap.Error(err))
-		response.FailWithMessage("获取AGC参数失败:"+err.Error(), c)
-		return
-	}
-	response.OkWithData(data, c)
-}
+// 	data, err := agvcBwdHisService.GetAgcParameters(ctx, number)
+// 	if err != nil {
+// 		global.GVA_LOG.Error("获取AGC参数失败!", zap.Error(err))
+// 		response.FailWithMessage("获取AGC参数失败:"+err.Error(), c)
+// 		return
+// 	}
+// 	response.OkWithData(data, c)
+// }
 
 // GetAvcParameters 获取AVC参数设置
 // @Tags AgvcBwdHis
@@ -374,23 +374,23 @@ func (agvcBwdHisApi *AgvcBwdHisApi) GetAgcParameters(c *gin.Context) {
 // @Param number query string true "并网点编号"
 // @Success 200 {object} response.Response{data=object,msg=string} "获取成功"
 // @Router /agvcBwdHis/getAvcParameters [get]
-func (agvcBwdHisApi *AgvcBwdHisApi) GetAvcParameters(c *gin.Context) {
-	ctx := c.Request.Context()
+// func (agvcBwdHisApi *AgvcBwdHisApi) GetAvcParameters(c *gin.Context) {
+// 	ctx := c.Request.Context()
 
-	number := c.Query("number")
-	if number == "" {
-		response.FailWithMessage("参数不完整", c)
-		return
-	}
+// 	number := c.Query("number")
+// 	if number == "" {
+// 		response.FailWithMessage("参数不完整", c)
+// 		return
+// 	}
 
-	data, err := agvcBwdHisService.GetAvcParameters(ctx, number)
-	if err != nil {
-		global.GVA_LOG.Error("获取AVC参数失败!", zap.Error(err))
-		response.FailWithMessage("获取AVC参数失败:"+err.Error(), c)
-		return
-	}
-	response.OkWithData(data, c)
-}
+// 	data, err := agvcBwdHisService.GetAvcParameters(ctx, number)
+// 	if err != nil {
+// 		global.GVA_LOG.Error("获取AVC参数失败!", zap.Error(err))
+// 		response.FailWithMessage("获取AVC参数失败:"+err.Error(), c)
+// 		return
+// 	}
+// 	response.OkWithData(data, c)
+// }
 
 // GetPlanCurves 获取计划曲线
 // @Tags AgvcBwdHis
@@ -402,25 +402,25 @@ func (agvcBwdHisApi *AgvcBwdHisApi) GetAvcParameters(c *gin.Context) {
 // @Param curveType query string false "曲线类型: agc/avc"
 // @Success 200 {object} response.Response{data=object,msg=string} "获取成功"
 // @Router /agvcBwdHis/getPlanCurves [get]
-func (agvcBwdHisApi *AgvcBwdHisApi) GetPlanCurves(c *gin.Context) {
-	ctx := c.Request.Context()
+// func (agvcBwdHisApi *AgvcBwdHisApi) GetPlanCurves(c *gin.Context) {
+// 	ctx := c.Request.Context()
 
-	number := c.Query("number")
-	if number == "" {
-		response.FailWithMessage("参数不完整", c)
-		return
-	}
+// 	number := c.Query("number")
+// 	if number == "" {
+// 		response.FailWithMessage("参数不完整", c)
+// 		return
+// 	}
 
-	curveType := c.Query("curveType") // agc 或 avc
+// 	curveType := c.Query("curveType") // agc 或 avc
 
-	data, err := agvcBwdHisService.GetPlanCurves(ctx, number, curveType)
-	if err != nil {
-		global.GVA_LOG.Error("获取计划曲线失败!", zap.Error(err))
-		response.FailWithMessage("获取计划曲线失败:"+err.Error(), c)
-		return
-	}
-	response.OkWithData(data, c)
-}
+// 	data, err := agvcBwdHisService.GetPlanCurves(ctx, number, curveType)
+// 	if err != nil {
+// 		global.GVA_LOG.Error("获取计划曲线失败!", zap.Error(err))
+// 		response.FailWithMessage("获取计划曲线失败:"+err.Error(), c)
+// 		return
+// 	}
+// 	response.OkWithData(data, c)
+// }
 
 // UpdateAgcStatus 更新AGC状态
 // @Tags AgvcBwdHis
@@ -431,24 +431,24 @@ func (agvcBwdHisApi *AgvcBwdHisApi) GetPlanCurves(c *gin.Context) {
 // @Param data body agvcReq.AgcStatusRequest true "AGC状态数据"
 // @Success 200 {object} response.Response{msg=string} "更新成功"
 // @Router /agvcBwdHis/updateAgcStatus [put]
-func (agvcBwdHisApi *AgvcBwdHisApi) UpdateAgcStatus(c *gin.Context) {
-	ctx := c.Request.Context()
+// func (agvcBwdHisApi *AgvcBwdHisApi) UpdateAgcStatus(c *gin.Context) {
+// 	ctx := c.Request.Context()
 
-	var req agvcReq.AgcStatusRequest
-	err := c.ShouldBindJSON(&req)
-	if err != nil {
-		response.FailWithMessage(err.Error(), c)
-		return
-	}
+// 	var req agvcReq.AgcStatusRequest
+// 	err := c.ShouldBindJSON(&req)
+// 	if err != nil {
+// 		response.FailWithMessage(err.Error(), c)
+// 		return
+// 	}
 
-	err = agvcBwdHisService.UpdateAgcStatus(ctx, req)
-	if err != nil {
-		global.GVA_LOG.Error("更新AGC状态失败!", zap.Error(err))
-		response.FailWithMessage("更新AGC状态失败:"+err.Error(), c)
-		return
-	}
-	response.OkWithMessage("更新AGC状态成功", c)
-}
+// 	err = agvcBwdHisService.UpdateAgcStatus(ctx, req)
+// 	if err != nil {
+// 		global.GVA_LOG.Error("更新AGC状态失败!", zap.Error(err))
+// 		response.FailWithMessage("更新AGC状态失败:"+err.Error(), c)
+// 		return
+// 	}
+// 	response.OkWithMessage("更新AGC状态成功", c)
+// }
 
 // GetAgcStatus 获取AGC状态
 // @Tags AgvcBwdHis
@@ -486,24 +486,24 @@ func (agvcBwdHisApi *AgvcBwdHisApi) GetAgcStatus(c *gin.Context) {
 // @Param data body agvcReq.AvcStatusRequest true "AVC状态数据"
 // @Success 200 {object} response.Response{msg=string} "更新成功"
 // @Router /agvcBwdHis/updateAvcStatus [put]
-func (agvcBwdHisApi *AgvcBwdHisApi) UpdateAvcStatus(c *gin.Context) {
-	ctx := c.Request.Context()
+// func (agvcBwdHisApi *AgvcBwdHisApi) UpdateAvcStatus(c *gin.Context) {
+// 	ctx := c.Request.Context()
 
-	var req agvcReq.AvcStatusRequest
-	err := c.ShouldBindJSON(&req)
-	if err != nil {
-		response.FailWithMessage(err.Error(), c)
-		return
-	}
+// 	var req agvcReq.AvcStatusRequest
+// 	err := c.ShouldBindJSON(&req)
+// 	if err != nil {
+// 		response.FailWithMessage(err.Error(), c)
+// 		return
+// 	}
 
-	err = agvcBwdHisService.UpdateAvcStatus(ctx, req)
-	if err != nil {
-		global.GVA_LOG.Error("更新AVC状态失败!", zap.Error(err))
-		response.FailWithMessage("更新AVC状态失败:"+err.Error(), c)
-		return
-	}
-	response.OkWithMessage("更新AVC状态成功", c)
-}
+// 	err = agvcBwdHisService.UpdateAvcStatus(ctx, req)
+// 	if err != nil {
+// 		global.GVA_LOG.Error("更新AVC状态失败!", zap.Error(err))
+// 		response.FailWithMessage("更新AVC状态失败:"+err.Error(), c)
+// 		return
+// 	}
+// 	response.OkWithMessage("更新AVC状态成功", c)
+// }
 
 // GetAvcStatus 获取AVC状态
 // @Tags AgvcBwdHis
@@ -514,23 +514,23 @@ func (agvcBwdHisApi *AgvcBwdHisApi) UpdateAvcStatus(c *gin.Context) {
 // @Param number query string true "并网点编号"
 // @Success 200 {object} response.Response{data=object,msg=string} "获取成功"
 // @Router /agvcBwdHis/getAvcStatus [get]
-func (agvcBwdHisApi *AgvcBwdHisApi) GetAvcStatus(c *gin.Context) {
-	ctx := c.Request.Context()
+// func (agvcBwdHisApi *AgvcBwdHisApi) GetAvcStatus(c *gin.Context) {
+// 	ctx := c.Request.Context()
 
-	number := c.Query("number")
-	if number == "" {
-		response.FailWithMessage("参数不完整", c)
-		return
-	}
+// 	number := c.Query("number")
+// 	if number == "" {
+// 		response.FailWithMessage("参数不完整", c)
+// 		return
+// 	}
 
-	data, err := agvcBwdHisService.GetAvcStatus(ctx, number)
-	if err != nil {
-		global.GVA_LOG.Error("获取AVC状态失败!", zap.Error(err))
-		response.FailWithMessage("获取AVC状态失败:"+err.Error(), c)
-		return
-	}
-	response.OkWithData(data, c)
-}
+// 	data, err := agvcBwdHisService.GetAvcStatus(ctx, number)
+// 	if err != nil {
+// 		global.GVA_LOG.Error("获取AVC状态失败!", zap.Error(err))
+// 		response.FailWithMessage("获取AVC状态失败:"+err.Error(), c)
+// 		return
+// 	}
+// 	response.OkWithData(data, c)
+// }
 
 // GetBwdRealtimeData 获取并网点实时数据
 // @Tags AgvcBwdHis

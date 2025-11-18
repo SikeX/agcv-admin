@@ -174,11 +174,13 @@ var QxyPointMapping = map[string]string{
 
 // 设备类型枚举
 const (
-	EqTypeNBQ = "2" // 逆变器
-	EqTypeXB  = "4" //箱变
-	EqTypeBWD = "5" // 并网点
-	EqTypeDB  = "7" //电表
-	EqTypeQXY = "8" // 气象仪
+	EqTypeNBQ = "2"  // 逆变器
+	EqTypeXB  = "4"  //箱变
+	EqTypeBWD = "5"  // 并网点
+	EqTypeDB  = "7"  //电表
+	EqTypeQXY = "8"  // 气象仪
+	EqTypeAGC = "60" // AGC
+	EqTypeAVC = "61" // AVC
 )
 
 // 获取并网点点位名称
