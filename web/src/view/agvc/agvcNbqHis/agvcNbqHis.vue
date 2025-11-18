@@ -96,7 +96,6 @@
               range-separator="至"
               start-placeholder="开始日期"
               end-placeholder="结束日期"
-              value-format="YYYY-MM-DD"
               style="width: 100%; margin-bottom: 20px;"
             />
             <el-button type="primary" @click="loadHistoryData" :loading="loading" style="width: 100%;">查询</el-button>
@@ -306,6 +305,12 @@ const showHistoryChart = async (row, field) => {
 const loadHistoryData = async () => {
   if (!currentDevice.value || !currentField.value) return
   
+  // 检查时间范围是否有效
+  if (!historyDateRange.value || historyDateRange.value.length !== 2) {
+    ElMessage.warning('请选择时间范围')
+    return
+  }
+  
   loading.value = true
   try {
     // 构建AgvcNbqHis结构体，只设置需要查询的字段
@@ -317,23 +322,37 @@ const loadHistoryData = async () => {
       [currentField.value.prop]: 0
     }
     
+    // 格式化时间为RFC3339格式
+    const formatToRFC3339 = (date) => {
+      if (typeof date === 'string') {
+        date = new Date(date)
+      }
+      return date.toISOString()
+    }
+    
     const requestData = {
       agvcNbqHis: agvcNbqHis,
-      startTime: historyDateRange.value[0],
-      endTime: historyDateRange.value[1]
+      startTime: formatToRFC3339(historyDateRange.value[0]),
+      endTime: formatToRFC3339(historyDateRange.value[1])
     }
     
     const res = await getAgvcNbqHistory(requestData)
     if (res.code === 0) {
       // 处理从 InfluxDB获取的历史数据
-      historyData.value = res.data.map(item => {
-        return {
-          timestamp: new Date(item.time),
-          value: item.value,
-        }
-      })
-      // 按时间排序
-      historyData.value.sort((a, b) => a.timestamp - b.timestamp)
+      if (res.data && res.data.length > 0) {
+        historyData.value = res.data.map(item => {
+          return {
+            timestamp: new Date(item.time),
+            value: item.value,
+          }
+        })
+        // 按时间排序
+        historyData.value.sort((a, b) => a.timestamp - b.timestamp)
+      } else {
+        // 没有数据时清空
+        historyData.value = []
+        ElMessage.info('选择的时间范围内没有历史数据')
+      }
       
       // 更新图表
       updateChart()

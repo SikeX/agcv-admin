@@ -100,15 +100,20 @@ func (agvcNbqHisService *AgvcNbqHisService) GetAgvcNbqHisInfoList(ctx context.Co
 		// 构建Flux查询语句 - 查询该逆变器的所有点位的最新值
 		flux := fmt.Sprintf(`
         from(bucket: "%s")
-            |> range(start: -1y)
-            |> filter(fn: (r) => r["_measurement"] == "agvc_data")
-						|> filter(fn: (r) => r["psid"] == "%d")
+            |> range(start: -1h)
+            |> filter(fn: (r) => r["_measurement"] == "%s")
             |> filter(fn: (r) => r["eqid"] == "%d")
             |> filter(fn: (r) => r["eqType"] == "%s")
-            |> filter(fn: (r) => r["dataType"] == "%d")`,
-			global.GVA_CONFIG.InfluxDB.Bucket, *setting.Psid, *setting.InverterNo, agvc.EqTypeNBQ, cons.YC)
-
-		flux += `
+            |> filter(fn: (r) => r["dataType"] == "%d")`, 
+            global.GVA_CONFIG.InfluxDB.Bucket, global.GVA_CONFIG.InfluxDB.GetMeasurement(), *setting.InverterNo, agvc.EqTypeNBQ, cons.YC)
+        
+        // 如果设置中有psid，添加psid过滤
+        if setting.Psid != nil {
+            flux += fmt.Sprintf(`
+            |> filter(fn: (r) => r["psid"] == "%d")`, *setting.Psid)
+        }
+        
+        flux += `
             |> last()`
 
 		// 执行查询
@@ -241,21 +246,20 @@ func (agvcNbqHisService *AgvcNbqHisService) GetAgvcNbqHistory(ctx context.Contex
 		flux := fmt.Sprintf(`
         from(bucket: "%s")
             |> range(start: %s, stop: %s)
-            |> filter(fn: (r) => r["_measurement"] == "agvc_data")
-						|> filter(fn: (r) => r["psid"] == "%d")
+            |> filter(fn: (r) => r["_measurement"] == "%s")
             |> filter(fn: (r) => r["eqid"] == "%d")
             |> filter(fn: (r) => r["eqType"] == "%s")
             |> filter(fn: (r) => r["dataType"] == "%d")
-            |> filter(fn: (r) => r["_field"] == "point_%s")`,
-			global.GVA_CONFIG.InfluxDB.Bucket,
-			startTime,
-			endTime,
-			*nbqHis.Psid,
-			*nbqHis.InverterNo,
-			agvc.EqTypeNBQ,
-			cons.YC,
-			pointValue,
-		)
+            |> filter(fn: (r) => r["point"] == "%s")`, 
+            global.GVA_CONFIG.InfluxDB.Bucket, 
+            startTime, 
+            endTime, 
+            global.GVA_CONFIG.InfluxDB.GetMeasurement(),
+            *nbqHis.InverterNo, 
+            agvc.EqTypeNBQ, 
+            cons.YC, 
+            pointValue,
+        )
 
 		// 执行查询
 		result, err := queryAPI.Query(ctx, flux)
@@ -287,7 +291,32 @@ func (agvcNbqHisService *AgvcNbqHisService) GetAgvcNbqHistory(ctx context.Contex
 		}
 	}
 
-	return historyData, nil
+            data := map[string]interface{}{
+                "time":      record.Time().Format(time.RFC3339),
+                "psid":      record.ValueByKey("psid"),
+                "eqid":      record.ValueByKey("eqid"),
+                "eqType":    record.ValueByKey("eqType"),
+                "dataType":  record.ValueByKey("dataType"),
+                "point":     pointValue,
+                "pointName": agvc.GetNbqPointName(pointValue),
+                "value":     record.Value(),
+            }
+            historyData = append(historyData, data)
+        }
+
+        // 检查是否有错误
+        if result.Err() != nil {
+            global.GVA_LOG.Error(fmt.Sprintf("解析点位%s的InfluxDB结果失败: %v", pointValue, result.Err()))
+        }
+    }
+
+    // 如果没有查询到数据，返回空数组而不是错误
+    if len(historyData) == 0 {
+        global.GVA_LOG.Info(fmt.Sprintf("逆变器%d在时间范围%s到%s内没有历史数据", *nbqHis.InverterNo, startTime, endTime))
+        return []map[string]interface{}{}, nil
+    }
+
+    return historyData, nil
 }
 
 // extractPointValues 从AgvcNbqHis结构体中提取所有带point标签的字段的value值
@@ -340,21 +369,21 @@ func (agvcNbqHisService *AgvcNbqHisService) WriteAgvcNbqDataToInfluxDB(ctx conte
 	// 获取写API
 	writeAPI := global.GVA_INFLUXDB.WriteAPIBlocking(global.GVA_CONFIG.InfluxDB.Org, global.GVA_CONFIG.InfluxDB.Bucket)
 
-	// 创建数据点
-	p := influxdb2.NewPoint(
-		"agvc",
-		map[string]string{
-			"psid":     strconv.Itoa(psid),
-			"eqType":   agvc.EqTypeNBQ,
-			"eqid":     strconv.Itoa(eqid),
-			"dataType": strconv.Itoa(cons.YC),
-			"point":    point,
-		},
-		map[string]interface{}{
-			"value": value,
-		},
-		time.Now(),
-	)
+    // 创建数据点
+    p := influxdb2.NewPoint(
+        global.GVA_CONFIG.InfluxDB.GetMeasurement(),
+        map[string]string{
+            "psid":     strconv.Itoa(psid),
+            "eqType":   agvc.EqTypeNBQ,
+            "eqid":     strconv.Itoa(eqid),
+            "dataType": strconv.Itoa(cons.YC),
+            "point":    point,
+        },
+        map[string]interface{}{
+            "value": value,
+        },
+        time.Now(),
+    )
 
 	// 写入数据点
 	if err := writeAPI.WritePoint(ctx, p); err != nil {
