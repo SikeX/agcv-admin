@@ -17,7 +17,7 @@ func (s *AgvcNbqHisRouter) InitAgvcNbqHisRouter(Router *gin.RouterGroup, PublicR
 		agvcNbqHisRouter.DELETE("deleteAgvcNbqHis", agvcNbqHisApi.DeleteAgvcNbqHis)           // 删除agvcNbqHis表
 		agvcNbqHisRouter.DELETE("deleteAgvcNbqHisByIds", agvcNbqHisApi.DeleteAgvcNbqHisByIds) // 批量删除agvcNbqHis表
 		agvcNbqHisRouter.PUT("updateAgvcNbqHis", agvcNbqHisApi.UpdateAgvcNbqHis)              // 更新agvcNbqHis表
-		agvcNbqHisRouter.POST("generateTestData", agvcNbqHisApi.GenerateAgvcNbqTestData)      // 生成测试数据
+		//agvcNbqHisRouter.POST("generateTestData", agvcNbqHisApi.GenerateAgvcNbqTestData)      // 生成测试数据
 	}
 	{
 		agvcNbqHisRouterWithoutRecord.GET("findAgvcNbqHis", agvcNbqHisApi.FindAgvcNbqHis)       // 根据ID获取agvcNbqHis表

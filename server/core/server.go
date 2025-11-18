@@ -32,10 +32,10 @@ func RunServer() {
 
 	initialize.InfluxDB() // 初始化InfluxDB
 
-	initialize.CoapServer() // 初始化并启动CoAP服务（5683端口-采集数据）
+	//initialize.CoapServer() // 初始化并启动CoAP服务（5683端口-采集数据）
 	// initialize.CoapDispatchServer() // 初始化并启动调度CoAP服务器（1190端口-接收调度数据，1189端口-返回计算结果）
 
-	RunAGCV() // 初始化并启动AGCV服务
+	//RunAGCV() // 初始化并启动AGCV服务
 
 	Router := initialize.Routers()
 
