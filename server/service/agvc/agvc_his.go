@@ -25,6 +25,11 @@ func (agvcHisService *AgvcHisService) GetHistory(ctx context.Context, psid int, 
 		return nil, fmt.Errorf("InfluxDB客户端未初始化")
 	}
 
+	measurement := global.GVA_CONFIG.InfluxDB.GetMeasurement()
+	if eqType == strconv.Itoa(NBQ_DEVICE_TYPE) {
+		measurement = global.GVA_CONFIG.InfluxDB.GetNBQMeasurement()
+	}
+
 	// 获取查询API
 	queryAPI := global.GVA_INFLUXDB.QueryAPI(global.GVA_CONFIG.InfluxDB.Org)
 
@@ -46,7 +51,7 @@ func (agvcHisService *AgvcHisService) GetHistory(ctx context.Context, psid int, 
 		global.GVA_CONFIG.InfluxDB.Bucket,
 		startTime,
 		endTime,
-		global.GVA_CONFIG.InfluxDB.GetMeasurement(),
+		measurement,
 		psid,
 		eqid,
 		eqType,
