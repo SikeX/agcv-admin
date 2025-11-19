@@ -298,7 +298,17 @@ const handleCurrentChange = (val) => {
 const getTableData = async() => {
   loading.value = true
   try {
-    const table = await getAgvcNbqHisList({ page: page.value, pageSize: pageSize.value, ...searchInfo.value })
+    // 设置查询最近5分钟的数据，确保获取实时数据
+    const now = new Date()
+    const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000)
+    
+    const table = await getAgvcNbqHisList({ 
+      page: page.value, 
+      pageSize: pageSize.value,
+      startTime: fiveMinutesAgo,
+      endTime: now,
+      ...searchInfo.value 
+    })
     if (table.code === 0) {
       tableData.value = table.data.list
       total.value = table.data.total

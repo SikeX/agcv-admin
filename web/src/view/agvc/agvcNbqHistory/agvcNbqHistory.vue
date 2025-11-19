@@ -16,6 +16,7 @@
             start-placeholder="开始日期"
             end-placeholder="结束日期"
             style="width: 400px;"
+            :disabled-date="disabledDate"
           />
         </el-form-item>
         <el-form-item>
@@ -28,8 +29,8 @@
     <!-- 历史数据表格 -->
     <div class="gva-table-box">
       <div class="gva-btn-list">
-            <ExportTemplate  template-id="agvcNbqHis" />
-            <ExportExcel  template-id="agvcNbqHis" filterDeleted/>
+            <ExportTemplate template-id="agvcNbqHis" />
+            <ExportExcel template-id="agvcNbqHis" :condition="searchInfo" />
         </div>
       <el-table
         :data="tableData"
@@ -112,6 +113,19 @@
           <template #default="scope">{{ formatValue(scope.row.deviceStatusCode) }}</template>
         </el-table-column>
       </el-table>
+      
+      <!-- 分页组件 -->
+      <div class="gva-pagination">
+        <el-pagination
+          layout="total, sizes, prev, pager, next, jumper"
+          :current-page="currentPage"
+          :page-size="pageSize"
+          :page-sizes="[10, 20, 50, 100]"
+          :total="total"
+          @current-change="handleCurrentChange"
+          @size-change="handleSizeChange"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -127,6 +141,7 @@ import { start } from 'nprogress'
 import { ref, onMounted } from 'vue'
 // 导出组件
 import ExportExcel from '@/components/exportExcel/exportExcel.vue'
+import ExportTemplate from '@/components/exportExcel/exportTemplate.vue'
 
 defineOptions({
   name: 'AgvcNbqHistory'
@@ -180,9 +195,29 @@ const formatTime = (timeStr) => {
   }
 }
 
+// 禁用超过7天范围的日期
+const disabledDate = (time) => {
+  if (!queryInfo.value.dateRange || queryInfo.value.dateRange.length === 0) {
+    return false
+  }
+  
+  const selectedDate = queryInfo.value.dateRange[0]
+  if (!selectedDate) {
+    return false
+  }
+  
+  // 计算选中日期前后7天的范围
+  const minTime = new Date(selectedDate).getTime() - 7 * 24 * 60 * 60 * 1000
+  const maxTime = new Date(selectedDate).getTime() + 7 * 24 * 60 * 60 * 1000
+  
+  return time.getTime() < minTime || time.getTime() > maxTime
+}
+
 // 重置搜索
 const onReset = () => {
   searchInfo.value = {}
+  queryInfo.value.dateRange = []
+  currentPage.value = 1
   getTableData()
 }
 
@@ -190,15 +225,41 @@ const onReset = () => {
 const onSubmit = () => {
   elSearchFormRef.value?.validate(async(valid) => {
     if (!valid) return
+    
+    // 验证时间范围不超过7天
+    if (queryInfo.value.dateRange && queryInfo.value.dateRange.length === 2) {
+      const start = new Date(queryInfo.value.dateRange[0])
+      const end = new Date(queryInfo.value.dateRange[1])
+      const diffTime = Math.abs(end - start)
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+      
+      if (diffDays > 7) {
+        ElMessage.warning('查询时间范围不能超过7天')
+        return
+      }
+    }
+    
+    currentPage.value = 1
     getTableData()
   })
+}
+
+// 分页相关
+const handleSizeChange = (val) => {
+  pageSize.value = val
+  getTableData()
+}
+
+const handleCurrentChange = (val) => {
+  currentPage.value = val
+  getTableData()
 }
 
 // 查询设备列表
 const getTableData = async() => {
   loading.value = true
   // console.log(queryInfo.dateRange)
-  if (queryInfo.dateRange=== undefined || queryInfo.dateRange.length === 0 ) { 
+  if (queryInfo.value.dateRange === undefined || queryInfo.value.dateRange.length === 0 ) { 
     //默认查询最近7天
     const end = new Date()
     const start = new Date()
@@ -206,20 +267,25 @@ const getTableData = async() => {
     searchInfo.value.startTime = start
     searchInfo.value.endTime = end
   } else {
-    searchInfo.value.startTime = queryInfo.dateRange[0]
-    searchInfo.value.endTime = queryInfo.dateRange[1]
+    searchInfo.value.startTime = queryInfo.value.dateRange[0]
+    searchInfo.value.endTime = queryInfo.value.dateRange[1]
   }
   
 
   try {
-    // 查询所有设备，不分页
-    const table = await getAgvcNbqHisList({ page: 1, pageSize: 1000, ...searchInfo.value })
+    // 使用分页查询
+    const table = await getAgvcNbqHisList({ 
+      page: currentPage.value, 
+      pageSize: pageSize.value, 
+      ...searchInfo.value 
+    })
     if (table.code === 0) {
-      tableData.value = table.data.list || []
-      tableData.value = table.data.list.sort((a, b) => {
-          return new Date(b.ctime) - new Date(a.ctime)
-        })
-      
+      tableData.value = (table.data.list || []).sort((a, b) => {
+        return new Date(b.ctime) - new Date(a.ctime)
+      })
+      total.value = table.data.total
+      currentPage.value = table.data.page
+      pageSize.value = table.data.pageSize
     }
   } catch (error) {
     ElMessage.error('获取设备列表失败: ' + error.message)
