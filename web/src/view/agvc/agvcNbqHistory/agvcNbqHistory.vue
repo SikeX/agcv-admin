@@ -29,8 +29,11 @@
     <!-- 历史数据表格 -->
     <div class="gva-table-box">
       <div class="gva-btn-list">
-            <ExportTemplate template-id="agvcNbqHis" />
-            <ExportExcel template-id="agvcNbqHis" :condition="searchInfo" />
+            <ExportNonDbExcel 
+              api-url="/agvcNbqHis/exportAgvcNbqHistory" 
+              :condition="searchInfo" 
+              :export-func="exportAgvcNbqHistory"
+            />
         </div>
       <el-table
         :data="tableData"
@@ -133,7 +136,8 @@
 <script setup>
 import {
   getAgvcNbqHisList,
-  getAgvcNbqHistory
+  getAgvcNbqHistory,
+  exportAgvcNbqHistory
 } from '@/api/agvc/agvcNbqHis'
 
 import { ElMessage } from 'element-plus'
@@ -142,6 +146,7 @@ import { ref, onMounted } from 'vue'
 // 导出组件
 import ExportExcel from '@/components/exportExcel/exportExcel.vue'
 import ExportTemplate from '@/components/exportExcel/exportTemplate.vue'
+import ExportNonDbExcel from '@/components/exportExcel/exportNonDbExcel.vue'
 
 defineOptions({
   name: 'AgvcNbqHistory'
