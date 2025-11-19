@@ -220,118 +220,13 @@ func (agvcNbqHisService *AgvcNbqHisService) GetAgvcNbqHisPublic(ctx context.Cont
     // 请自行实现
 }
 
-// GetHistory 通用的历史数据查询方法
-// psid: 电站编号, eqid: 设备编号, eqType: 设备类型, pointValues: 点位列表, startTime/endTime: 时间范围
+// GetHistory 通用的历史数据查询方法（已废弃，使用 AgvcHisService.GetHistory）
+// 为保持向后兼容，此方法委托给通用服务
 func (agvcNbqHisService *AgvcNbqHisService) GetHistory(ctx context.Context, psid, eqid int, eqType string, pointValues []string, startTime, endTime string) ([]agvc.AgvcNbqHis, error) {
-    // 检查InfluxDB客户端是否已初始化
-    if global.GVA_INFLUXDB == nil {
-        return nil, fmt.Errorf("InfluxDB客户端未初始化")
-    }
-
-    // 获取查询API
-    queryAPI := global.GVA_INFLUXDB.QueryAPI(global.GVA_CONFIG.InfluxDB.Org)
-
-    // 如果没有指定点位，返回错误
-    if len(pointValues) == 0 {
-        return nil, fmt.Errorf("未找到需要查询的点位信息")
-    }
-
-    // 构建Flux查询语句
-    // 查询所有点位的历史数据
-    flux := fmt.Sprintf(`
-        from(bucket: "%s")
-            |> range(start: %s, stop: %s)
-            |> filter(fn: (r) => r["_measurement"] == "%s")
-            |> filter(fn: (r) => r["psid"] == "%d")
-            |> filter(fn: (r) => r["eqid"] == "%d")
-            |> filter(fn: (r) => r["eqType"] == "%s")
-            |> filter(fn: (r) => r["dataType"] == "%d")`,
-        global.GVA_CONFIG.InfluxDB.Bucket,
-        startTime,
-        endTime,
-        global.GVA_CONFIG.InfluxDB.GetMeasurement(),
-        psid,
-        eqid,
-        eqType,
-        cons.YC,
-    )
-
-    // 如果只查询特定点位，添加点位过滤
-    if len(pointValues) > 0 {
-        pointFilters := make([]string, 0, len(pointValues))
-        for _, point := range pointValues {
-            pointFilters = append(pointFilters, fmt.Sprintf(`r["_field"] == "point_%s"`, point))
-        }
-        flux += fmt.Sprintf(`
-            |> filter(fn: (r) => %s)`, strings.Join(pointFilters, " or "))
-    }
-
-    // 执行查询
-    result, err := queryAPI.Query(ctx, flux)
-    if err != nil {
-        global.GVA_LOG.Error(fmt.Sprintf("查询InfluxDB数据失败: %v", err))
-        return nil, err
-    }
-
-    // 按时间分组存储数据
-    timeDataMap := make(map[string]*agvc.AgvcNbqHis)
-
-    // 解析结果
-    for result.Next() {
-        record := result.Record()
-        timeKey := record.Time().Format(time.RFC3339)
-        
-        // 提取point值
-        field := record.Field()
-        pointArr := strings.Split(field, "_")
-        if len(pointArr) < 2 {
-            continue
-        }
-        point := pointArr[1]
-
-        // 获取或创建对应时间的AgvcNbqHis
-        nbqHis, exists := timeDataMap[timeKey]
-        if !exists {
-            ctimeStr := record.Time().Format(time.RFC3339)
-            nbqHis = &agvc.AgvcNbqHis{
-                Ctime:      &ctimeStr,
-                Psid:       &psid,
-                InverterNo: &eqid,
-            }
-            timeDataMap[timeKey] = nbqHis
-        }
-
-        // 设置字段值
-        value, ok := record.Value().(float64)
-        if !ok {
-            continue
-        }
-
-        // 使用缓存的映射关系设置字段值
-        if fieldName, found := agvc.GetFieldNameByPoint(point); found {
-            setFieldValue(nbqHis, fieldName, value)
-        }
-    }
-
-    // 检查是否有错误
-    if result.Err() != nil {
-        global.GVA_LOG.Error(fmt.Sprintf("解析InfluxDB结果失败: %v", result.Err()))
-        return nil, result.Err()
-    }
-
-    // 将map转换为slice
-    historyData := make([]agvc.AgvcNbqHis, 0, len(timeDataMap))
-    for _, data := range timeDataMap {
-        historyData = append(historyData, *data)
-    }
-
-    // 如果没有查询到数据，返回空数组
-    if len(historyData) == 0 {
-        global.GVA_LOG.Info(fmt.Sprintf("设备%d在时间范围%s到%s内没有历史数据", eqid, startTime, endTime))
-        return []agvc.AgvcNbqHis{}, nil
-    }
-
-    return historyData, nil
+    // 委托给通用历史数据服务
+    hisService := &AgvcHisService{}
+    eqidStr := fmt.Sprintf("%d", eqid)
+    return hisService.GetHistory(ctx, psid, eqidStr, eqType, pointValues, startTime, endTime)
 }
 
 // GetAgvcNbqHistory 获取逆变器历史数据
@@ -353,8 +248,10 @@ func (agvcNbqHisService *AgvcNbqHisService) GetAgvcNbqHistory(ctx context.Contex
         return nil, fmt.Errorf("未找到需要查询的点位信息")
     }
 
-    // 调用通用查询方法
-    return agvcNbqHisService.GetHistory(ctx, *nbqHis.Psid, *nbqHis.InverterNo, agvc.EqTypeNBQ, pointValues, startTime, endTime)
+    // 调用通用历史数据服务
+    hisService := &AgvcHisService{}
+    eqidStr := fmt.Sprintf("%d", *nbqHis.InverterNo)
+    return hisService.GetHistory(ctx, *nbqHis.Psid, eqidStr, agvc.EqTypeNBQ, pointValues, startTime, endTime)
 }
 
 // setFieldValue 根据字段名设置AgvcNbqHis结构体对应字段的值
@@ -413,86 +310,10 @@ func extractPointValues(nbqHis agvc.AgvcNbqHis) []string {
 
 // GetNbqRealData 获取逆变器实时数据（从InfluxDB中获取最后一条数据）
 func (agvcNbqHisService *AgvcNbqHisService) GetNbqRealData(ctx context.Context, psid, inverterNo int) (*agvc.AgvcNbqHis, error) {
-    // 检查InfluxDB客户端是否已初始化
-    if global.GVA_INFLUXDB == nil {
-        return nil, fmt.Errorf("InfluxDB客户端未初始化")
-    }
-
-    // 获取查询API
-    queryAPI := global.GVA_INFLUXDB.QueryAPI(global.GVA_CONFIG.InfluxDB.Org)
-
-    // 构建Flux查询语句 - 查询该逆变器所有点位的最新值
-    flux := fmt.Sprintf(`
-        from(bucket: "%s")
-            |> range(start: -1y)
-            |> filter(fn: (r) => r["_measurement"] == "%s")
-            |> filter(fn: (r) => r["psid"] == "%d")
-            |> filter(fn: (r) => r["eqid"] == "%d")
-            |> filter(fn: (r) => r["eqType"] == "%s")
-            |> filter(fn: (r) => r["dataType"] == "%d")
-            |> last()`,
-        global.GVA_CONFIG.InfluxDB.Bucket,
-        global.GVA_CONFIG.InfluxDB.GetMeasurement(),
-        psid,
-        inverterNo,
-        agvc.EqTypeNBQ,
-        cons.YC,
-    )
-
-    // 执行查询
-    result, err := queryAPI.Query(ctx, flux)
-    if err != nil {
-        global.GVA_LOG.Error(fmt.Sprintf("查询逆变器%d的实时数据失败: %v", inverterNo, err))
-        return nil, err
-    }
-
-    // 创建AgvcNbqHis对象
-    nbqHis := &agvc.AgvcNbqHis{
-        Psid:       &psid,
-        InverterNo: &inverterNo,
-    }
-
-    // 解析结果
-    for result.Next() {
-        record := result.Record()
-        
-        // 设置采集时间
-        if nbqHis.Ctime == nil {
-            ctimeStr := record.Time().Format(time.RFC3339)
-            nbqHis.Ctime = &ctimeStr
-        }
-
-        // 提取point值
-        field := record.Field()
-        pointArr := strings.Split(field, "_")
-        if len(pointArr) < 2 {
-            continue
-        }
-        point := pointArr[1]
-
-        value, ok := record.Value().(float64)
-        if !ok {
-            continue
-        }
-
-        // 使用缓存的映射关系设置字段值
-        if fieldName, found := agvc.GetFieldNameByPoint(point); found {
-            setFieldValue(nbqHis, fieldName, value)
-        }
-    }
-
-    // 检查是否有错误
-    if result.Err() != nil {
-        global.GVA_LOG.Error(fmt.Sprintf("解析逆变器%d的实时数据失败: %v", inverterNo, result.Err()))
-        return nil, result.Err()
-    }
-
-    // 如果没有采集时间，说明没有数据
-    if nbqHis.Ctime == nil {
-        return nil, fmt.Errorf("未找到逆变器%d的实时数据", inverterNo)
-    }
-
-    return nbqHis, nil
+    // 调用通用实时数据服务
+    hisService := &AgvcHisService{}
+    eqidStr := fmt.Sprintf("%d", inverterNo)
+    return hisService.GetRealData(ctx, psid, eqidStr, agvc.EqTypeNBQ)
 }
 
 // WriteAgvcNbqDataToInfluxDB 将逆变器数据写入InfluxDB
