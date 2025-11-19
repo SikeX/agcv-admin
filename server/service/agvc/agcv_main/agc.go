@@ -45,15 +45,15 @@ func (s *agc) AutoStartAllGridPoints() {
 
 	successCount := 0
 	for _, setting := range settings {
-		if setting.Number == nil {
+		if setting.Eqid == nil {
 			continue
 		}
 
 		// 将并网点编号转换为整数
 		var bwdNo int
-		if _, err := fmt.Sscanf(*setting.Number, "%d", &bwdNo); err != nil {
+		if _, err := fmt.Sscanf(fmt.Sprintf("%d", *setting.Eqid), "%d", &bwdNo); err != nil {
 			global.GVA_LOG.Warn("并网点编号格式错误，跳过",
-				zap.String("number", *setting.Number),
+				zap.String("number", fmt.Sprintf("%d", *setting.Eqid)),
 				zap.Error(err))
 			continue
 		}

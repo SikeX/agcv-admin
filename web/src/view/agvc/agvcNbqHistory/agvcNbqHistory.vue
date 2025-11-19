@@ -8,32 +8,6 @@
         <el-form-item label="逆变器名称">
           <el-input v-model="searchInfo.name" placeholder="请输入逆变器名称" clearable />
         </el-form-item>
-        <el-form-item>
-          <el-button type="primary" icon="search" @click="onSubmit">查询设备</el-button>
-          <el-button icon="refresh" @click="onReset">重置</el-button>
-        </el-form-item>
-      </el-form>
-    </div>
-    
-    <!-- 设备选择和时间范围 -->
-    <div class="gva-search-box">
-      <el-form :inline="true" :model="queryInfo" class="demo-form-inline">
-        <el-form-item label="选择设备">
-          <el-select 
-            v-model="queryInfo.selectedDevice" 
-            placeholder="请选择要查询的设备" 
-            clearable 
-            style="width: 300px;"
-            @change="onDeviceChange"
-          >
-            <el-option
-              v-for="item in tableData"
-              :key="item.inverterNo"
-              :label="`${item.inverterNo} - ${item.name || '未命名'}`"
-              :value="item.inverterNo"
-            />
-          </el-select>
-        </el-form-item>
         <el-form-item label="时间范围">
           <el-date-picker
             v-model="queryInfo.dateRange"
@@ -45,35 +19,33 @@
           />
         </el-form-item>
         <el-form-item>
-          <el-button 
-            type="primary" 
-            icon="Search" 
-            @click="loadHistoryData" 
-            :loading="loading"
-            :disabled="!queryInfo.selectedDevice"
-          >
-            查询历史数据
-          </el-button>
+          <el-button type="primary" icon="search" @click="onSubmit">查询</el-button>
+          <el-button icon="refresh" @click="onReset">重置</el-button>
         </el-form-item>
       </el-form>
     </div>
     
     <!-- 历史数据表格 -->
     <div class="gva-table-box">
+      <div class="gva-btn-list">
+            <ExportTemplate  template-id="agvcNbqHis" />
+            <ExportExcel  template-id="agvcNbqHis" filterDeleted/>
+        </div>
       <el-table
-        :data="historyData"
+        :data="tableData"
         border
         style="width: 100%"
         max-height="600"
         v-loading="loading"
       >
+        <el-table-column align="center" label="设备编号" prop="inverterNo" width="120" fixed="left" />
+        <el-table-column align="center" label="设备名称" prop="name" width="150" fixed="left" />
         <el-table-column align="center" label="采集时间" prop="ctime" width="180" fixed="left">
           <template #default="scope">
             {{ formatTime(scope.row.ctime) }}
           </template>
         </el-table-column>
-        <el-table-column align="center" label="设备编号" prop="inverterNo" width="120" fixed="left" />
-        <el-table-column align="center" label="设备名称" prop="name" width="150" fixed="left" />
+        
         
         <!-- 发电量相关 -->
         <el-table-column align="center" label="总发电量(kWh)" prop="totalPowerGeneration" width="150">
@@ -151,7 +123,10 @@ import {
 } from '@/api/agvc/agvcNbqHis'
 
 import { ElMessage } from 'element-plus'
+import { start } from 'nprogress'
 import { ref, onMounted } from 'vue'
+// 导出组件
+import ExportExcel from '@/components/exportExcel/exportExcel.vue'
 
 defineOptions({
   name: 'AgvcNbqHistory'
@@ -170,6 +145,11 @@ const queryInfo = ref({
 })
 const historyData = ref([])
 const loading = ref(false)
+
+// 分页相关变量
+const total = ref(0)
+const currentPage = ref(1)
+const pageSize = ref(20)
 
 // 格式化数值显示
 const formatValue = (value) => {
@@ -217,11 +197,29 @@ const onSubmit = () => {
 // 查询设备列表
 const getTableData = async() => {
   loading.value = true
+  // console.log(queryInfo.dateRange)
+  if (queryInfo.dateRange=== undefined || queryInfo.dateRange.length === 0 ) { 
+    //默认查询最近7天
+    const end = new Date()
+    const start = new Date()
+    start.setTime(start.getTime() - 3600 * 1000 * 24 * 7)
+    searchInfo.value.startTime = start
+    searchInfo.value.endTime = end
+  } else {
+    searchInfo.value.startTime = queryInfo.dateRange[0]
+    searchInfo.value.endTime = queryInfo.dateRange[1]
+  }
+  
+
   try {
     // 查询所有设备，不分页
     const table = await getAgvcNbqHisList({ page: 1, pageSize: 1000, ...searchInfo.value })
     if (table.code === 0) {
       tableData.value = table.data.list || []
+      tableData.value = table.data.list.sort((a, b) => {
+          return new Date(b.ctime) - new Date(a.ctime)
+        })
+      
     }
   } catch (error) {
     ElMessage.error('获取设备列表失败: ' + error.message)
@@ -320,5 +318,11 @@ onMounted(() => {
 <style scoped>
 .el-table {
   margin-top: 20px;
+}
+
+.gva-pagination {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
 }
 </style>

@@ -2,6 +2,7 @@ package agvc
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/flipped-aurora/gin-vue-admin/server/global"
 	"github.com/flipped-aurora/gin-vue-admin/server/model/agvc"
@@ -534,6 +535,12 @@ func (agvcBwdHisApi *AgvcBwdHisApi) GetAvcStatus(c *gin.Context) {
 		return
 	}
 
+	numberInt, err := strconv.Atoi(number)
+	if err != nil {
+		response.FailWithMessage("并网点编号格式错误", c)
+		return
+	}
+
 	// 获取电站编号，默认为1
 	psid := 1
 	if c.Query("psid") != "" {
@@ -541,7 +548,7 @@ func (agvcBwdHisApi *AgvcBwdHisApi) GetAvcStatus(c *gin.Context) {
 	}
 
 	// 从InfluxDB获取AVC实时数据
-	data, err := agvcAvcHisService.GetAvcRealData(ctx, psid, number)
+	data, err := agvcAvcHisService.GetAvcRealData(ctx, psid, numberInt)
 	if err != nil {
 		global.GVA_LOG.Error("获取AVC状态失败!", zap.Error(err))
 		response.FailWithMessage("获取AVC状态失败:"+err.Error(), c)

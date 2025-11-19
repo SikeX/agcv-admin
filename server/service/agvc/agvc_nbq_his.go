@@ -17,6 +17,8 @@ import (
 
 type AgvcNbqHisService struct{}
 
+var agvcHisService = AgvcHisService{}
+
 func init() {
 	// 系统启动时初始化point标签映射
 	agvc.InitPointMapping()
@@ -67,11 +69,6 @@ func (agvcNbqHisService *AgvcNbqHisService) GetAgvcNbqHisInfoList(ctx context.Co
 	db := global.GVA_DB.Model(&agvc.AgvcNbqSetting{})
 	var inverterSettings []agvc.AgvcNbqSetting
 
-	// 如果有条件搜索 下方会自动创建搜索语句
-	if len(info.CreatedAtRange) == 2 {
-		db = db.Where("created_at BETWEEN ? AND ?", info.CreatedAtRange[0], info.CreatedAtRange[1])
-	}
-
 	if info.Psid != nil {
 		db = db.Where("psid = ?", *info.Psid)
 	}
@@ -90,70 +87,21 @@ func (agvcNbqHisService *AgvcNbqHisService) GetAgvcNbqHisInfoList(ctx context.Co
 		return
 	}
 
-	// 检查InfluxDB客户端是否已初始化
-	if global.GVA_INFLUXDB == nil {
-		return nil, 0, fmt.Errorf("InfluxDB客户端未初始化")
-	}
-
-	// 获取查询API
-	queryAPI := global.GVA_INFLUXDB.QueryAPI(global.GVA_CONFIG.InfluxDB.Org)
-
 	agvcNbqHises := make([]agvc.AgvcNbq, 0)
 
 	// 对每个逆变器查询其最新数据
 	for _, setting := range inverterSettings {
-		// 构建Flux查询语句 - 查询该逆变器的所有点位的最新值
-		flux := fmt.Sprintf(`
-        from(bucket: "%s")
-            |> range(start: -1y)
-            |> filter(fn: (r) => r["_measurement"] == "%s")
-                        |> filter(fn: (r) => r["psid"] == "%d")
-            |> filter(fn: (r) => r["eqid"] == "%d")
-            |> filter(fn: (r) => r["eqType"] == "%s")
-            |> filter(fn: (r) => r["dataType"] == "%d")`,
-			global.GVA_CONFIG.InfluxDB.Bucket, global.GVA_CONFIG.InfluxDB.GetMeasurement(), *setting.Psid, *setting.InverterNo, agvc.EqTypeNBQ, cons.YC)
-
-		flux += `
-            |> last()`
-
-		// 执行查询
-		result, err := queryAPI.Query(ctx, flux)
+		agvcNbqHisInterface, err := agvcHisService.GetHistoryGeneric(ctx, *setting.Psid, *setting.InverterNo, agvc.EqTypeNBQ, nil, *setting.Name, info.StartTime, info.EndTime)
 		if err != nil {
-			global.GVA_LOG.Error(fmt.Sprintf("查询逆变器%d的InfluxDB数据失败: %v", *setting.InverterNo, err))
+			global.GVA_LOG.Error(fmt.Sprintf("查询逆变器%d的历史数据失败: %v", *setting.InverterNo, err))
 			continue
 		}
-
-		// 创建一个AgvcNbqHis对象
-		nbqHis := agvc.AgvcNbq{
-			Psid:       setting.Psid,
-			InverterNo: setting.InverterNo,
-			Name:       setting.Name,
+		agvcNbqHis, ok := agvcNbqHisInterface.([]agvc.AgvcNbq)
+		if !ok {
+			global.GVA_LOG.Error(fmt.Sprintf("类型断言失败: %v", agvcNbqHisInterface))
+			continue
 		}
-
-		// 解析结果，将各个点位的值填充到结构体中
-		for result.Next() {
-			record := result.Record()
-			field := record.Field()
-			pointArr := strings.Split(field, "_")
-			if len(pointArr) < 2 {
-				continue
-			}
-
-			point := pointArr[1]
-			value, ok := record.Value().(float64)
-			if !ok {
-				continue
-			}
-
-			// 根据point值设置对应的字段
-			setFieldByPoint(&nbqHis, point, value)
-		}
-
-		if result.Err() != nil {
-			global.GVA_LOG.Error(fmt.Sprintf("解析逆变器%d的InfluxDB结果失败: %v", *setting.InverterNo, result.Err()))
-		}
-
-		agvcNbqHises = append(agvcNbqHises, nbqHis)
+		agvcNbqHises = append(agvcNbqHises, agvcNbqHis...)
 	}
 
 	// 对inverterMonitors手动分页
@@ -220,39 +168,30 @@ func (agvcNbqHisService *AgvcNbqHisService) GetAgvcNbqHisPublic(ctx context.Cont
 	// 请自行实现
 }
 
-// GetHistory 通用的历史数据查询方法（已废弃，使用 AgvcHisService.GetHistory）
-// 为保持向后兼容，此方法委托给通用服务
-func (agvcNbqHisService *AgvcNbqHisService) GetHistory(ctx context.Context, psid, eqid int, eqType string, pointValues []string, startTime, endTime string) ([]agvc.AgvcNbq, error) {
-	// 委托给通用历史数据服务
-	hisService := &AgvcHisService{}
-	eqidStr := fmt.Sprintf("%d", eqid)
-	return hisService.GetHistory(ctx, psid, eqidStr, eqType, pointValues, startTime, endTime)
-}
-
 // GetAgvcNbqHistory 获取逆变器历史数据
 // 调用通用GetHistory方法，传入设备类型
-func (agvcNbqHisService *AgvcNbqHisService) GetAgvcNbqHistory(ctx context.Context, nbqHis agvc.AgvcNbq, startTime, endTime string) ([]agvc.AgvcNbq, error) {
-	// 检查必要的参数
-	if nbqHis.InverterNo == nil {
-		return nil, fmt.Errorf("逆变器编号不能为空")
-	}
-	if nbqHis.Psid == nil {
-		return nil, fmt.Errorf("电站编号不能为空")
-	}
+// func (agvcNbqHisService *AgvcNbqHisService) GetAgvcNbqHistory(ctx context.Context, nbqHis agvc.AgvcNbq, eqName, startTime, endTime string) ([]agvc.AgvcNbq, error) {
+// 	// 检查必要的参数
+// 	if nbqHis.InverterNo == nil {
+// 		return nil, fmt.Errorf("逆变器编号不能为空")
+// 	}
+// 	if nbqHis.Psid == nil {
+// 		return nil, fmt.Errorf("电站编号不能为空")
+// 	}
 
-	// 提取结构体中所有带point标签的字段的value值
-	pointValues := extractPointValues(nbqHis)
+// 	// 提取结构体中所有带point标签的字段的value值
+// 	pointValues := extractPointValues(nbqHis)
 
-	// 如果没有提取到任何point值，返回错误
-	if len(pointValues) == 0 {
-		return nil, fmt.Errorf("未找到需要查询的点位信息")
-	}
+// 	// 如果没有提取到任何point值，返回错误
+// 	if len(pointValues) == 0 {
+// 		return nil, fmt.Errorf("未找到需要查询的点位信息")
+// 	}
 
-	// 调用通用历史数据服务
-	hisService := &AgvcHisService{}
-	eqidStr := fmt.Sprintf("%d", *nbqHis.InverterNo)
-	return hisService.GetHistory(ctx, *nbqHis.Psid, eqidStr, agvc.EqTypeNBQ, pointValues, startTime, endTime)
-}
+// 	// 调用通用历史数据服务
+// 	hisService := &AgvcHisService{}
+
+// 	return hisService.GetHistory(ctx, *nbqHis.Psid, *nbqHis.InverterNo, agvc.EqTypeNBQ, pointValues, eqName, startTime, endTime)
+// }
 
 // setFieldValue 根据字段名设置AgvcNbqHis结构体对应字段的值
 // func setFieldValue(nbqHis *agvc.AgvcNbqHis, fieldName string, value float64) {

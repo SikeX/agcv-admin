@@ -60,11 +60,11 @@
             {{ formatValue(scope.row.acPower) }}
           </template>
         </el-table-column>
-        <el-table-column align="center" label="采集时间" prop="ctime" width="180">
+        <!-- <el-table-column align="center" label="采集时间" prop="ctime" width="180">
           <template #default="scope">
             {{ formatTime(scope.row.ctime) }}
           </template>
-        </el-table-column>
+        </el-table-column> -->
         
         <!-- 操作列 -->
         <el-table-column align="center" label="操作" width="120" fixed="right">

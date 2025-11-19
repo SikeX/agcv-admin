@@ -196,37 +196,37 @@ func (agvcNbqHisApi *AgvcNbqHisApi) GetAgvcNbqHisPublic(c *gin.Context) {
 // @Param data body agvcReq.AgvcNbqHistoryRequest true "包含AgvcNbqHis结构体和时间范围"
 // @Success 200 {object} response.Response{data=[]agvc.AgvcNbqHis,msg=string} "获取成功"
 // @Router /agvcNbqHis/getAgvcNbqHistory [post]
-func (agvcNbqHisApi *AgvcNbqHisApi) GetAgvcNbqHistory(c *gin.Context) {
-	// 创建业务用Context
-	ctx := c.Request.Context()
+// func (agvcNbqHisApi *AgvcNbqHisApi) GetAgvcNbqHistory(c *gin.Context) {
+// 	// 创建业务用Context
+// 	ctx := c.Request.Context()
 
-	var req agvcReq.AgvcNbqHistoryRequest
-	err := c.ShouldBindJSON(&req)
-	if err != nil {
-		response.FailWithMessage("参数绑定失败:"+err.Error(), c)
-		return
-	}
+// 	var req agvcReq.AgvcNbqHistoryRequest
+// 	err := c.ShouldBindJSON(&req)
+// 	if err != nil {
+// 		response.FailWithMessage("参数绑定失败:"+err.Error(), c)
+// 		return
+// 	}
 
-	// 检查必要的参数
-	if req.StartTime == "" || req.EndTime == "" {
-		response.FailWithMessage("开始时间和结束时间不能为空", c)
-		return
-	}
+// 	// 检查必要的参数
+// 	if req.StartTime == "" || req.EndTime == "" {
+// 		response.FailWithMessage("开始时间和结束时间不能为空", c)
+// 		return
+// 	}
 
-	// 如果传入的时间是日期格式，转换为RFC3339格式
-	if len(req.StartTime) == 10 {
-		req.StartTime += "T00:00:00Z"
-		req.EndTime += "T23:59:59Z"
-	}
+// 	// 如果传入的时间是日期格式，转换为RFC3339格式
+// 	if len(req.StartTime) == 10 {
+// 		req.StartTime += "T00:00:00Z"
+// 		req.EndTime += "T23:59:59Z"
+// 	}
 
-	historyData, err := agvcNbqHisService.GetAgvcNbqHistory(ctx, req.AgvcNbqHis, req.StartTime, req.EndTime)
-	if err != nil {
-		global.GVA_LOG.Error("获取历史数据失败!", zap.Error(err))
-		response.FailWithMessage("获取历史数据失败:"+err.Error(), c)
-		return
-	}
-	response.OkWithData(historyData, c)
-}
+// 	historyData, err := agvcNbqHisService.GetAgvcNbqHistory(ctx, req.AgvcNbqHis, req.StartTime, req.EndTime)
+// 	if err != nil {
+// 		global.GVA_LOG.Error("获取历史数据失败!", zap.Error(err))
+// 		response.FailWithMessage("获取历史数据失败:"+err.Error(), c)
+// 		return
+// 	}
+// 	response.OkWithData(historyData, c)
+// }
 
 // GetNbqRealData 获取逆变器实时数据
 // @Tags AgvcNbqHis

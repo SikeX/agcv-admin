@@ -30,9 +30,9 @@ func (c *BwdSettingCache) Initialize() error {
 	}
 
 	for _, setting := range settings {
-		if setting.Number != nil {
+		if setting.Eqid != nil {
 			var bwdNo int
-			if _, err := fmt.Sscanf(*setting.Number, "%d", &bwdNo); err == nil {
+			if _, err := fmt.Sscanf(fmt.Sprintf("%d", *setting.Eqid), "%d", &bwdNo); err == nil {
 				c.cache[bwdNo] = setting
 			}
 		}
