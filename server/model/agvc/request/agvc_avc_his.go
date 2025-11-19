@@ -17,7 +17,7 @@ type AgvcAvcHisSearch struct {
 
 // AgvcAvcHistoryRequest 历史数据查询请求
 type AgvcAvcHistoryRequest struct {
-	AgvcAvcHis agvc.AgvcAvcHis `json:"agvcAvcHis" form:"agvcAvcHis"`
-	StartTime  string           `json:"startTime" form:"startTime" binding:"required"`
-	EndTime    string           `json:"endTime" form:"endTime" binding:"required"`
+	AgvcAvcHis agvc.AgvcAvc `json:"agvcAvcHis" form:"agvcAvcHis"`
+	StartTime  string       `json:"startTime" form:"startTime" binding:"required"`
+	EndTime    string       `json:"endTime" form:"endTime" binding:"required"`
 }

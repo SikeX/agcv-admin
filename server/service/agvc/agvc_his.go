@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
 	"time"
 
@@ -18,7 +19,7 @@ type AgvcHisService struct{}
 // GetHistory 通用的历史数据查询方法
 // psid: 电站编号, eqid: 设备编号, eqType: 设备类型, pointValues: 点位列表, startTime/endTime: 时间范围
 // 支持任意设备类型的历史数据查询，包括：NBQ（逆变器）、BWD（并网点）、AGC、AVC、QXY（气象仪）等
-func (agvcHisService *AgvcHisService) GetHistory(ctx context.Context, psid int, eqid string, eqType string, pointValues []string, startTime, endTime string) ([]agvc.AgvcNbqHis, error) {
+func (agvcHisService *AgvcHisService) GetHistory(ctx context.Context, psid int, eqid string, eqType string, pointValues []string, startTime, endTime string) ([]agvc.AgvcNbq, error) {
 	// 检查InfluxDB客户端是否已初始化
 	if global.GVA_INFLUXDB == nil {
 		return nil, fmt.Errorf("InfluxDB客户端未初始化")
@@ -70,13 +71,13 @@ func (agvcHisService *AgvcHisService) GetHistory(ctx context.Context, psid int, 
 	}
 
 	// 按时间分组存储数据
-	timeDataMap := make(map[string]*agvc.AgvcNbqHis)
+	timeDataMap := make(map[string]*agvc.AgvcNbq)
 
 	// 解析结果
 	for result.Next() {
 		record := result.Record()
 		timeKey := record.Time().Format(time.RFC3339)
-		
+
 		// 提取point值
 		field := record.Field()
 		pointArr := strings.Split(field, "_")
@@ -89,7 +90,7 @@ func (agvcHisService *AgvcHisService) GetHistory(ctx context.Context, psid int, 
 		nbqHis, exists := timeDataMap[timeKey]
 		if !exists {
 			ctimeStr := record.Time().Format(time.RFC3339)
-			nbqHis = &agvc.AgvcNbqHis{
+			nbqHis = &agvc.AgvcNbq{
 				Ctime: &ctimeStr,
 				Psid:  &psid,
 			}
@@ -122,7 +123,7 @@ func (agvcHisService *AgvcHisService) GetHistory(ctx context.Context, psid int, 
 	}
 
 	// 将map转换为slice
-	historyData := make([]agvc.AgvcNbqHis, 0, len(timeDataMap))
+	historyData := make([]agvc.AgvcNbq, 0, len(timeDataMap))
 	for _, data := range timeDataMap {
 		historyData = append(historyData, *data)
 	}
@@ -130,7 +131,7 @@ func (agvcHisService *AgvcHisService) GetHistory(ctx context.Context, psid int, 
 	// 如果没有查询到数据，返回空数组
 	if len(historyData) == 0 {
 		global.GVA_LOG.Info(fmt.Sprintf("设备%s在时间范围%s到%s内没有历史数据", eqid, startTime, endTime))
-		return []agvc.AgvcNbqHis{}, nil
+		return []agvc.AgvcNbq{}, nil
 	}
 
 	return historyData, nil
@@ -139,7 +140,11 @@ func (agvcHisService *AgvcHisService) GetHistory(ctx context.Context, psid int, 
 // GetRealData 通用的实时数据查询方法
 // psid: 电站编号, eqid: 设备编号, eqType: 设备类型
 // 从InfluxDB获取指定设备的最新数据
-func (agvcHisService *AgvcHisService) GetRealData(ctx context.Context, psid int, eqid string, eqType string) (*agvc.AgvcNbqHis, error) {
+func (agvcHisService *AgvcHisService) GetRealData(ctx context.Context, psid int, eqid string, eqType string) (*agvc.AgvcNbq, error) {
+	measurement := global.GVA_CONFIG.InfluxDB.GetMeasurement()
+	if eqType == strconv.Itoa(NBQ_DEVICE_TYPE) {
+		measurement = global.GVA_CONFIG.InfluxDB.GetNBQMeasurement()
+	}
 	// 检查InfluxDB客户端是否已初始化
 	if global.GVA_INFLUXDB == nil {
 		return nil, fmt.Errorf("InfluxDB客户端未初始化")
@@ -159,7 +164,7 @@ func (agvcHisService *AgvcHisService) GetRealData(ctx context.Context, psid int,
 			|> filter(fn: (r) => r["dataType"] == "%d")
 			|> last()`,
 		global.GVA_CONFIG.InfluxDB.Bucket,
-		global.GVA_CONFIG.InfluxDB.GetMeasurement(),
+		measurement,
 		psid,
 		eqid,
 		eqType,
@@ -174,10 +179,10 @@ func (agvcHisService *AgvcHisService) GetRealData(ctx context.Context, psid int,
 	}
 
 	// 创建数据对象
-	realData := &agvc.AgvcNbqHis{
+	realData := &agvc.AgvcNbq{
 		Psid: &psid,
 	}
-	
+
 	// 根据设备类型设置设备编号字段
 	if eqType == agvc.EqTypeNBQ {
 		eqidInt := 0
@@ -188,7 +193,7 @@ func (agvcHisService *AgvcHisService) GetRealData(ctx context.Context, psid int,
 	// 解析结果
 	for result.Next() {
 		record := result.Record()
-		
+
 		// 设置采集时间
 		if realData.Ctime == nil {
 			ctimeStr := record.Time().Format(time.RFC3339)
@@ -229,10 +234,10 @@ func (agvcHisService *AgvcHisService) GetRealData(ctx context.Context, psid int,
 }
 
 // setFieldValue 根据字段名设置AgvcNbqHis结构体对应字段的值
-func setFieldValue(nbqHis *agvc.AgvcNbqHis, fieldName string, value float64) {
+func setFieldValue(nbqHis *agvc.AgvcNbq, fieldName string, value float64) {
 	v := reflect.ValueOf(nbqHis).Elem()
 	field := v.FieldByName(fieldName)
-	
+
 	if !field.IsValid() || !field.CanSet() {
 		return
 	}

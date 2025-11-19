@@ -1,9 +1,9 @@
 // 自动生成模板AgvcAvcHis
 package agvc
 
-// agvcAvcHis表 结构体  AgvcAvcHis
+// agvcAvcHis表 结构体  AgvcAvc
 // 用于存储和展示AVC实时数据和历史数据
-type AgvcAvcHis struct {
+type AgvcAvc struct {
 	Psid                *int     `json:"psid" form:"psid" point:"name:电站编号"`
 	Number              *string  `json:"number" form:"number" point:"name:设备编号"`
 	Name                *string  `json:"name" form:"name" point:"name:并网点名称"`
@@ -15,6 +15,6 @@ type AgvcAvcHis struct {
 }
 
 // TableName agvcAvcHis表 AgvcAvcHis自定义表名 agvc_avc_his
-func (AgvcAvcHis) TableName() string {
+func (AgvcAvc) TableName() string {
 	return "agvc_avc_his"
 }

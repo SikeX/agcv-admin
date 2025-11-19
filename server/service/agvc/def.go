@@ -7,6 +7,8 @@ const (
 	AVC_DEVICE_TYPE = 61
 	// BWD设备类型
 	BWD_DEVICE_TYPE = 5
+	// NBQ设备类型
+	NBQ_DEVICE_TYPE = 2
 )
 
 // AGC调度标准点名称常量

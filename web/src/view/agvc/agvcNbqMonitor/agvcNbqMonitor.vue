@@ -2,11 +2,11 @@
   <div>
     <div class="gva-search-box">
       <el-form ref="elSearchFormRef" :inline="true" :model="searchInfo" class="demo-form-inline" @keyup.enter="onSubmit">
-        <el-form-item label="电站编号">
+        <!-- <el-form-item label="电站编号">
           <el-input v-model.number="searchInfo.psid" placeholder="请输入电站编号" clearable />
-        </el-form-item>
-        <el-form-item label="逆变器编号">
-          <el-input v-model="searchInfo.inverter_no" placeholder="请输入逆变器编号" clearable />
+        </el-form-item> -->
+        <el-form-item label="设备编号">
+          <el-input v-model="searchInfo.inverter_no" placeholder="请输入设备编号" clearable />
         </el-form-item>
         <el-form-item label="逆变器名称">
           <el-input v-model="searchInfo.name" placeholder="请输入逆变器名称" clearable />
@@ -30,8 +30,8 @@
         :max-height="600"
       >
         <!-- 固定列 -->
-        <el-table-column align="center" label="电站编号" prop="psid" width="100" fixed="left" />
-        <el-table-column align="center" label="逆变器编号" prop="inverterNo" width="120" fixed="left" />
+        <!-- <el-table-column align="center" label="电站编号" prop="psid" width="100" fixed="left" /> -->
+        <el-table-column align="center" label="设备编号" prop="inverterNo" width="120" fixed="left" />
         <el-table-column align="center" label="逆变器名称" prop="name" width="150" fixed="left" />
         
         <!-- 主要数据列 -->

@@ -23,7 +23,7 @@ type AgvcBwdHisService struct{}
 
 // CreateAgvcBwdHis 创建agvcBwdHis表记录
 // Author [yourname](https://github.com/yourname)
-func (agvcBwdHisService *AgvcBwdHisService) CreateAgvcBwdHis(ctx context.Context, agvcBwdHis *agvc.AgvcBwdHis) (err error) {
+func (agvcBwdHisService *AgvcBwdHisService) CreateAgvcBwdHis(ctx context.Context, agvcBwdHis *agvc.AgvcBwd) (err error) {
 	err = global.GVA_DB.Create(agvcBwdHis).Error
 	return err
 }
@@ -31,14 +31,14 @@ func (agvcBwdHisService *AgvcBwdHisService) CreateAgvcBwdHis(ctx context.Context
 // DeleteAgvcBwdHis 删除agvcBwdHis表记录
 // Author [yourname](https://github.com/yourname)
 func (agvcBwdHisService *AgvcBwdHisService) DeleteAgvcBwdHis(ctx context.Context, ID string) (err error) {
-	err = global.GVA_DB.Delete(&agvc.AgvcBwdHis{}, "id = ?", ID).Error
+	err = global.GVA_DB.Delete(&agvc.AgvcBwd{}, "id = ?", ID).Error
 	return err
 }
 
 // DeleteAgvcBwdHisByIds 批量删除agvcBwdHis表记录
 // Author [yourname](https://github.com/yourname)
 func (agvcBwdHisService *AgvcBwdHisService) DeleteAgvcBwdHisByIds(ctx context.Context, IDs []string) (err error) {
-	err = global.GVA_DB.Delete(&[]agvc.AgvcBwdHis{}, "id in ?", IDs).Error
+	err = global.GVA_DB.Delete(&[]agvc.AgvcBwd{}, "id in ?", IDs).Error
 	return err
 }
 
@@ -51,14 +51,14 @@ func (agvcBwdHisService *AgvcBwdHisService) DeleteAgvcBwdHisByIds(ctx context.Co
 
 // GetAgvcBwdHis 根据ID获取agvcBwdHis表记录
 // Author [yourname](https://github.com/yourname)
-func (agvcBwdHisService *AgvcBwdHisService) GetAgvcBwdHis(ctx context.Context, ID string) (agvcBwdHis agvc.AgvcBwdHis, err error) {
+func (agvcBwdHisService *AgvcBwdHisService) GetAgvcBwdHis(ctx context.Context, ID string) (agvcBwdHis agvc.AgvcBwd, err error) {
 	err = global.GVA_DB.Where("id = ?", ID).First(&agvcBwdHis).Error
 	return
 }
 
 // GetAgvcBwdHisInfoList 分页获取并网点历史数据列表
 // 从InfluxDB中查询设备列表及其最新数据
-func (agvcBwdHisService *AgvcBwdHisService) GetAgvcBwdHisInfoList(ctx context.Context, info agvcReq.AgvcBwdHisSearch) (list []agvc.AgvcBwdHis, total int64, err error) {
+func (agvcBwdHisService *AgvcBwdHisService) GetAgvcBwdHisInfoList(ctx context.Context, info agvcReq.AgvcBwdHisSearch) (list []agvc.AgvcBwd, total int64, err error) {
 	// 检查InfluxDB客户端是否已初始化
 	if global.GVA_INFLUXDB == nil {
 		return nil, 0, fmt.Errorf("InfluxDB客户端未初始化")
@@ -111,7 +111,7 @@ func (agvcBwdHisService *AgvcBwdHisService) GetAgvcBwdHisInfoList(ctx context.Co
 	}
 
 	// 转换为AgvcBwdHis结构体列表
-	var agvcBwdHisList []agvc.AgvcBwdHis
+	var agvcBwdHisList []agvc.AgvcBwd
 	for eqid := range deviceSet {
 		number := eqid
 		name := eqid // 默认使用设备编号
@@ -121,7 +121,7 @@ func (agvcBwdHisService *AgvcBwdHisService) GetAgvcBwdHisInfoList(ctx context.Co
 			name = deviceName
 		}
 
-		bwdHis := agvc.AgvcBwdHis{
+		bwdHis := agvc.AgvcBwd{
 			Number: &number,
 			Name:   &name,
 		}
@@ -136,7 +136,7 @@ func (agvcBwdHisService *AgvcBwdHisService) GetAgvcBwdHisInfoList(ctx context.Co
 	limit := info.PageSize
 
 	if offset >= int(total) {
-		return []agvc.AgvcBwdHis{}, total, nil
+		return []agvc.AgvcBwd{}, total, nil
 	}
 
 	end := offset + limit
@@ -157,7 +157,7 @@ func (agvcBwdHisService *AgvcBwdHisService) GetAgvcBwdHisPublic(ctx context.Cont
 }
 
 // GetAgvcBwdHistoryNew 获取并网点历史数据(新版本，按AgvcNbqHis格式)
-func (agvcBwdHisService *AgvcBwdHisService) GetAgvcBwdHistoryNew(ctx context.Context, bwdHis agvc.AgvcBwdHis, startTime, endTime string) ([]map[string]interface{}, error) {
+func (agvcBwdHisService *AgvcBwdHisService) GetAgvcBwdHistoryNew(ctx context.Context, bwdHis agvc.AgvcBwd, startTime, endTime string) ([]map[string]interface{}, error) {
 	// 检查InfluxDB客户端是否已初始化
 	if global.GVA_INFLUXDB == nil {
 		return nil, fmt.Errorf("InfluxDB客户端未初始化")
@@ -237,7 +237,7 @@ func (agvcBwdHisService *AgvcBwdHisService) GetAgvcBwdHistoryNew(ctx context.Con
 }
 
 // extractPointValuesFromBwd 从AgvcBwdHis结构体中提取所有带point标签的字段的value值
-func extractPointValuesFromBwd(bwdHis agvc.AgvcBwdHis) []string {
+func extractPointValuesFromBwd(bwdHis agvc.AgvcBwd) []string {
 	var pointValues []string
 	v := reflect.ValueOf(bwdHis)
 	t := v.Type()

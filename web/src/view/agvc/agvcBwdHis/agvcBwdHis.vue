@@ -734,47 +734,47 @@ const avcControlAuthority = ref(1) // 1: 站内控制, 0: 调度控制
 let isLoadingAgcStatus = false
 
 // 监听AGC状态变化并自动保存
-watch([agcFunctionState, agcControlMode, agcControlAuthority], async () => {
-  // 获取当前选中的设备
-  const currentDevice = deviceList.value.find(device => device.number === mainActiveTab.value)
-  if (!currentDevice) return
+// watch([agcFunctionState, agcControlMode, agcControlAuthority], async () => {
+//   // 获取当前选中的设备
+//   const currentDevice = deviceList.value.find(device => device.number === mainActiveTab.value)
+//   if (!currentDevice) return
   
-  try {
-    const res = await updateAgcStatus({
-      number: currentDevice.number,
-      agcFunctionState: agcFunctionState.value,
-      agcControlMode: agcControlMode.value,
-      agcControlAuthority: agcControlAuthority.value
-    })
-    if (res.code !== 0) {
-      console.error('保存AGC状态失败:', res.msg)
-    }
-  } catch (error) {
-    console.error('保存AGC状态失败:', error)
-  }
-})
+//   try {
+//     const res = await updateAgcStatus({
+//       number: currentDevice.number,
+//       agcFunctionState: agcFunctionState.value,
+//       agcControlMode: agcControlMode.value,
+//       agcControlAuthority: agcControlAuthority.value
+//     })
+//     if (res.code !== 0) {
+//       console.error('保存AGC状态失败:', res.msg)
+//     }
+//   } catch (error) {
+//     console.error('保存AGC状态失败:', error)
+//   }
+// })
 
-// 监听AVC状态变化并自动保存
-watch([avcFunctionState, avcControlMode, avcControlAuthority], async () => {
-  // 获取当前选中的设备
-  const currentDevice = deviceList.value.find(device => device.number === mainActiveTab.value)
-  if (!currentDevice) return
+// // 监听AVC状态变化并自动保存
+// watch([avcFunctionState, avcControlMode, avcControlAuthority], async () => {
+//   // 获取当前选中的设备
+//   const currentDevice = deviceList.value.find(device => device.number === mainActiveTab.value)
+//   if (!currentDevice) return
   
-  try {
-    // 更新AVC状态（与agvc_bwd_his表）
-    const res = await updateAvcStatus({
-      number: currentDevice.number,
-      avcFunctionState: avcFunctionState.value,
-      avcControlMode: avcControlMode.value,
-      avcControlAuthority: avcControlAuthority.value
-    })
-    if (res.code !== 0) {
-      console.error('保存AVC状态失败:', res.msg)
-    }
-  } catch (error) {
-    console.error('保存AVC状态失败:', error)
-  }
-})
+//   try {
+//     // 更新AVC状态（与agvc_bwd_his表）
+//     const res = await updateAvcStatus({
+//       number: currentDevice.number,
+//       avcFunctionState: avcFunctionState.value,
+//       avcControlMode: avcControlMode.value,
+//       avcControlAuthority: avcControlAuthority.value
+//     })
+//     if (res.code !== 0) {
+//       console.error('保存AVC状态失败:', res.msg)
+//     }
+//   } catch (error) {
+//     console.error('保存AVC状态失败:', error)
+//   }
+// })
 
 // 定时刷新实时数据
 let realtimeTimer = null
