@@ -1,6 +1,6 @@
 <template>
   <el-button type="primary" icon="download" @click="exportExcelFunc"
-    >导出历史数据</el-button
+    >导出</el-button
   >
 </template>
 
@@ -40,7 +40,12 @@ const exportExcelFunc = async () => {
     if(res.code === 0){
       ElMessage.success('创建导出任务成功，开始下载')
       const url = `${baseUrl}${res.data}`
-      window.open(url, '_blank')
+      const a = document.createElement('a')
+      a.href = url
+      a.download = ''
+      a.click()
+
+      // window.open(url, '_blank')
     } else {
       ElMessage.error(res.msg || '创建导出任务失败')
     }

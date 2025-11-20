@@ -23,6 +23,8 @@ type AgvcNbqHistoryRequest struct {
 
 // AgvcNbqRealDataRequest 实时数据查询请求
 type AgvcNbqRealDataRequest struct {
-	Psid       int `json:"psid" form:"psid" binding:"required"`
-	InverterNo int `json:"inverterNo" form:"inverterNo" binding:"required"`
+	Psid       *int    `json:"psid" form:"psid"`
+	InverterNo *int    `json:"inverter_no" form:"inverter_no"`
+	Name       *string `json:"name" form:"name"`
+	request.PageInfo
 }

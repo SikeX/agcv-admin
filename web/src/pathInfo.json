@@ -8,6 +8,8 @@
   "/src/view/agvc/agvcEventHis/agvcEventHisForm.vue": "AgvcEventHisForm",
   "/src/view/agvc/agvcNbqHis/agvcNbqHis.vue": "AgvcNbqHis",
   "/src/view/agvc/agvcNbqHis/agvcNbqHisForm.vue": "AgvcNbqHisForm",
+  "/src/view/agvc/agvcNbqHistory/agvcNbqHistory.vue": "AgvcNbqHistory",
+  "/src/view/agvc/agvcNbqMonitor/agvcNbqMonitor.vue": "AgvcNbqMonitor",
   "/src/view/agvc/agvcNbqSetting/agvcNbqSetting.vue": "AgvcNbqSetting",
   "/src/view/agvc/agvcNbqSetting/agvcNbqSettingForm.vue": "AgvcNbqSettingForm",
   "/src/view/agvc/agvcQxyHis/agvcQxyHis.vue": "AgvcQxyHis",

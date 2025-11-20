@@ -478,8 +478,14 @@ func (agvcBwdHisApi *AgvcBwdHisApi) GetAgcStatus(c *gin.Context) {
 		fmt.Sscanf(c.Query("psid"), "%d", &psid)
 	}
 
+	eqid, err := strconv.Atoi(number)
+	if err != nil {
+		response.FailWithMessage("参数不完整", c)
+		return
+	}
+
 	// 从InfluxDB获取AGC实时数据
-	data, err := agvcAgcHisService.GetAgcRealData(ctx, psid, number)
+	data, err := agvcAgcHisService.GetAgcRealData(ctx, psid, eqid)
 	if err != nil {
 		global.GVA_LOG.Error("获取AGC状态失败!", zap.Error(err))
 		response.FailWithMessage("获取AGC状态失败:"+err.Error(), c)

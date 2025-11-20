@@ -6,7 +6,7 @@
           <el-input v-model.number="searchInfo.psid" placeholder="请输入电站编号" clearable />
         </el-form-item> -->
         <el-form-item label="设备编号">
-          <el-input v-model="searchInfo.inverter_no" placeholder="请输入设备编号" clearable />
+          <el-input-number v-model.number="searchInfo.inverter_no" placeholder="请输入设备编号" clearable />
         </el-form-item>
         <el-form-item label="逆变器名称">
           <el-input v-model="searchInfo.name" placeholder="请输入逆变器名称" clearable />
@@ -35,22 +35,22 @@
         <el-table-column align="center" label="逆变器名称" prop="name" width="150" fixed="left" />
         
         <!-- 主要数据列 -->
-        <el-table-column align="center" label="逆变器状态" prop="deviceStatusCode" width="120">
+        <el-table-column align="center" label="逆变器状态" prop="deviceStatusCode" >
           <template #default="scope">
             {{ formatDeviceStatus(scope.row.deviceStatusCode) }}
           </template>
         </el-table-column>
-        <el-table-column align="center" label="日发电量(kWh)" prop="dailyPowerGeneration" width="150">
+        <el-table-column align="center" label="日发电量(kWh)" prop="dailyPowerGeneration" >
           <template #default="scope">
             {{ formatValue(scope.row.dailyPowerGeneration) }}
           </template>
         </el-table-column>
-        <el-table-column align="center" label="等效时(h)" prop="equivalentHours" width="120">
+        <el-table-column align="center" label="等效时(h)" prop="equivalentHours" >
           <template #default="scope">
             {{ calculateEquivalentHours(scope.row) }}
           </template>
         </el-table-column>
-        <el-table-column align="center" label="实际容量(kW)" prop="ratedActivePower" width="130">
+        <el-table-column align="center" label="实际容量(kW)" prop="ratedActivePower" >
           <template #default="scope">
             {{ formatValue(scope.row.ratedActivePower) }}
           </template>
@@ -302,7 +302,7 @@ const getTableData = async() => {
     const now = new Date()
     const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000)
     
-    const table = await getAgvcNbqHisList({ 
+    const table = await getNbqRealData({ 
       page: page.value, 
       pageSize: pageSize.value,
       startTime: fiveMinutesAgo,

@@ -169,7 +169,7 @@ const loading = ref(false)
 // 分页相关变量
 const total = ref(0)
 const currentPage = ref(1)
-const pageSize = ref(20)
+const pageSize = ref(10)
 
 // 格式化数值显示
 const formatValue = (value) => {
@@ -233,6 +233,7 @@ const onSubmit = () => {
     
     // 验证时间范围不超过7天
     if (queryInfo.value.dateRange && queryInfo.value.dateRange.length === 2) {
+      // 时间的格式“yyyy-MM-dd HH:mm:ss”
       const start = new Date(queryInfo.value.dateRange[0])
       const end = new Date(queryInfo.value.dateRange[1])
       const diffTime = Math.abs(end - start)
@@ -263,8 +264,10 @@ const handleCurrentChange = (val) => {
 // 查询设备列表
 const getTableData = async() => {
   loading.value = true
-  // console.log(queryInfo.dateRange)
-  if (queryInfo.value.dateRange === undefined || queryInfo.value.dateRange.length === 0 ) { 
+  console.log(queryInfo.value.dateRange)
+  if (queryInfo.value.dateRange == undefined || 
+      queryInfo.value.dateRange.length === 0 
+    ) { 
     //默认查询最近7天
     const end = new Date()
     const start = new Date()
@@ -285,9 +288,7 @@ const getTableData = async() => {
       ...searchInfo.value 
     })
     if (table.code === 0) {
-      tableData.value = (table.data.list || []).sort((a, b) => {
-        return new Date(b.ctime) - new Date(a.ctime)
-      })
+      tableData.value = table.data.list || []
       total.value = table.data.total
       currentPage.value = table.data.page
       pageSize.value = table.data.pageSize

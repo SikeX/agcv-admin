@@ -252,6 +252,7 @@
               range-separator="至"
               start-placeholder="开始日期"
               end-placeholder="结束日期"
+              value-format="YYYY-MM-DD"
               style="width: 100%; margin-bottom: 20px;"
             />
             <el-button type="primary" @click="loadHistoryData" style="width: 100%;">查询</el-button>
@@ -734,47 +735,47 @@ const avcControlAuthority = ref(1) // 1: 站内控制, 0: 调度控制
 let isLoadingAgcStatus = false
 
 // 监听AGC状态变化并自动保存
-// watch([agcFunctionState, agcControlMode, agcControlAuthority], async () => {
-//   // 获取当前选中的设备
-//   const currentDevice = deviceList.value.find(device => device.number === mainActiveTab.value)
-//   if (!currentDevice) return
+watch([agcFunctionState, agcControlMode, agcControlAuthority], async () => {
+  // 获取当前选中的设备
+  const currentDevice = deviceList.value.find(device => device.number === mainActiveTab.value)
+  if (!currentDevice) return
   
-//   try {
-//     const res = await updateAgcStatus({
-//       number: currentDevice.number,
-//       agcFunctionState: agcFunctionState.value,
-//       agcControlMode: agcControlMode.value,
-//       agcControlAuthority: agcControlAuthority.value
-//     })
-//     if (res.code !== 0) {
-//       console.error('保存AGC状态失败:', res.msg)
-//     }
-//   } catch (error) {
-//     console.error('保存AGC状态失败:', error)
-//   }
-// })
+  try {
+    const res = await updateAgcStatus({
+      number: currentDevice.number,
+      agcFunctionState: agcFunctionState.value,
+      agcControlMode: agcControlMode.value,
+      agcControlAuthority: agcControlAuthority.value
+    })
+    if (res.code !== 0) {
+      console.error('保存AGC状态失败:', res.msg)
+    }
+  } catch (error) {
+    console.error('保存AGC状态失败:', error)
+  }
+})
 
-// // 监听AVC状态变化并自动保存
-// watch([avcFunctionState, avcControlMode, avcControlAuthority], async () => {
-//   // 获取当前选中的设备
-//   const currentDevice = deviceList.value.find(device => device.number === mainActiveTab.value)
-//   if (!currentDevice) return
+// 监听AVC状态变化并自动保存
+watch([avcFunctionState, avcControlMode, avcControlAuthority], async () => {
+  // 获取当前选中的设备
+  const currentDevice = deviceList.value.find(device => device.number === mainActiveTab.value)
+  if (!currentDevice) return
   
-//   try {
-//     // 更新AVC状态（与agvc_bwd_his表）
-//     const res = await updateAvcStatus({
-//       number: currentDevice.number,
-//       avcFunctionState: avcFunctionState.value,
-//       avcControlMode: avcControlMode.value,
-//       avcControlAuthority: avcControlAuthority.value
-//     })
-//     if (res.code !== 0) {
-//       console.error('保存AVC状态失败:', res.msg)
-//     }
-//   } catch (error) {
-//     console.error('保存AVC状态失败:', error)
-//   }
-// })
+  try {
+    // 更新AVC状态（与agvc_bwd_his表）
+    const res = await updateAvcStatus({
+      number: currentDevice.number,
+      avcFunctionState: avcFunctionState.value,
+      avcControlMode: avcControlMode.value,
+      avcControlAuthority: avcControlAuthority.value
+    })
+    if (res.code !== 0) {
+      console.error('保存AVC状态失败:', res.msg)
+    }
+  } catch (error) {
+    console.error('保存AVC状态失败:', error)
+  }
+})
 
 // 定时刷新实时数据
 let realtimeTimer = null
@@ -1277,46 +1278,26 @@ const showHistoryData = async (row) => {
 const loadHistoryData = async () => {
   if (!currentDevice.value) return
   
-  // 检查时间范围是否有效
-  if (!historyDateRange.value || historyDateRange.value.length !== 2) {
-    ElMessage.warning('请选择时间范围')
-    return
-  }
-  
   try {
-    // 格式化时间为RFC3339格式
-    const formatToRFC3339 = (date) => {
-      if (typeof date === 'string') {
-        date = new Date(date)
-      }
-      return date.toISOString()
-    }
-    
     const params = {
       eqid: currentDevice.value.number,  // 使用设备编号
-      startTime: formatToRFC3339(historyDateRange.value[0]),
-      endTime: formatToRFC3339(historyDateRange.value[1])
+      startTime: historyDateRange.value[0],
+      endTime: historyDateRange.value[1]
     }
     
     const res = await getAgvcBwdHistory(params)
     if (res.code === 0) {
       // 处理从 InfluxDB获取的历史数据
-      if (res.data && res.data.length > 0) {
-        historyData.value = res.data.map(item => {
-          return {
-            timestamp: new Date(item.time),
-            point: item.point,
-            pointName: item.pointName || `点号${item.point}`, // 使用后端返回的点位名称
-            value: item.value,
-          }
-        })
-        // 按时间排序
-        historyData.value.sort((a, b) => a.timestamp - b.timestamp)
-      } else {
-        // 没有数据时清空
-        historyData.value = []
-        ElMessage.info('选择的时间范围内没有历史数据')
-      }
+      historyData.value = res.data.map(item => {
+        return {
+          timestamp: new Date(item.time),
+          point: item.point,
+          pointName: item.pointName || `点号${item.point}`, // 使用后端返回的点位名称
+          value: item.value,
+        }
+      })
+      // 按时间排序
+      historyData.value.sort((a, b) => a.timestamp - b.timestamp)
       
       // 更新图表
       updateChart()

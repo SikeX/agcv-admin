@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"reflect"
-	"strconv"
 	"strings"
 	"time"
 
@@ -62,8 +61,9 @@ func (agvcHisService *AgvcHisService) getHistoryNbq(ctx context.Context, psid, e
             |> filter(fn: (r) => r["eqid"] == "%d")
             |> filter(fn: (r) => r["eqType"] == "%d")
             |> filter(fn: (r) => r["dataType"] == "%d")
-						|> aggregateWindow(every: 5m, fn: last, createEmpty: false)
-						|> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")`,
+			|> aggregateWindow(every: 5m, fn: last, createEmpty: false)
+			|> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
+			|> sort(columns: ["_time"], desc: true)`,
 		global.GVA_CONFIG.InfluxDB.Bucket,
 		startTime,
 		endTime,
@@ -144,7 +144,7 @@ func (agvcHisService *AgvcHisService) getHistoryNbq(ctx context.Context, psid, e
 
 	// 如果没有查询到数据，返回空数组
 	if len(nbqhises) == 0 {
-		global.GVA_LOG.Info(fmt.Sprintf("设备%s在时间范围%s到%s内没有历史数据", eqid, startTime, endTime))
+		global.GVA_LOG.Info(fmt.Sprintf("设备%d在时间范围%s到%s内没有历史数据", eqid, startTime, endTime))
 		return []agvc.AgvcNbq{}, nil
 	}
 
@@ -514,102 +514,6 @@ func (agvcHisService *AgvcHisService) getHistoryAvc(ctx context.Context, psid, e
 	}
 
 	return historyData, nil
-}
-
-// GetRealData 通用的实时数据查询方法
-// psid: 电站编号, eqid: 设备编号, eqType: 设备类型
-// 从InfluxDB获取指定设备的最新数据
-func (agvcHisService *AgvcHisService) GetRealData(ctx context.Context, psid int, eqid string, eqType string) (*agvc.AgvcNbq, error) {
-	measurement := global.GVA_CONFIG.InfluxDB.GetMeasurement()
-	if eqType == strconv.Itoa(NBQ_DEVICE_TYPE) {
-		measurement = global.GVA_CONFIG.InfluxDB.GetNBQMeasurement()
-	}
-	// 检查InfluxDB客户端是否已初始化
-	if global.GVA_INFLUXDB == nil {
-		return nil, fmt.Errorf("InfluxDB客户端未初始化")
-	}
-
-	// 获取查询API
-	queryAPI := global.GVA_INFLUXDB.QueryAPI(global.GVA_CONFIG.InfluxDB.Org)
-
-	// 构建Flux查询语句 - 查询该设备所有点位的最新值
-	flux := fmt.Sprintf(`
-        from(bucket: "%s")
-            |> range(start: -1y)
-            |> filter(fn: (r) => r["_measurement"] == "%s")
-            |> filter(fn: (r) => r["psid"] == "%d")
-            |> filter(fn: (r) => r["eqid"] == "%s")
-            |> filter(fn: (r) => r["eqType"] == "%s")
-            |> filter(fn: (r) => r["dataType"] == "%d")
-            |> last()`,
-		global.GVA_CONFIG.InfluxDB.Bucket,
-		measurement,
-		psid,
-		eqid,
-		eqType,
-		cons.YC,
-	)
-
-	// 执行查询
-	result, err := queryAPI.Query(ctx, flux)
-	if err != nil {
-		global.GVA_LOG.Error(fmt.Sprintf("查询设备%s的实时数据失败: %v", eqid, err))
-		return nil, err
-	}
-
-	// 创建数据对象
-	realData := &agvc.AgvcNbq{
-		Psid: &psid,
-	}
-
-	// 根据设备类型设置设备编号字段
-	if eqType == agvc.EqTypeNBQ {
-		eqidInt := 0
-		fmt.Sscanf(eqid, "%d", &eqidInt)
-		realData.InverterNo = &eqidInt
-	}
-
-	// 解析结果
-	for result.Next() {
-		record := result.Record()
-
-		// 设置采集时间
-		if realData.Ctime == nil {
-			ctimeStr := record.Time().Format(time.RFC3339)
-			realData.Ctime = &ctimeStr
-		}
-
-		// 提取point值
-		field := record.Field()
-		pointArr := strings.Split(field, "_")
-		if len(pointArr) < 2 {
-			continue
-		}
-		point := pointArr[1]
-
-		value, ok := record.Value().(float64)
-		if !ok {
-			continue
-		}
-
-		// 使用缓存的映射关系设置字段值
-		if fieldName, found := agvc.GetFieldNameByPoint(point); found {
-			setFieldValue(realData, fieldName, value)
-		}
-	}
-
-	// 检查是否有错误
-	if result.Err() != nil {
-		global.GVA_LOG.Error(fmt.Sprintf("解析设备%s的实时数据失败: %v", eqid, result.Err()))
-		return nil, result.Err()
-	}
-
-	// 如果没有采集时间，说明没有数据
-	if realData.Ctime == nil {
-		return nil, fmt.Errorf("未找到设备%s的实时数据", eqid)
-	}
-
-	return realData, nil
 }
 
 // setFieldValue 根据字段名设置AgvcNbq结构体对应字段的值

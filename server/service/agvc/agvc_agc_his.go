@@ -4,9 +4,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
-	"strconv"
 	"strings"
-	"time"
 
 	"github.com/flipped-aurora/gin-vue-admin/server/global"
 	"github.com/flipped-aurora/gin-vue-admin/server/model/agvc"
@@ -15,6 +13,8 @@ import (
 )
 
 type AgvcAgcHisService struct{}
+
+var agvcRealService = AgvcRealService{}
 
 func init() {
 	// 系统启动时初始化AGC的point标签映射
@@ -297,91 +297,16 @@ func extractPointValuesFromAgc(agcHis agvc.AgvcAgc) []string {
 
 // GetAgcRealData 获取AGC实时数据（从InfluxDB中获取最后一条数据）
 // psid: 电站编号, eqid: 设备编号
-func (agvcAgcHisService *AgvcAgcHisService) GetAgcRealData(ctx context.Context, psid int, number string) (*agvc.AgvcAgc, error) {
-	// 检查InfluxDB客户端是否已初始化
-	if global.GVA_INFLUXDB == nil {
-		return nil, fmt.Errorf("InfluxDB客户端未初始化")
-	}
+func (agvcAgcHisService *AgvcAgcHisService) GetAgcRealData(ctx context.Context, psid, eqid int) (*agvc.AgvcAgc, error) {
 
-	// 获取查询API
-	queryAPI := global.GVA_INFLUXDB.QueryAPI(global.GVA_CONFIG.InfluxDB.Org)
-
-	// 构建Flux查询语句 - 查询AGC类型的所有点位的最新值
-	flux := fmt.Sprintf(`
-        from(bucket: "%s")
-            |> range(start: -1y)
-            |> filter(fn: (r) => r["_measurement"] == "%s")
-            |> filter(fn: (r) => r["psid"] == "%d")
-            |> filter(fn: (r) => r["eqid"] == "%s")
-            |> filter(fn: (r) => r["eqType"] == "%s")
-            |> filter(fn: (r) => r["dataType"] == "%d")
-            |> last()`,
-		global.GVA_CONFIG.InfluxDB.Bucket,
-		global.GVA_CONFIG.InfluxDB.GetMeasurement(),
-		psid,
-		number,
-		agvc.EqTypeAGC,
-		cons.YC,
-	)
-
-	// 执行查询
-	result, err := queryAPI.Query(ctx, flux)
+	agvcRealData, err := agvcRealService.GetRealData(ctx, psid, eqid, AGC_DEVICE_TYPE)
 	if err != nil {
-		global.GVA_LOG.Error(fmt.Sprintf("查询AGC %d的实时数据失败: %v", number, err))
 		return nil, err
 	}
-
-	eqid, err := strconv.Atoi(number)
-	if err != nil {
-		global.GVA_LOG.Error(fmt.Sprintf("将AGC编号 %s 转换为整数失败: %v", number, err))
-		return nil, err
+	if agvcRealData == nil {
+		return nil, fmt.Errorf("未找到AGC实时数据")
 	}
-
-	// 创建结果对象
-	realData := &agvc.AgvcAgc{
-		Psid: &psid,
-		Eqid: &eqid,
-	}
-
-	// 解析结果
-	hasData := false
-	for result.Next() {
-		record := result.Record()
-		hasData = true
-
-		// 设置采集时间
-		if realData.Ctime == nil {
-			ctimeStr := record.Time().Format(time.RFC3339)
-			realData.Ctime = &ctimeStr
-		}
-
-		// 提取point值
-		field := record.Field()
-		pointArr := strings.Split(field, "_")
-		if len(pointArr) < 2 {
-			continue
-		}
-		point := pointArr[1]
-
-		value, ok := record.Value().(float64)
-		if !ok {
-			continue
-		}
-
-		// 根据point值设置对应的字段
-		setFieldByPointForAgcRealData(realData, point, value)
-	}
-
-	// 检查是否有错误
-	if result.Err() != nil {
-		global.GVA_LOG.Error(fmt.Sprintf("解析AGC %s的实时数据失败: %v", number, result.Err()))
-		return nil, result.Err()
-	}
-
-	// 如果没有数据
-	if !hasData {
-		return nil, fmt.Errorf("未找到AGC %d的实时数据", eqid)
-	}
+	realData := agvcRealData.(*agvc.AgvcAgc)
 
 	return realData, nil
 }
