@@ -155,3 +155,18 @@ export const generateAgvcNbqTestData = (params) => {
     params
   })
 }
+
+// @Tags AgvcNbqHis
+// @Summary 导出逆变器历史数据
+// @Accept application/json
+// @Produce application/json
+// @Param data query agvcReq.AgvcNbqHisSearch true "查询参数"
+// @Success 200 {object} response.Response{data=string,msg=string} "获取导出链接成功"
+// @Router /agvcNbqHis/exportAgvcNbqHistory [get]
+export const exportAgvcNbqHistory = (params) => {
+  return service({
+    url: '/agvcNbqHis/exportAgvcNbqHistory',
+    method: 'get',
+    params
+  })
+}
