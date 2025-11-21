@@ -16,7 +16,7 @@
             <!-- 按钮组 - 绝对定位放在右上角 -->
             <div style="position: absolute; right: 20px; top: 8px; display: flex; gap: 10px; z-index: 100;" @click.stop>
               <el-button size="small" @click="showHistoryDataDialog">历史数据查看</el-button>
-              <el-button size="small" @click="generateTestData">生成测试数据</el-button>
+              <!-- <el-button size="small" @click="generateTestData">生成测试数据</el-button> -->
             </div>
             <!-- AGC控制标签页 -->
             <el-tab-pane label="AGC控制" name="agc">
@@ -503,7 +503,7 @@ const getDeviceList = async () => {
     if (res.code === 0) {
       deviceList.value = res.data.list.map(item => ({
         ID: item.ID, // 保存ID用于更新
-        number: item.number,
+        number: item.eqid,
         name: item.name
       }))
       console.log('2. 设备列表长度:', deviceList.value.length)
@@ -599,6 +599,9 @@ const loadDeviceParameters = async (number) => {
       agcFunctionState.value = statusRes.data.agcFunctionState
       agcControlMode.value = statusRes.data.agcControlMode
       agcControlAuthority.value = statusRes.data.agcControlAuthority
+      targetActivePower.value = statusRes.data.targetActivePower || 0
+      agcUpperLimit.value = statusRes.data.agcUpperLimit || 0
+      agcLowerLimit.value = statusRes.data.agcLowerLimit || 0
     }
     
     // 加载AVC状态（从agvc_bwd_his表）
@@ -609,6 +612,9 @@ const loadDeviceParameters = async (number) => {
       avcFunctionState.value = avcStatusRes.data.avcFunctionState
       avcControlMode.value = avcStatusRes.data.avcControlMode
       avcControlAuthority.value = avcStatusRes.data.avcControlAuthority
+      targetReactive.value = avcStatusRes.data.targetReactivePower || 0
+      targetVoltage.value = avcStatusRes.data.targetVoltage || 0
+
     }
     
     // 加载并网点实时数据
@@ -619,14 +625,11 @@ const loadDeviceParameters = async (number) => {
       // 更新AGC相关实时数据
       currentActivePower.value = realtimeRes.data.currentActivePower || 0
       targetActivePower.value = realtimeRes.data.targetActivePower || 0
-      agcUpperLimit.value = realtimeRes.data.agcUpperLimit || 0
-      agcLowerLimit.value = realtimeRes.data.agcLowerLimit || 0
       systemFrequency.value = realtimeRes.data.systemFrequency || 50
       
       // 更新AVC相关实时数据
-      targetVoltage.value = realtimeRes.data.targetVoltage || 0
       currentVoltage.value = realtimeRes.data.currentVoltage || 0
-      targetReactive.value = realtimeRes.data.targetReactive || 0
+      
       currentReactive.value = realtimeRes.data.currentReactive || 0
       systemImpedance.value = realtimeRes.data.systemImpedance || 0
       
@@ -740,19 +743,19 @@ watch([agcFunctionState, agcControlMode, agcControlAuthority], async () => {
   const currentDevice = deviceList.value.find(device => device.number === mainActiveTab.value)
   if (!currentDevice) return
   
-  try {
-    const res = await updateAgcStatus({
-      number: currentDevice.number,
-      agcFunctionState: agcFunctionState.value,
-      agcControlMode: agcControlMode.value,
-      agcControlAuthority: agcControlAuthority.value
-    })
-    if (res.code !== 0) {
-      console.error('保存AGC状态失败:', res.msg)
-    }
-  } catch (error) {
-    console.error('保存AGC状态失败:', error)
-  }
+  // try {
+  //   const res = await updateAgcStatus({
+  //     number: currentDevice.number,
+  //     agcFunctionState: agcFunctionState.value,
+  //     agcControlMode: agcControlMode.value,
+  //     agcControlAuthority: agcControlAuthority.value
+  //   })
+  //   if (res.code !== 0) {
+  //     console.error('保存AGC状态失败:', res.msg)
+  //   }
+  // } catch (error) {
+  //   console.error('保存AGC状态失败:', error)
+  // }
 })
 
 // 监听AVC状态变化并自动保存
@@ -761,20 +764,20 @@ watch([avcFunctionState, avcControlMode, avcControlAuthority], async () => {
   const currentDevice = deviceList.value.find(device => device.number === mainActiveTab.value)
   if (!currentDevice) return
   
-  try {
-    // 更新AVC状态（与agvc_bwd_his表）
-    const res = await updateAvcStatus({
-      number: currentDevice.number,
-      avcFunctionState: avcFunctionState.value,
-      avcControlMode: avcControlMode.value,
-      avcControlAuthority: avcControlAuthority.value
-    })
-    if (res.code !== 0) {
-      console.error('保存AVC状态失败:', res.msg)
-    }
-  } catch (error) {
-    console.error('保存AVC状态失败:', error)
-  }
+  // try {
+  //   // 更新AVC状态（与agvc_bwd_his表）
+  //   const res = await updateAvcStatus({
+  //     number: currentDevice.number,
+  //     avcFunctionState: avcFunctionState.value,
+  //     avcControlMode: avcControlMode.value,
+  //     avcControlAuthority: avcControlAuthority.value
+  //   })
+  //   if (res.code !== 0) {
+  //     console.error('保存AVC状态失败:', res.msg)
+  //   }
+  // } catch (error) {
+  //   console.error('保存AVC状态失败:', error)
+  // }
 })
 
 // 定时刷新实时数据
@@ -1225,31 +1228,6 @@ const currentDevice = ref(null)
 
 // 历史数据图表实例（独立命名，避免与AGC/AVC图表冲突）
 let historyChartInstance = null
-
-// 生成测试数据
-const generateTestData = async () => {
-  // 获取当前选中的设备
-  const current = deviceList.value.find(device => device.number === mainActiveTab.value)
-  if (!current) {
-    ElMessage.warning('请先选择设备')
-    return
-  }
-  
-  ElMessageBox.confirm(`确认为并网点【${current.name}】生成100条测试数据？`, '生成测试数据', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning'
-  }).then(async () => {
-    const res = await generateAgvcBwdTestData({ eqid: current.number, count: 100 })
-    if (res.code === 0) {
-      ElMessage.success('测试数据生成成功')
-      // 重新加载当前设备的数据
-      loadDeviceParameters(current.number)
-    } else {
-      ElMessage.error('生成失败: ' + res.msg)
-    }
-  }).catch(() => {})
-}
 
 // 显示历史数据
 const showHistoryData = async (row) => {

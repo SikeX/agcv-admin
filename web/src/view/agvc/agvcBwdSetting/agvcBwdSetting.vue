@@ -46,7 +46,7 @@
 
             <el-table-column align="left" label="名称" prop="name" width="120" />
 
-            <el-table-column align="left" label="编号" prop="number" width="100" />
+            <el-table-column align="left" label="设备编号" prop="eqid" width="100" />
 
             <el-table-column align="left" label="电压(kV)" prop="voltageLevel" width="100" />
 
@@ -114,8 +114,8 @@
             <el-form-item label="并网点名称:" prop="name">
     <el-input v-model="formData.name" :clearable="true" placeholder="请输入并网点名称" />
 </el-form-item>
-            <el-form-item label="设备编号:" prop="number">
-    <el-input v-model="formData.number" :clearable="true" placeholder="请输入设备编号" />
+            <el-form-item label="设备编号:" prop="eqid">
+    <el-input-number v-model="formData.eqid" :clearable="true" placeholder="请输入设备编号" />
 </el-form-item>
             <el-form-item label="电压等级(kV):" prop="voltageLevel">
     <el-input-number v-model="formData.voltageLevel" style="width:100%" :precision="2" :clearable="true" />
