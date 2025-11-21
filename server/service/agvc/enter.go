@@ -12,4 +12,5 @@ type ServiceGroup struct {
     AgvcAgcHisService
     AgvcAvcHisService
     AgvcHisService
+    AgvcChartService
 }

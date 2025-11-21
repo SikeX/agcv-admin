@@ -10,6 +10,7 @@ type RouterGroup struct {
     AgvcNbqHisRouter
     AgvcBwdHisRouter
     AgvcQxyHisRouter
+    AgvcChartRouter
 }
 
 var (
@@ -21,4 +22,5 @@ var (
     agvcNbqHisApi         = api.ApiGroupApp.AgvcApiGroup.AgvcNbqHisApi
     agvcBwdHisApi         = api.ApiGroupApp.AgvcApiGroup.AgvcBwdHisApi
     agvcQxyHisApi         = api.ApiGroupApp.AgvcApiGroup.AgvcQxyHisApi
+    agvcChartApi          = api.ApiGroupApp.AgvcApiGroup.AgvcChartApi
 )

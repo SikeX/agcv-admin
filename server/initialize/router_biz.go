@@ -22,6 +22,7 @@ func initBizRouter(routers ...*gin.RouterGroup) {
         agvcRouter.InitAgvcNbqHisRouter(privateGroup, publicGroup)
         agvcRouter.InitAgvcBwdHisRouter(privateGroup, publicGroup)
         agvcRouter.InitAgvcQxyHisRouter(privateGroup, publicGroup)
+        agvcRouter.InitAgvcChartRouter(privateGroup, publicGroup)
 
         router.RouterGroupApp.AgvcMainDevice.InitDeviceRouter(privateGroup, privateGroup)
         

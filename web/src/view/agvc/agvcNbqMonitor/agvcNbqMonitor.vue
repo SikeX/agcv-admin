@@ -322,24 +322,12 @@ const getTableData = async() => {
   }
 }
 
-// 显示更多数据
-const showMoreData = async(row) => {
+// 显示更多数据（直接从表格中获取数据）
+const showMoreData = (row) => {
   currentDevice.value = row
+  // 直接使用表格中的数据，不需要从后端查询
+  realData.value = row
   moreDialogVisible.value = true
-  moreDataLoading.value = true
-  
-  try {
-    const res = await getNbqRealData({ psid: row.psid, inverterNo: row.inverterNo })
-    if (res.code === 0) {
-      realData.value = res.data
-    } else {
-      ElMessage.error('获取实时数据失败: ' + res.msg)
-    }
-  } catch (error) {
-    ElMessage.error('获取实时数据失败: ' + error.message)
-  } finally {
-    moreDataLoading.value = false
-  }
 }
 
 // 启动自动刷新
