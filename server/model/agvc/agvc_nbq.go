@@ -2,6 +2,7 @@
 package agvc
 
 import (
+    "fmt"
     "reflect"
     "strings"
     "sync"
@@ -122,6 +123,7 @@ type PointInfo struct {
 }
 
 // PointToFieldMapping point值到字段信息的映射缓存
+// key格式为 "type-value"，例如 "1-501" 或 "2-10"
 var pointToFieldMapping map[string]PointInfo
 var pointMappingOnce sync.Once
 
@@ -161,7 +163,9 @@ func InitPointMapping() {
                 }
 
                 if pointValue != "" {
-                    pointToFieldMapping[pointValue] = PointInfo{
+                    // 使用 "type-value" 作为复合key
+                    key := fmt.Sprintf("%d-%s", dataType, pointValue)
+                    pointToFieldMapping[key] = PointInfo{
                         FieldName: field.Name,
                         DataType:  dataType,
                     }
@@ -171,22 +175,33 @@ func InitPointMapping() {
     })
 }
 
-// GetFieldNameByPoint 根据point值获取字段名
-func GetFieldNameByPoint(point string) (string, bool) {
-    pointInfo, ok := pointToFieldMapping[point]
+// GetFieldNameByPoint 根据dataType和point值获取字段名
+func GetFieldNameByPoint(dataType int, point string) (string, bool) {
+    key := fmt.Sprintf("%d-%s", dataType, point)
+    pointInfo, ok := pointToFieldMapping[key]
     return pointInfo.FieldName, ok
 }
 
-// GetPointInfoByPoint 根据point值获取点位信息
-func GetPointInfoByPoint(point string) (PointInfo, bool) {
-    pointInfo, ok := pointToFieldMapping[point]
+// GetPointInfoByPoint 根据dataType和point值获取点位信息
+func GetPointInfoByPoint(dataType int, point string) (PointInfo, bool) {
+    key := fmt.Sprintf("%d-%s", dataType, point)
+    pointInfo, ok := pointToFieldMapping[key]
     return pointInfo, ok
 }
 
-// GetAllPointValues 获取所有point值列表
+// GetAllPointValues 获取所有point值列表（去重）
 func GetAllPointValues() []string {
-    points := make([]string, 0, len(pointToFieldMapping))
-    for point := range pointToFieldMapping {
+    pointSet := make(map[string]bool)
+    for key := range pointToFieldMapping {
+        // key格式为 "type-value"，提取value部分
+        parts := strings.Split(key, "-")
+        if len(parts) == 2 {
+            pointSet[parts[1]] = true
+        }
+    }
+    
+    points := make([]string, 0, len(pointSet))
+    for point := range pointSet {
         points = append(points, point)
     }
     return points
@@ -195,9 +210,13 @@ func GetAllPointValues() []string {
 // GetPointValuesByType 根据数据类型获取point值列表
 func GetPointValuesByType(dataType int) []string {
     points := make([]string, 0)
-    for point, info := range pointToFieldMapping {
+    for key, info := range pointToFieldMapping {
         if info.DataType == dataType {
-            points = append(points, point)
+            // key格式为 "type-value"，提取value部分
+            parts := strings.Split(key, "-")
+            if len(parts) == 2 {
+                points = append(points, parts[1])
+            }
         }
     }
     return points

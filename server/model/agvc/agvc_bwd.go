@@ -2,6 +2,7 @@
 package agvc
 
 import (
+    "fmt"
     "reflect"
     "strings"
     "sync"
@@ -33,6 +34,7 @@ type PointInfoBwd struct {
 }
 
 // PointToFieldMappingBwd BWD的point值到字段信息的映射缓存
+// key格式为 "type-value"，例如 "1-22" 或 "2-10"
 var pointToFieldMappingBwd map[string]PointInfoBwd
 var pointMappingOnceBwd sync.Once
 
@@ -72,7 +74,9 @@ func InitPointMappingBwd() {
                 }
 
                 if pointValue != "" {
-                    pointToFieldMappingBwd[pointValue] = PointInfoBwd{
+                    // 使用 "type-value" 作为复合key
+                    key := fmt.Sprintf("%d-%s", dataType, pointValue)
+                    pointToFieldMappingBwd[key] = PointInfoBwd{
                         FieldName: field.Name,
                         DataType:  dataType,
                     }
@@ -82,22 +86,33 @@ func InitPointMappingBwd() {
     })
 }
 
-// GetFieldNameByPointBwd 根据point值获取BWD字段名
-func GetFieldNameByPointBwd(point string) (string, bool) {
-    pointInfo, ok := pointToFieldMappingBwd[point]
+// GetFieldNameByPointBwd 根据dataType和point值获取BWD字段名
+func GetFieldNameByPointBwd(dataType int, point string) (string, bool) {
+    key := fmt.Sprintf("%d-%s", dataType, point)
+    pointInfo, ok := pointToFieldMappingBwd[key]
     return pointInfo.FieldName, ok
 }
 
-// GetPointInfoByPointBwd 根据point值获取BWD点位信息
-func GetPointInfoByPointBwd(point string) (PointInfoBwd, bool) {
-    pointInfo, ok := pointToFieldMappingBwd[point]
+// GetPointInfoByPointBwd 根据dataType和point值获取BWD点位信息
+func GetPointInfoByPointBwd(dataType int, point string) (PointInfoBwd, bool) {
+    key := fmt.Sprintf("%d-%s", dataType, point)
+    pointInfo, ok := pointToFieldMappingBwd[key]
     return pointInfo, ok
 }
 
-// GetAllPointValuesBwd 获取BWD所有point值列表
+// GetAllPointValuesBwd 获取BWD所有point值列表（去重）
 func GetAllPointValuesBwd() []string {
-    points := make([]string, 0, len(pointToFieldMappingBwd))
-    for point := range pointToFieldMappingBwd {
+    pointSet := make(map[string]bool)
+    for key := range pointToFieldMappingBwd {
+        // key格式为 "type-value"，提取value部分
+        parts := strings.Split(key, "-")
+        if len(parts) == 2 {
+            pointSet[parts[1]] = true
+        }
+    }
+    
+    points := make([]string, 0, len(pointSet))
+    for point := range pointSet {
         points = append(points, point)
     }
     return points
@@ -106,9 +121,13 @@ func GetAllPointValuesBwd() []string {
 // GetPointValuesByTypeBwd 根据数据类型获取BWD的point值列表
 func GetPointValuesByTypeBwd(dataType int) []string {
     points := make([]string, 0)
-    for point, info := range pointToFieldMappingBwd {
+    for key, info := range pointToFieldMappingBwd {
         if info.DataType == dataType {
-            points = append(points, point)
+            // key格式为 "type-value"，提取value部分
+            parts := strings.Split(key, "-")
+            if len(parts) == 2 {
+                points = append(points, parts[1])
+            }
         }
     }
     return points

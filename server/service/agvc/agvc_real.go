@@ -109,25 +109,46 @@ func (agvcRealService *AgvcRealService) GetRealData(ctx context.Context, psid, e
             }
             valueFloat64, _ := value.(float64)
             
-            // 根据设备类型获取点位信息
+            // 根据设备类型获取点位信息，需要同时匹配dataType和point
             var pointDataType int
+            var fieldFound bool
             switch eqType {
             case NBQ_DEVICE_TYPE:
-                if pointInfo, found := agvc.GetPointInfoByPoint(point); found {
+                if pointInfo, found := agvc.GetPointInfoByPoint(1, point); found {
                     pointDataType = pointInfo.DataType
+                    fieldFound = true
+                } else if pointInfo, found := agvc.GetPointInfoByPoint(2, point); found {
+                    pointDataType = pointInfo.DataType
+                    fieldFound = true
                 }
             case BWD_DEVICE_TYPE:
-                if pointInfo, found := agvc.GetPointInfoByPointBwd(point); found {
+                if pointInfo, found := agvc.GetPointInfoByPointBwd(1, point); found {
                     pointDataType = pointInfo.DataType
+                    fieldFound = true
+                } else if pointInfo, found := agvc.GetPointInfoByPointBwd(2, point); found {
+                    pointDataType = pointInfo.DataType
+                    fieldFound = true
                 }
             case AGC_DEVICE_TYPE:
-                if pointInfo, found := agvc.GetPointInfoByPointAgc(point); found {
+                if pointInfo, found := agvc.GetPointInfoByPointAgc(1, point); found {
                     pointDataType = pointInfo.DataType
+                    fieldFound = true
+                } else if pointInfo, found := agvc.GetPointInfoByPointAgc(2, point); found {
+                    pointDataType = pointInfo.DataType
+                    fieldFound = true
                 }
             case AVC_DEVICE_TYPE:
-                if pointInfo, found := agvc.GetPointInfoByPointAvc(point); found {
+                if pointInfo, found := agvc.GetPointInfoByPointAvc(1, point); found {
                     pointDataType = pointInfo.DataType
+                    fieldFound = true
+                } else if pointInfo, found := agvc.GetPointInfoByPointAvc(2, point); found {
+                    pointDataType = pointInfo.DataType
+                    fieldFound = true
                 }
+            }
+            
+            if !fieldFound {
+                continue
             }
             
             // 判断dataType是否匹配
@@ -143,7 +164,7 @@ func (agvcRealService *AgvcRealService) GetRealData(ctx context.Context, psid, e
                     Psid:       &psid,
                     InverterNo: &eqid,
                 }
-                if fieldName, found := agvc.GetFieldNameByPoint(point); found {
+                if fieldName, found := agvc.GetFieldNameByPoint(pointDataType, point); found {
                     setFieldValue(resEntity, fieldName, valueFloat64)
                 }
                 res = resEntity
@@ -153,7 +174,7 @@ func (agvcRealService *AgvcRealService) GetRealData(ctx context.Context, psid, e
                     Psid:  &psid,
                     Eqid:  &eqid,
                 }
-                if fieldName, found := agvc.GetFieldNameByPointBwd(point); found {
+                if fieldName, found := agvc.GetFieldNameByPointBwd(pointDataType, point); found {
                     setFieldValueBwd(resEntity, fieldName, valueFloat64)
                 }
                 res = resEntity
@@ -163,7 +184,7 @@ func (agvcRealService *AgvcRealService) GetRealData(ctx context.Context, psid, e
                     Psid:  &psid,
                     Eqid:  &eqid,
                 }
-                if fieldName, found := agvc.GetFieldNameByPointAgc(point); found {
+                if fieldName, found := agvc.GetFieldNameByPointAgc(pointDataType, point); found {
                     setFieldValueAgc(resEntity, fieldName, valueFloat64)
                 }
                 res = resEntity
@@ -173,7 +194,7 @@ func (agvcRealService *AgvcRealService) GetRealData(ctx context.Context, psid, e
                     Psid:  &psid,
                     Eqid:  &eqid,
                 }
-                if fieldName, found := agvc.GetFieldNameByPointAvc(point); found {
+                if fieldName, found := agvc.GetFieldNameByPointAvc(pointDataType, point); found {
                     setFieldValueAvc(resEntity, fieldName, valueFloat64)
                 }
                 res = resEntity
