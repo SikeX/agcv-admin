@@ -2,6 +2,7 @@
 package agvc
 
 import (
+    "fmt"
     "reflect"
     "strings"
     "sync"
@@ -33,6 +34,7 @@ type PointInfoAvc struct {
 }
 
 // PointToFieldMappingAvc AVC的point值到字段信息的映射缓存
+// key格式为 "type-value"，例如 "1-32" 或 "2-30"
 var pointToFieldMappingAvc map[string]PointInfoAvc
 var pointMappingOnceAvc sync.Once
 
@@ -72,7 +74,9 @@ func InitPointMappingAvc() {
                 }
 
                 if pointValue != "" {
-                    pointToFieldMappingAvc[pointValue] = PointInfoAvc{
+                    // 使用 "type-value" 作为复合key
+                    key := fmt.Sprintf("%d-%s", dataType, pointValue)
+                    pointToFieldMappingAvc[key] = PointInfoAvc{
                         FieldName: field.Name,
                         DataType:  dataType,
                     }
@@ -82,22 +86,33 @@ func InitPointMappingAvc() {
     })
 }
 
-// GetFieldNameByPointAvc 根据point值获取AVC字段名
-func GetFieldNameByPointAvc(point string) (string, bool) {
-    pointInfo, ok := pointToFieldMappingAvc[point]
+// GetFieldNameByPointAvc 根据dataType和point值获取AVC字段名
+func GetFieldNameByPointAvc(dataType int, point string) (string, bool) {
+    key := fmt.Sprintf("%d-%s", dataType, point)
+    pointInfo, ok := pointToFieldMappingAvc[key]
     return pointInfo.FieldName, ok
 }
 
-// GetPointInfoByPointAvc 根据point值获取AVC点位信息
-func GetPointInfoByPointAvc(point string) (PointInfoAvc, bool) {
-    pointInfo, ok := pointToFieldMappingAvc[point]
+// GetPointInfoByPointAvc 根据dataType和point值获取AVC点位信息
+func GetPointInfoByPointAvc(dataType int, point string) (PointInfoAvc, bool) {
+    key := fmt.Sprintf("%d-%s", dataType, point)
+    pointInfo, ok := pointToFieldMappingAvc[key]
     return pointInfo, ok
 }
 
-// GetAllPointValuesAvc 获取AVC所有point值列表
+// GetAllPointValuesAvc 获取AVC所有point值列表（去重）
 func GetAllPointValuesAvc() []string {
-    points := make([]string, 0, len(pointToFieldMappingAvc))
-    for point := range pointToFieldMappingAvc {
+    pointSet := make(map[string]bool)
+    for key := range pointToFieldMappingAvc {
+        // key格式为 "type-value"，提取value部分
+        parts := strings.Split(key, "-")
+        if len(parts) == 2 {
+            pointSet[parts[1]] = true
+        }
+    }
+    
+    points := make([]string, 0, len(pointSet))
+    for point := range pointSet {
         points = append(points, point)
     }
     return points
@@ -106,9 +121,13 @@ func GetAllPointValuesAvc() []string {
 // GetPointValuesByTypeAvc 根据数据类型获取AVC的point值列表
 func GetPointValuesByTypeAvc(dataType int) []string {
     points := make([]string, 0)
-    for point, info := range pointToFieldMappingAvc {
+    for key, info := range pointToFieldMappingAvc {
         if info.DataType == dataType {
-            points = append(points, point)
+            // key格式为 "type-value"，提取value部分
+            parts := strings.Split(key, "-")
+            if len(parts) == 2 {
+                points = append(points, parts[1])
+            }
         }
     }
     return points
