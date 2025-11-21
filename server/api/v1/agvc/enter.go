@@ -11,6 +11,7 @@ type ApiGroup struct {
     AgvcNbqHisApi
     AgvcBwdHisApi
     AgvcQxyHisApi
+    AgvcChartApi
 }
 
 var (
@@ -23,4 +24,5 @@ var (
     agvcQxyHisService     = service.ServiceGroupApp.AgvcServiceGroup.AgvcQxyHisService
     agvcAgcHisService     = service.ServiceGroupApp.AgvcServiceGroup.AgvcAgcHisService
     agvcAvcHisService     = service.ServiceGroupApp.AgvcServiceGroup.AgvcAvcHisService
+    agvcChartService      = service.ServiceGroupApp.AgvcServiceGroup.AgvcChartService
 )
