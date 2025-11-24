@@ -5,20 +5,27 @@
     <el-card class="device-selector-card" shadow="hover">
       <div class="device-info">
         <div class="device-name-row">
-          <el-select 
-            v-model="mainActiveTab" 
-            placeholder="请选择并网点设备" 
+          <el-dropdown 
+            trigger="click"
             size="large"
-            style="width: 300px;"
-            @change="onDeviceChange"
+            @command="handleDeviceCommand"
           >
-            <el-option
-              v-for="device in deviceList"
-              :key="device.number"
-              :label="device.name"
-              :value="device.number"
-            />
-          </el-select>
+            <el-button type="primary" size="large" style="width: 300px;">
+              {{ getCurrentDevice()?.name || '请选择并网点设备' }}
+              <el-icon class="el-icon--right"><ArrowDown /></el-icon>
+            </el-button>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item
+                  v-for="device in deviceList"
+                  :key="device.number"
+                  :command="device.number"
+                >
+                  {{ device.name }}
+                </el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
         </div>
         <div class="device-details">
           <span class="detail-item">
@@ -441,6 +448,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { ref, reactive, nextTick, onMounted, onUnmounted, watch } from 'vue'
 import { useAppStore } from "@/pinia"
 import * as echarts from 'echarts'
+import { ArrowDown } from '@element-plus/icons-vue'
 
 
 
@@ -542,6 +550,18 @@ const onDeviceChange = async (deviceNumber) => {
     // 加载新设备的参数和数据
     await loadDeviceParameters(device.number)
   }
+}
+
+// el-dropdown 命令处理
+const handleDeviceCommand = async (deviceNumber) => {
+  console.log('========== handleDeviceCommand 开始 ==========')
+  console.log('选中设备编号:', deviceNumber)
+  
+  // 更新当前选中的设备
+  mainActiveTab.value = deviceNumber
+  
+  // 调用设备切换处理逻辑
+  await onDeviceChange(deviceNumber)
 }
 
 // 获取并网点设备列表
