@@ -12,10 +12,10 @@
           :name="device.number"
         >
           <!-- AGC/AVC控制标签页 -->
-          <el-tabs v-model="controlActiveTab" type="card" style="position: relative;">
+          <el-tabs v-model="controlActiveTab" style="position: relative;">
             <!-- 按钮组 - 绝对定位放在右上角 -->
             <div style="position: absolute; right: 20px; top: 8px; display: flex; gap: 10px; z-index: 100;" @click.stop>
-              <el-button size="small" @click="showHistoryDataDialog">历史数据查看</el-button>
+              <!-- <el-button size="small" @click="showHistoryDataDialog">历史数据查看</el-button> -->
               <!-- <el-button size="small" @click="generateTestData">生成测试数据</el-button> -->
             </div>
             <!-- AGC控制标签页 -->
@@ -24,8 +24,9 @@
                 <!-- AGC折线图 - 放在最上面 -->
                 <div class="chart-section chart-top">
                   <div class="section-title">电站出力曲线</div>
-                  <div class="chart-container">
-                    <div ref="agcChartContainer" class="chart-wrapper"></div>
+                  <!-- PowerChart组件渲染 -->
+                  <div style="margin-top: 20px;">
+                    <PowerChart />
                   </div>
                 </div>
                 
@@ -126,8 +127,9 @@
                 <!-- AVC折线图 - 放在最上面 -->
                 <div class="chart-section chart-top">
                   <div class="section-title">AVC曲线图</div>
-                  <div class="chart-container">
-                    <div ref="avcChartContainer" class="chart-wrapper"></div>
+                  <!-- VoltageReactiveChart组件渲染 -->
+                  <div style="margin-top: 20px;">
+                    <VoltageReactiveChart />
                   </div>
                 </div>
                 
@@ -408,12 +410,17 @@ import {
 
 import { getAgvcBwdSettingList, updateAgvcBwdSetting } from '@/api/agvc/agvcBwdSetting'
 
+// 导入图表组件
+import PowerChart from '@/view/agvc/agvcChart/powerChart.vue'
+import VoltageReactiveChart from '@/view/agvc/agvcChart/voltageReactiveChart.vue'
+
 // 全量引入格式化工具 请按需保留
 import { getDictFunc, formatDate, formatBoolean, filterDict ,filterDataSource, returnArrImg, onDownloadFile } from '@/utils/format'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ref, reactive, nextTick, onMounted, onUnmounted, watch } from 'vue'
 import { useAppStore } from "@/pinia"
 import * as echarts from 'echarts'
+
 
 
 
