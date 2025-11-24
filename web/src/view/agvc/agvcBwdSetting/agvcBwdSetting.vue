@@ -76,6 +76,10 @@
 
             <el-table-column align="left" label="AVC最大值(kV)" prop="avcAdjustmentRangeMax" width="130" />
 
+            <el-table-column align="left" label="容量(kW)" prop="capacity" width="120" />
+
+            <el-table-column align="left" label="并网日期" prop="gridConnectionDate" width="120" />
+
         <el-table-column align="left" label="操作" fixed="right" :min-width="appStore.operateMinWith">
             <template #default="scope">
             <el-button  type="primary" link class="table-button" @click="getDetails(scope.row)"><el-icon style="margin-right: 5px"><InfoFilled /></el-icon>查看</el-button>
@@ -159,6 +163,12 @@
             <el-form-item label="AVC调节范围最大值(kV):" prop="avcAdjustmentRangeMax">
     <el-input-number v-model="formData.avcAdjustmentRangeMax" style="width:100%" :precision="2" :clearable="true" />
 </el-form-item>
+            <el-form-item label="并网点容量(kW):" prop="capacity">
+    <el-input-number v-model="formData.capacity" style="width:100%" :precision="2" :clearable="true" placeholder="请输入并网点容量" />
+</el-form-item>
+            <el-form-item label="并网日期:" prop="gridConnectionDate">
+    <el-date-picker v-model="formData.gridConnectionDate" type="date" placeholder="请选择并网日期" value-format="YYYY-MM-DD" style="width:100%" />
+</el-form-item>
           </el-form>
     </el-drawer>
 
@@ -215,6 +225,12 @@
                     <el-descriptions-item label="AVC调节范围最大值(kV)">
     {{ detailForm.avcAdjustmentRangeMax }}
 </el-descriptions-item>
+                    <el-descriptions-item label="并网点容量(kW)">
+    {{ detailForm.capacity }}
+</el-descriptions-item>
+                    <el-descriptions-item label="并网日期">
+    {{ detailForm.gridConnectionDate }}
+</el-descriptions-item>
             </el-descriptions>
         </el-drawer>
 
@@ -270,6 +286,8 @@ const formData = ref({
             avcSystemImpedance: 0,
             avcAdjustmentRangeMin: 0,
             avcAdjustmentRangeMax: 0,
+            capacity: 0,
+            gridConnectionDate: '',
         })
 
 
@@ -453,6 +471,8 @@ const closeDialog = () => {
         avcSystemImpedance: 0,
         avcAdjustmentRangeMin: 0,
         avcAdjustmentRangeMax: 0,
+        capacity: 0,
+        gridConnectionDate: '',
         }
 }
 // 弹窗确定

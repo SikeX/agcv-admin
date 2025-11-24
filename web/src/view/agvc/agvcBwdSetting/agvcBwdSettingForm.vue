@@ -51,6 +51,12 @@
         <el-form-item label="AVC调节范围最大值(kV):" prop="avcAdjustmentRangeMax">
     <el-input-number v-model="formData.avcAdjustmentRangeMax" style="width:100%" :precision="2" :clearable="true" />
 </el-form-item>
+        <el-form-item label="并网点容量(kW):" prop="capacity">
+    <el-input-number v-model="formData.capacity" style="width:100%" :precision="2" :clearable="true" placeholder="请输入并网点容量" />
+</el-form-item>
+        <el-form-item label="并网日期:" prop="gridConnectionDate">
+    <el-date-picker v-model="formData.gridConnectionDate" type="date" placeholder="请选择并网日期" value-format="YYYY-MM-DD" style="width:100%" />
+</el-form-item>
         <el-form-item>
           <el-button :loading="btnLoading" type="primary" @click="save">保存</el-button>
           <el-button type="primary" @click="back">返回</el-button>
@@ -102,6 +108,8 @@ const formData = ref({
             avcSystemImpedance: 0,
             avcAdjustmentRangeMin: 0,
             avcAdjustmentRangeMax: 0,
+            capacity: 0,
+            gridConnectionDate: '',
         })
 // 验证规则
 const rule = reactive({
