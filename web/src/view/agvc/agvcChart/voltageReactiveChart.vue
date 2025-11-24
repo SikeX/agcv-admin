@@ -5,7 +5,7 @@
         <template #header>
           <div class="card-header">
             <span>电压监控</span>
-            <el-tag type="success" effect="dark">自动刷新中(5s)</el-tag>
+            <!-- <el-tag type="success" effect="dark">自动刷新中(5s)</el-tag> -->
           </div>
         </template>
         <div v-loading="loading" style="height: 500px">
@@ -218,11 +218,13 @@ onMounted(async() => {
   await nextTick()
   initVoltageChart()
   startAutoRefresh() // 默认启动自动刷新
+  handleResize
   window.addEventListener('resize', handleResize)
 })
 
 onUnmounted(() => {
   stopAutoRefresh()
+  handleResize
   window.removeEventListener('resize', handleResize)
   if (voltageChartInstance) {
     voltageChartInstance.dispose()

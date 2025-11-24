@@ -5,7 +5,7 @@
         <template #header>
           <div class="card-header">
             <span>电站出力监控</span>
-            <el-tag type="success" effect="dark">自动刷新中(5s)</el-tag>
+            <!-- <el-tag type="success" effect="dark">自动刷新中(5s)</el-tag> -->
           </div>
         </template>
         <div v-loading="loading" style="height: 500px">

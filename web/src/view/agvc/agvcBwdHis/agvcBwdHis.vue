@@ -46,7 +46,7 @@
           <div class="control-content">
             <!-- AGC折线图 - 放在最上面 -->
             <div class="chart-section chart-top">
-              <div class="section-title">电站出力曲线</div>
+              <div class="section-title">电站出力曲线图</div>
               <!-- PowerChart组件渲染 -->
               <div style="margin-top: 20px;">
                 <PowerChart :psid="currentPsid" :eqid="mainActiveTab" />
@@ -258,7 +258,6 @@
             </div>
           </el-tab-pane>
         </el-tabs>
-      </div>
     </div>
 
     <!-- 历史数据弹窗 -->
@@ -531,9 +530,17 @@ const getCurrentDevice = () => {
 
 // 设备切换事件处理
 const onDeviceChange = async (deviceNumber) => {
+  console.log('========== onDeviceChange 开始 ==========')
   const device = deviceList.value.find(d => d.number === deviceNumber)
   if (device) {
-    await selectDevice(device)
+    console.log('选中设备:', device)
+    // 更新电站编号
+    if (device.psid) {
+      currentPsid.value = device.psid
+    }
+    
+    // 加载新设备的参数和数据
+    await loadDeviceParameters(device.number)
   }
 }
 
@@ -570,16 +577,6 @@ const getDeviceList = async () => {
         await nextTick()
         console.log('5. DOM渲染完成')
         
-        // 1. 先初始化图表（确保图表实例存在）
-        console.log('6. 开始初始化图表...')
-        console.log('   controlActiveTab.value:', controlActiveTab.value)
-        if (controlActiveTab.value === 'agc') {
-          console.log('7. 初始化AGC图表')
-          initAgcChart()
-        } else {
-          console.log('7. 初始化AVC图表')
-          initAvcChart()
-        }
         
         // 2. 再加载数据（数据加载后会自动调用updateAgcChart更新图表）
         // console.log('8. 开始加载设备参数...')
@@ -600,6 +597,7 @@ const getDeviceList = async () => {
 
 // 选择设备
 const selectDevice = async (device) => {
+  console.log('========== selectDevice 开始 ==========')
   // 设置主标签页为当前设备
   mainActiveTab.value = device.number
   
@@ -610,10 +608,6 @@ const selectDevice = async (device) => {
   
   // 等待DOM更新
   await nextTick()
-  
-  // 1. 先初始化图表
-  initAgcChart()
-  initAvcChart()
   
   // 2. 再加载该设备的参数和曲线
   await loadDeviceParameters(device.number)
@@ -629,25 +623,7 @@ const loadDeviceParameters = async (number) => {
   
   console.log('========== loadDeviceParameters 开始 ==========')
   console.log('设备编号:', number)
-  try {
-    // isLoadingAgcStatus = true
-    
-    // 加载AGC配置参数
-    // console.log('1. 加载AGC配置参数...')
-    // const agcRes = await getAgcParameters({ number })
-    // console.log('AGC配置参数响应:', agcRes)
-    // if (agcRes.code === 0 && agcRes.data) {
-    //   agcParametersForm.value = {...agcParametersForm.value, ...agcRes.data, number}
-    // }
-    
-    // 加载AVC配置参数
-    // console.log('2. 加载AVC配置参数...')
-    // const avcRes = await getAvcParameters({ number })
-    // console.log('AVC配置参数响应:', avcRes)
-    // if (avcRes.code === 0 && avcRes.data) {
-    //   avcParametersForm.value = {...avcParametersForm.value, ...avcRes.data, number}
-    // }
-    
+  try {    
     // 加载AGC状态
     console.log('3. 加载AGC状态...')
     const statusRes = await getAgcStatus({ number })
@@ -656,7 +632,7 @@ const loadDeviceParameters = async (number) => {
       agcFunctionState.value = statusRes.data.agcFunctionState
       agcControlMode.value = statusRes.data.agcControlMode
       agcControlAuthority.value = statusRes.data.agcControlAuthority
-      targetActivePower.value = statusRes.data.targetActivePower || 0
+      targetActivePower.value = statusRes.data.targetActivePower
       agcUpperLimit.value = statusRes.data.agcUpperLimit || 0
       agcLowerLimit.value = statusRes.data.agcLowerLimit || 0
     }
@@ -681,7 +657,7 @@ const loadDeviceParameters = async (number) => {
     if (realtimeRes.code === 0 && realtimeRes.data) {
       // 更新AGC相关实时数据
       currentActivePower.value = realtimeRes.data.currentActivePower || 0
-      targetActivePower.value = realtimeRes.data.targetActivePower || 0
+      // targetActivePower.value = realtimeRes.data.targetActivePower || 0
       systemFrequency.value = realtimeRes.data.systemFrequency || 50
       
       // 更新AVC相关实时数据
@@ -693,52 +669,9 @@ const loadDeviceParameters = async (number) => {
       console.log('实时数据更新完成')
     }
     
-    // 加载电站负荷实时数据从最上一小时数据
-    console.log('4. 加载历史数据...')
-    const now = new Date()
-    const endTime = now.toISOString().split('T')[0]
-    const startTime = new Date(now.getTime() - 3600000).toISOString().split('T')[0]
-    console.log('时间范围:', startTime, '到', endTime)
-    
-    const historyRes = await getAgvcBwdHistory({ eqid: number, startTime, endTime })
-    console.log('历史数据响应:', historyRes)
-    console.log('历史数据长度:', historyRes.data ? historyRes.data.length : 'null')
-    if (historyRes.code === 0 && historyRes.data && historyRes.data.length > 0) {
-      // 更新historyData并刷新AGC图表
-      console.log('5. 处理历史数据...')
-      historyData.value = historyRes.data.map(item => ({
-        timestamp: new Date(item.time),
-        point: item.point,
-        pointName: item.pointName || `点号${item.point}`,
-        value: item.value,
-        time: item.time
-      }))
-      historyData.value.sort((a, b) => new Date(a.time) - new Date(b.time))
-      console.log('historyData更新后长度:', historyData.value.length)
-      
-      // 如果实时数据中没有获取到某些值，则从历史数据中提取最新值
-      if (!realtimeRes || realtimeRes.code !== 0 || !realtimeRes.data) {
-        console.log('6. 提取最新数据...')
-        const sortedData = historyRes.data.sort((a, b) => new Date(a.time) - new Date(b.time))
-        const latestData = {}
-        sortedData.forEach(item => {
-          latestData[item.point] = item.value
-        })
-        currentActivePower.value = currentActivePower.value || latestData['100'] || 0
-        systemFrequency.value = systemFrequency.value || latestData['10'] || 50
-        agcUpperLimit.value = agcUpperLimit.value || latestData['401'] || 0
-        agcLowerLimit.value = agcLowerLimit.value || latestData['402'] || 0
-        console.log('最新数据:', latestData)
-      }
-    } else {
-      console.log('⚠️ 未获取到历史数据，初始化为空数组')
-      // 即使没有数据，也要初始化为空数组，这样图表可以显示底图
-      historyData.value = []
-    }
-    
     // 无论是否有数据，都更新AGC图表（显示底图）
-    console.log('7. 调用 updateAgcChart...')
-    updateAgcChart(number)
+    // console.log('7. 调用 updateAgcChart...')
+    // updateAgcChart(number)
     
     // isLoadingAgcStatus = false
     console.log('========== loadDeviceParameters 完成 ==========')
@@ -1557,287 +1490,6 @@ const onAvcModeChange = (mode) => {
   loadAvcChartData()
 }
 
-// 初始化AGC图表
-const initAgcChart = () => {
-  console.log('========== initAgcChart 开始 ==========')
-  console.log('1. agcChartContainer ref存在:', !!agcChartContainer)
-  console.log('2. agcChartContainer.value:', agcChartContainer.value)
-  console.log('3. controlActiveTab值:', controlActiveTab.value)
-  console.log('4. agcChartInstance存在:', !!agcChartInstance)
-  console.log('5. mainActiveTab值:', mainActiveTab.value)
-  
-  // 使用 nextTick 确保 DOM 已更新
-  nextTick(() => {
-    console.log('6. nextTick回调执行')
-    // 获取实际的DOM元素（处理ref在v-for中的情况）
-    let chartDom = agcChartContainer.value
-    
-    // 如果是数组，获取当前激活设备对应的索引
-    if (Array.isArray(chartDom)) {
-      console.log('7. agcChartContainer是数组，长度:', chartDom.length)
-      // 找到当前激活设备的索引
-      const currentIndex = deviceList.value.findIndex(d => d.number === mainActiveTab.value)
-      console.log('8. 当前设备索引:', currentIndex, '设备编号:', mainActiveTab.value)
-      chartDom = chartDom[currentIndex >= 0 ? currentIndex : 0]
-    }
-    
-    console.log('9. 最终DOM元素:', chartDom)
-    console.log('10. DOM类型:', chartDom ? chartDom.constructor.name : 'null')
-    console.log('11. DOM标签名:', chartDom ? chartDom.tagName : 'null')
-    
-    if (!chartDom) {
-      console.error('❌ AGC chart container not found')
-      return
-    }
-    
-    console.log('12. 准备初始化echarts实例')
-    // 使用 echarts 绘制图表
-    try {
-      // 销毁旧的图表实例，确保每次都重新创建
-      if (agcChartInstance) {
-        console.log('13. 销毁旧的echarts实例')
-        agcChartInstance.dispose()
-        agcChartInstance = null
-      }
-      
-      console.log('14. 创建新的echarts实例')
-      agcChartInstance = echarts.init(chartDom)
-      console.log('15. echarts实例创建成功:', !!agcChartInstance)
-      
-      // console.log('16. 调用 updateAgcChart')
-      // updateAgcChart(bwdNumber)
-      console.log('========== initAgcChart 完成 ==========')
-    } catch (error) {
-      console.error('❌ initAgcChart 错误:', error)
-      console.error('错误堆栈:', error.stack)
-    }
-  })
-}
-
-// 更新AGC图表
-const updateAgcChart = async(bwdNumber) => {
-  console.log('========== updateAgcChart 开始 ==========')
-  console.log('1. agcChartInstance存在:', !!agcChartInstance)
-  
-  if (!agcChartInstance) {
-    console.warn('❌ agcChartInstance不存在，无法更新图表')
-    return
-  }
-  
-  console.log('2. historyData.value长度:', historyData.value.length)
-  console.log('3. historyData样本（前3条）:', historyData.value.slice(0, 3))
-
-  let dispatchPowerData = []
-  let realPowerData = []
-
-  try{
-    const res = await getBwdRealtimeData({number: bwdNumber})
-    if (res.code === 0) {
-      console.log('4. 获取实时数据成功:', res.data.dispatchData)
-      realPowerData = res.data.realtimeData
-      dispatchPowerData = res.data.dispatchData
-
-    } else {
-      ElMessage.error('获取实时数据失败: ' + res.msg)
-    }
-  }catch (error) {
-    console.error('获取实时数据失败:', error)
-  }
-  
-  // 从历史数据中提取点位100和101的数据
-  // const realPowerData = historyData.value.filter(d => d.point === '100').sort((a, b) => new Date(a.time) - new Date(b.time))
-  // const dispatchPowerData = historyData.value.filter(d => d.point === '101').sort((a, b) => new Date(a.time) - new Date(b.time))
-  
-  console.log('4. 点位100（实时出力）数据量:', realPowerData.length)
-  console.log('5. 点位101（调度出力）数据量:', dispatchPowerData.length)
-  console.log('6. realPowerData样本:', realPowerData.slice(0, 3))
-
-  //
-  
-  // 格式化时间：显示 HH:mm:ss
-  const timeData = realPowerData.map(d => {
-    const time = new Date(d.time)
-    return time.toLocaleTimeString('zh-CN', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })
-  })
-  const realPower = realPowerData.map(d => d.value)
-  const dispatchPower = dispatchPowerData.length > 0 ? dispatchPowerData.map(d => d.value) : []
-  
-  console.log('7. timeData样本（前5个）:', timeData.slice(0, 5))
-  console.log('8. realPower样本（前5个）:', realPower.slice(0, 5))
-  
-  const option = {
-    title: {
-      text: '电站出力曲线',
-      left: 'center'
-    },
-    tooltip: {
-      trigger: 'axis'
-    },
-    legend: {
-      data: ['电站实时出力', '调度下发出力'],
-      top: 30
-    },
-    xAxis: {
-      type: 'category',
-      data: timeData.length > 0 ? timeData : [],
-      name: '时间',
-      axisLabel: {
-        rotate: 45,
-        interval: 'auto'
-      }
-    },
-    yAxis: {
-      type: 'value',
-      name: '功率(kW)'
-    },
-    series: [
-      {
-        name: '电站实时出力',
-        type: 'line',
-        data: realPower,
-        smooth: true,
-        connectNulls: true
-      },
-      {
-        name: '调度下发出力',
-        type: 'line',
-        data: dispatchPower,
-        smooth: true,
-        connectNulls: true
-      }
-    ],
-    grid: {
-      left: '3%',
-      right: '2%',
-      top: '20%',
-      bottom: '15%',
-      containLabel: true
-    }
-  }
-  
-  console.log('9. 准备setOption')
-  agcChartInstance.setOption(option, true)
-  console.log('10. setOption完成')
-  console.log('========== updateAgcChart 结束 ==========')
-}
-
-// 初始化AVC图表
-const initAvcChart = () => {
-  // 使用 nextTick 确保 DOM 已更新
-  nextTick(() => {
-    // 获取实际的DOM元素（处理ref在v-for中的情况）
-    let chartDom = avcChartContainer.value
-    
-    // 如果是数组，获取当前激活设备对应的索引
-    if (Array.isArray(chartDom)) {
-      const currentIndex = deviceList.value.findIndex(d => d.number === mainActiveTab.value)
-      chartDom = chartDom[currentIndex >= 0 ? currentIndex : 0]
-    }
-    
-    if (!chartDom) {
-      console.log('AVC chart container not found')
-      return
-    }
-    
-    // 销毁旧的图表实例，确保每次都重新创建
-    if (avcChartInstance) {
-      avcChartInstance.dispose()
-      avcChartInstance = null
-    }
-    
-    // 使用 echarts 绘制图表
-    avcChartInstance = echarts.init(chartDom)
-    
-    updateAvcChart()
-  })
-}
-
-// 更新AVC图表（使用实际数据）
-const updateAvcChart = () => {
-  if (!avcChartInstance) return
-  
-  console.log('updateAvcChart called, avcMode:', avcMode.value, 'historyData:', historyData.value)
-  
-  let title, point1, point2, seriesName1, seriesName2, yAxisName
-  
-  if (avcMode.value === 'voltage') {
-    // 电压模式
-    title = 'AVC电压曲线'
-    point1 = '102' // 目标电压
-    point2 = '103' // 当前电压
-    seriesName1 = '目标电压'
-    seriesName2 = '当前电压'
-    yAxisName = '电压(kV)'
-  } else {
-    // 无功模式
-    title = 'AVC无功曲线'
-    point1 = '104' // 目标无功
-    point2 = '105' // 当前无功
-    seriesName1 = '目标无功'
-    seriesName2 = '当前无功'
-    yAxisName = '无功(kVar)'
-  }
-  
-  // 从历史数据中辐取对应点位的数据
-  const data1 = historyData.value.filter(d => d.point === point1).sort((a, b) => new Date(a.time) - new Date(b.time))
-  const data2 = historyData.value.filter(d => d.point === point2).sort((a, b) => new Date(a.time) - new Date(b.time))
-  
-  const timeData = data1.map(d => {
-    const time = new Date(d.time)
-    return time.toLocaleTimeString('zh-CN', { hour12: false, hour: '2-digit', minute: '2-digit' })
-  })
-  const seriesData1 = data1.map(d => d.value)
-  const seriesData2 = data2.length > 0 ? data2.map(d => d.value) : []
-  
-  const option = {
-    title: {
-      text: title,
-      left: 'center'
-    },
-    tooltip: {
-      trigger: 'axis'
-    },
-    legend: {
-      data: [seriesName1, seriesName2],
-      top: 30
-    },
-    xAxis: {
-      type: 'category',
-      data: timeData.length > 0 ? timeData : [],
-      name: '时间'
-    },
-    yAxis: {
-      type: 'value',
-      name: yAxisName
-    },
-    series: [
-      {
-        name: seriesName1,
-        type: 'line',
-        data: seriesData1,
-        smooth: true,
-        connectNulls: true
-      },
-      {
-        name: seriesName2,
-        type: 'line',
-        data: seriesData2,
-        smooth: true,
-        connectNulls: true
-      }
-    ],
-    grid: {
-      left: '3%',
-      right: '2%',
-      top: '20%',
-      bottom: '15%',
-      containLabel: true
-    }
-  }
-  
-  avcChartInstance.setOption(option, true)
-}
-
 // 加载AVC图表数据
 const loadAvcChartData = () => {
   updateAvcChart()
@@ -1863,34 +1515,11 @@ onMounted(() => {
 // 监听主标签页变化（并网点切换）
 watch(mainActiveTab, (newNumber, oldNumber) => {
   if (!newNumber || newNumber === oldNumber) return
-  
   console.log('并网点切换:', oldNumber, '->', newNumber)
-  
-  
   // 加载新设备的参数和曲线
   loadDeviceParameters(newNumber)
   // loadDevicePlanCurves(newNumber)
   
-  // 延迟初始化图表
-  nextTick(() => {
-    if (controlActiveTab.value === 'agc') {
-      initAgcChart()
-    } else {
-      initAvcChart()
-    }
-  })
-})
-
-// 监听控制标签页变化，重新初始化对应图表
-watch(controlActiveTab, (newTab) => {
-  // 在下次DOM更新后初始化图表
-  nextTick(() => {
-    if (newTab === 'agc') {
-      initAgcChart()
-    } else if (newTab === 'avc') {
-      initAvcChart()
-    }
-  })
 })
 
 // 监听窗口大小变化，重置图表大小

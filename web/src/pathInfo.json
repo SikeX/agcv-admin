@@ -4,6 +4,8 @@
   "/src/view/agvc/agvcBwdHis/agvcBwdHisForm.vue": "AgvcBwdHisForm",
   "/src/view/agvc/agvcBwdSetting/agvcBwdSetting.vue": "AgvcBwdSetting",
   "/src/view/agvc/agvcBwdSetting/agvcBwdSettingForm.vue": "AgvcBwdSettingForm",
+  "/src/view/agvc/agvcChart/powerChart.vue": "PowerChart",
+  "/src/view/agvc/agvcChart/voltageReactiveChart.vue": "VoltageReactiveChart",
   "/src/view/agvc/agvcEventHis/agvcEventHis.vue": "AgvcEventHis",
   "/src/view/agvc/agvcEventHis/agvcEventHisForm.vue": "AgvcEventHisForm",
   "/src/view/agvc/agvcNbqHis/agvcNbqHis.vue": "AgvcNbqHis",
