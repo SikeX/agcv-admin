@@ -1,34 +1,57 @@
 
 <template>
   <div>
-    <!-- 标签页主界面 -->
-    <div class="main-tabs">
-      <el-tabs v-model="mainActiveTab" type="border-card">
-        <!-- 并网点标签页 -->
-        <el-tab-pane 
-          v-for="device in deviceList" 
-          :key="device.number" 
-          :label="device.name" 
-          :name="device.number"
-        >
-          <!-- AGC/AVC控制标签页 -->
-          <el-tabs v-model="controlActiveTab" style="position: relative;">
-            <!-- 按钮组 - 绝对定位放在右上角 -->
-            <div style="position: absolute; right: 20px; top: 8px; display: flex; gap: 10px; z-index: 100;" @click.stop>
-              <!-- <el-button size="small" @click="showHistoryDataDialog">历史数据查看</el-button> -->
-              <!-- <el-button size="small" @click="generateTestData">生成测试数据</el-button> -->
+    <!-- 设备选择卡片 -->
+    <el-card class="device-selector-card" shadow="hover">
+      <div class="device-info">
+        <div class="device-name-row">
+          <el-select 
+            v-model="mainActiveTab" 
+            placeholder="请选择并网点设备" 
+            size="large"
+            style="width: 300px;"
+            @change="onDeviceChange"
+          >
+            <el-option
+              v-for="device in deviceList"
+              :key="device.number"
+              :label="device.name"
+              :value="device.number"
+            />
+          </el-select>
+        </div>
+        <div class="device-details">
+          <span class="detail-item">
+            <span class="detail-label">并网点容量：</span>
+            <span class="detail-value">{{ getCurrentDevice()?.capacity || '未设置' }} kW</span>
+          </span>
+          <span class="detail-item">
+            <span class="detail-label">并网日期：</span>
+            <span class="detail-value">{{ getCurrentDevice()?.gridConnectionDate || '未设置' }}</span>
+          </span>
+        </div>
+      </div>
+    </el-card>
+
+    <!-- AGC/AVC控制标签页 -->
+    <div class="main-tabs" style="margin-top: 20px;">
+      <el-tabs v-model="controlActiveTab" type="border-card" style="position: relative;">
+        <!-- 按钮组 - 绝对定位放在右上角 -->
+        <div style="position: absolute; right: 20px; top: 8px; display: flex; gap: 10px; z-index: 100;" @click.stop>
+          <!-- <el-button size="small" @click="showHistoryDataDialog">历史数据查看</el-button> -->
+          <!-- <el-button size="small" @click="generateTestData">生成测试数据</el-button> -->
+        </div>
+        <!-- AGC控制标签页 -->
+        <el-tab-pane label="AGC控制" name="agc">
+          <div class="control-content">
+            <!-- AGC折线图 - 放在最上面 -->
+            <div class="chart-section chart-top">
+              <div class="section-title">电站出力曲线</div>
+              <!-- PowerChart组件渲染 -->
+              <div style="margin-top: 20px;">
+                <PowerChart :psid="currentPsid" :eqid="mainActiveTab" />
+              </div>
             </div>
-            <!-- AGC控制标签页 -->
-            <el-tab-pane label="AGC控制" name="agc">
-            <div class="control-content">
-                <!-- AGC折线图 - 放在最上面 -->
-                <div class="chart-section chart-top">
-                  <div class="section-title">电站出力曲线</div>
-                  <!-- PowerChart组件渲染 -->
-                  <div style="margin-top: 20px;">
-                    <PowerChart />
-                  </div>
-                </div>
                 
                 <!-- AGC控制面板和参数设置 - 左右布局 -->
                 <div class="control-section">
@@ -123,15 +146,15 @@
             
             <!-- AVC控制标签页 -->
             <el-tab-pane label="AVC控制" name="avc">
-              <div class="control-content">
-                <!-- AVC折线图 - 放在最上面 -->
-                <div class="chart-section chart-top">
-                  <div class="section-title">AVC曲线图</div>
-                  <!-- VoltageReactiveChart组件渲染 -->
-                  <div style="margin-top: 20px;">
-                    <VoltageReactiveChart />
-                  </div>
+            <div class="control-content">
+              <!-- AVC折线图 - 放在最上面 -->
+              <div class="chart-section chart-top">
+                <div class="section-title">AVC曲线图</div>
+                <!-- VoltageReactiveChart组件渲染 -->
+                <div style="margin-top: 20px;">
+                  <VoltageReactiveChart :psid="currentPsid" :eqid="mainActiveTab" />
                 </div>
+              </div>
                 
                 <!-- AVC控制面板、模式切换、参数设置 - 三列布局 -->
                 <div class="control-section">
@@ -232,11 +255,10 @@
                     </div>
                   </div>
                 </div>
-              </div>
-            </el-tab-pane>
-          </el-tabs>
-        </el-tab-pane>
-      </el-tabs>
+            </div>
+          </el-tab-pane>
+        </el-tabs>
+      </div>
     </div>
 
     <!-- 历史数据弹窗 -->
@@ -499,6 +521,21 @@ getTableData()
 // =========== 实时控制面板相关 ===========
 // 设备列表
 const deviceList = ref([])
+// 当前电站编号
+const currentPsid = ref(1)
+
+// 获取当前选中的设备
+const getCurrentDevice = () => {
+  return deviceList.value.find(device => device.number === mainActiveTab.value)
+}
+
+// 设备切换事件处理
+const onDeviceChange = async (deviceNumber) => {
+  const device = deviceList.value.find(d => d.number === deviceNumber)
+  if (device) {
+    await selectDevice(device)
+  }
+}
 
 // 获取并网点设备列表
 const getDeviceList = async () => {
@@ -511,8 +548,16 @@ const getDeviceList = async () => {
       deviceList.value = res.data.list.map(item => ({
         ID: item.ID, // 保存ID用于更新
         number: item.eqid,
-        name: item.name
+        name: item.name,
+        psid: item.psid,
+        capacity: item.capacity,
+        gridConnectionDate: item.gridConnectionDate
       }))
+      
+      // 设置当前电站编号
+      if (deviceList.value.length > 0 && deviceList.value[0].psid) {
+        currentPsid.value = deviceList.value[0].psid
+      }
       console.log('2. 设备列表长度:', deviceList.value.length)
       
       // 默认选择第一个设备
@@ -557,6 +602,11 @@ const getDeviceList = async () => {
 const selectDevice = async (device) => {
   // 设置主标签页为当前设备
   mainActiveTab.value = device.number
+  
+  // 更新电站编号
+  if (device.psid) {
+    currentPsid.value = device.psid
+  }
   
   // 等待DOM更新
   await nextTick()
@@ -2057,6 +2107,50 @@ const handleResize = () => {
   text-align: center;
 }
 
+/* 设备选择卡片样式 */
+.device-selector-card {
+  margin-bottom: 20px;
+}
+
+.device-info {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.device-name-row {
+  display: flex;
+  align-items: center;
+}
+
+.device-name-row :deep(.el-select .el-input__wrapper) {
+  font-size: 18px;
+  font-weight: bold;
+  padding: 10px 15px;
+}
+
+.device-details {
+  display: flex;
+  gap: 30px;
+  padding-left: 5px;
+}
+
+.detail-item {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+}
+
+.detail-label {
+  color: #909399;
+  margin-right: 8px;
+}
+
+.detail-value {
+  color: #606266;
+  font-weight: 500;
+}
+
 /* 响应式调整 */
 @media (max-width: 768px) {
   .control-grid {
@@ -2070,6 +2164,11 @@ const handleResize = () => {
   
   .device-buttons {
     flex-direction: column;
+  }
+  
+  .device-details {
+    flex-direction: column;
+    gap: 10px;
   }
 }
 </style>

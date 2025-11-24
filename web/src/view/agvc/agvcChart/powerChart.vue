@@ -1,29 +1,11 @@
 <template>
   <div>
-    <div class="gva-search-box">
-      <el-form ref="searchFormRef" :inline="true" :model="searchInfo" class="demo-form-inline">
-        <el-form-item label="电站编号">
-          <el-input-number v-model.number="searchInfo.psid" placeholder="请输入电站编号" clearable />
-        </el-form-item>
-        <el-form-item label="设备编号">
-          <el-input-number v-model.number="searchInfo.eqid" placeholder="请输入设备编号" clearable />
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" icon="search" @click="loadChartData">查询</el-button>
-          <el-button icon="refresh" @click="onReset">重置</el-button>
-          <el-button :type="autoRefresh ? 'danger' : 'success'" @click="toggleAutoRefresh">
-            {{ autoRefresh ? '停止刷新' : '自动刷新(5s)' }}
-          </el-button>
-        </el-form-item>
-      </el-form>
-    </div>
-    
     <div class="gva-table-box">
       <el-card>
         <template #header>
           <div class="card-header">
             <span>电站出力监控</span>
-            <el-tag v-if="autoRefresh" type="success" effect="dark">自动刷新中...</el-tag>
+            <el-tag type="success" effect="dark">自动刷新中(5s)</el-tag>
           </div>
         </template>
         <div v-loading="loading" style="height: 500px">
@@ -35,7 +17,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import * as echarts from 'echarts'
 import { getPowerChartData } from '@/api/agvc/agvcChart'
@@ -44,17 +26,22 @@ defineOptions({
   name: 'PowerChart'
 })
 
-const searchFormRef = ref()
+// 接收父组件传递的props
+const props = defineProps({
+  psid: {
+    type: Number,
+    required: true
+  },
+  eqid: {
+    type: Number,
+    required: true
+  }
+})
+
 const chartRef = ref()
 let chartInstance = null
 const loading = ref(false)
-const autoRefresh = ref(false)
 let refreshTimer = null
-
-const searchInfo = ref({
-  psid: 1,
-  eqid: 1
-})
 
 // 初始化图表
 const initChart = () => {
@@ -132,8 +119,7 @@ const initChart = () => {
 
 // 加载图表数据
 const loadChartData = async() => {
-  if (!searchInfo.value.psid || !searchInfo.value.eqid) {
-    ElMessage.warning('请输入电站编号和设备编号')
+  if (!props.psid || !props.eqid) {
     return
   }
   
@@ -144,8 +130,8 @@ const loadChartData = async() => {
     const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000)
     
     const params = {
-      psid: searchInfo.value.psid,
-      eqid: searchInfo.value.eqid,
+      psid: props.psid,
+      eqid: props.eqid,
       startTime: fiveMinutesAgo.toISOString(),
       endTime: now.toISOString()
     }
@@ -153,11 +139,9 @@ const loadChartData = async() => {
     const res = await getPowerChartData(params)
     if (res.code === 0 && res.data) {
       updateChart(res.data)
-    } else {
-      ElMessage.error(res.msg || '获取数据失败')
     }
   } catch (error) {
-    ElMessage.error('获取数据失败: ' + error.message)
+    console.error('获取数据失败:', error)
   } finally {
     loading.value = false
   }
@@ -166,13 +150,15 @@ const loadChartData = async() => {
 // 更新图表数据
 const updateChart = (data) => {
   if (!chartInstance || !data || data.length === 0) {
-    ElMessage.warning('暂无数据')
     return
   }
   
-  const times = data.map(item => item.time)
-  const currentPowers = data.map(item => item.currentActivePower || null)
-  const targetPowers = data.map(item => item.targetActivePower || null)
+  // 对数据按时间排序
+  const sortedData = [...data].sort((a, b) => new Date(a.time) - new Date(b.time))
+  
+  const times = sortedData.map(item => item.time)
+  const currentPowers = sortedData.map(item => item.currentActivePower || null)
+  const targetPowers = sortedData.map(item => item.targetActivePower || null)
   
   chartInstance.setOption({
     xAxis: {
@@ -189,17 +175,7 @@ const updateChart = (data) => {
   })
 }
 
-// 切换自动刷新
-const toggleAutoRefresh = () => {
-  autoRefresh.value = !autoRefresh.value
-  if (autoRefresh.value) {
-    startAutoRefresh()
-  } else {
-    stopAutoRefresh()
-  }
-}
-
-// 启动自动刷新
+// 启动自动刷新 - 默认5s
 const startAutoRefresh = () => {
   if (refreshTimer) {
     clearInterval(refreshTimer)
@@ -218,16 +194,6 @@ const stopAutoRefresh = () => {
   }
 }
 
-// 重置
-const onReset = () => {
-  searchInfo.value = {
-    psid: 1,
-    eqid: 1
-  }
-  stopAutoRefresh()
-  autoRefresh.value = false
-}
-
 // 窗口大小改变时调整图表
 const handleResize = () => {
   if (chartInstance) {
@@ -235,9 +201,17 @@ const handleResize = () => {
   }
 }
 
+// 监听props变化，重新加载数据
+watch(() => [props.psid, props.eqid], () => {
+  if (props.psid && props.eqid) {
+    loadChartData()
+  }
+}, { immediate: false })
+
 onMounted(async() => {
   await nextTick()
   initChart()
+  startAutoRefresh() // 默认启动自动刷新
   window.addEventListener('resize', handleResize)
 })
 
