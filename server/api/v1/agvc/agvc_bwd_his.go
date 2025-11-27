@@ -7,6 +7,7 @@ import (
     "github.com/flipped-aurora/gin-vue-admin/server/global"
     "github.com/flipped-aurora/gin-vue-admin/server/model/agvc"
     agvcReq "github.com/flipped-aurora/gin-vue-admin/server/model/agvc/request"
+    agvcMainReq "github.com/flipped-aurora/gin-vue-admin/server/model/agvc/agvc_main/request"
     "github.com/flipped-aurora/gin-vue-admin/server/model/common/response"
     "github.com/gin-gonic/gin"
     "go.uber.org/zap"
@@ -601,4 +602,33 @@ func (agvcBwdHisApi *AgvcBwdHisApi) GetBwdRealtimeData(c *gin.Context) {
         return
     }
     response.OkWithData(realtimeData, c)
+}
+
+// SendAgcAvcStatesToTcp 发送AGC/AVC状态到TCP 1187端口
+// @Tags AgvcBwdHis
+// @Summary 发送AGC/AVC状态到TCP 1187端口
+// @Security ApiKeyAuth
+// @Accept application/json
+// @Produce application/json
+// @Param data body []agvcMainReq.CoAPDataMessage true "AGC/AVC状态数据"
+// @Success 200 {object} response.Response{msg=string} "发送成功"
+// @Router /agvcBwdHis/sendAgcAvcStatesToTcp [post]
+func (agvcBwdHisApi *AgvcBwdHisApi) SendAgcAvcStatesToTcp(c *gin.Context) {
+    ctx := c.Request.Context()
+
+    var messages []agvcMainReq.CoAPDataMessage
+    err := c.ShouldBindJSON(&messages)
+    if err != nil {
+        response.FailWithMessage("参数格式错误: "+err.Error(), c)
+        return
+    }
+
+    // 调用服务层发送数据到TCP 1187端口
+    err = agvcBwdHisService.SendAgcAvcStatesToTcp(ctx, messages)
+    if err != nil {
+        global.GVA_LOG.Error("发送AGC/AVC状态失败!", zap.Error(err))
+        response.FailWithMessage("发送失败: "+err.Error(), c)
+        return
+    }
+    response.OkWithMessage("发送成功", c)
 }

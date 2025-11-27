@@ -13,6 +13,7 @@ import (
     "github.com/flipped-aurora/gin-vue-admin/server/global"
     "github.com/flipped-aurora/gin-vue-admin/server/model/agvc"
     agvcReq "github.com/flipped-aurora/gin-vue-admin/server/model/agvc/request"
+    agvcMainReq "github.com/flipped-aurora/gin-vue-admin/server/model/agvc/agvc_main/request"
     agcvMain "github.com/flipped-aurora/gin-vue-admin/server/service/agvc/agcv_main"
     "github.com/flipped-aurora/gin-vue-admin/server/service/agvc/cons"
     influxdb2 "github.com/influxdata/influxdb-client-go/v2"
@@ -822,4 +823,31 @@ func (agvcBwdHisService *AgvcBwdHisService) GetBwdRealtimeData(ctx context.Conte
     realData := agvcRealData.(*agvc.AgvcBwd)
 
     return realData, nil
+}
+
+// SendAgcAvcStatesToTcp 发送AGC/AVC状态到TCP 1187端口
+func (agvcBwdHisService *AgvcBwdHisService) SendAgcAvcStatesToTcp(ctx context.Context, messages []agvcMainReq.CoAPDataMessage) error {
+    if len(messages) == 0 {
+        return fmt.Errorf("没有数据需要发送")
+    }
+
+    // 获取CoAP主机和端口
+    host := agcvMain.CoapSender.GetDispatchCoapHost()
+    port := agcvMain.CoapSender.GetDispatchBackCoapPort() // 1187端口
+
+    global.GVA_LOG.Info("发送AGC/AVC状态到TCP",
+        zap.String("host", host),
+        zap.Int("port", port),
+        zap.Int("dataCount", len(messages)))
+
+    // 使用CoAP发送器发送数据
+    err := agcvMain.CoapSender.SendData(host, port, messages)
+    if err != nil {
+        return fmt.Errorf("发送数据失败: %v", err)
+    }
+
+    global.GVA_LOG.Info("AGC/AVC状态发送成功",
+        zap.Int("count", len(messages)))
+
+    return nil
 }

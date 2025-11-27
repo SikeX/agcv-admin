@@ -324,3 +324,20 @@ export const getBwdRealtimeData = (params) => {
     params
   })
 }
+
+// @Tags AgvcBwdHis
+// @Summary 发送AGC/AVC状态到TCP 1187端口
+// @Security ApiKeyAuth
+// @Accept application/json
+// @Produce application/json
+// @Param data body array true "AGC/AVC状态数据"
+// @Success 200 {object} response.Response{msg=string} "发送成功"
+// @Router /agvcBwdHis/sendAgcAvcStatesToTcp [post]
+export const sendAgcAvcStatesToTcp = (data) => {
+  return service({
+    url: '/agvcBwdHis/sendAgcAvcStatesToTcp',
+    method: 'post',
+    donNotShowLoading: true,
+    data
+  })
+}
