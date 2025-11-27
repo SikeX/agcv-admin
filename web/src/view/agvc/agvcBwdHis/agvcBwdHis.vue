@@ -448,7 +448,8 @@ import {
   getAgcStatus,
   updateAvcStatus,
   getAvcStatus,
-  getBwdRealtimeData
+  getBwdRealtimeData,
+  sendAgcAvcStatesToTcp
 } from '@/api/agvc/agvcBwdHis'
 
 import { getAgvcBwdSettingList, updateAgvcBwdSetting } from '@/api/agvc/agvcBwdSetting'
@@ -762,47 +763,120 @@ const avcControlAuthority = ref(1) // 1: 站内控制, 0: 调度控制
 // 已禁用loading状态，不再显示loading动画和遮罩
 let isLoadingAgcStatus = false
 
-// 监听AGC状态变化并自动保存
-watch([agcFunctionState, agcControlMode, agcControlAuthority], async () => {
+// 监听AGC状态变化并发送到TCP 1187端口
+watch([agcFunctionState, agcControlMode, agcControlAuthority], async (newValues, oldValues) => {
+  // 如果是初始化加载时的赋值，不触发发送
+  if (!oldValues || oldValues.every((val, index) => val === newValues[index])) {
+    return
+  }
+  
   // 获取当前选中的设备
   const currentDevice = deviceList.value.find(device => device.number === mainActiveTab.value)
   if (!currentDevice) return
   
-  // try {
-  //   const res = await updateAgcStatus({
-  //     number: currentDevice.number,
-  //     agcFunctionState: agcFunctionState.value,
-  //     agcControlMode: agcControlMode.value,
-  //     agcControlAuthority: agcControlAuthority.value
-  //   })
-  //   if (res.code !== 0) {
-  //     console.error('保存AGC状态失败:', res.msg)
-  //   }
-  // } catch (error) {
-  //   console.error('保存AGC状态失败:', error)
-  // }
+  try {
+    const messages = []
+    
+    // AGC功能投退状态 (point: 401, dataType: 1-遥信)
+    messages.push({
+      psid: currentPsid.value || 1,
+      eqid: parseInt(currentDevice.number),
+      eqType: 60, // AGC类型
+      dataType: 1, // 遥信
+      point: "401",
+      value: agcFunctionState.value
+    })
+    
+    // AGC控制权限 (point: 402, dataType: 1-遥信)
+    messages.push({
+      psid: currentPsid.value || 1,
+      eqid: parseInt(currentDevice.number),
+      eqType: 60, // AGC类型
+      dataType: 1, // 遥信
+      point: "402",
+      value: agcControlAuthority.value
+    })
+    
+    // AGC调节方式 (point: 404, dataType: 1-遥信)
+    messages.push({
+      psid: currentPsid.value || 1,
+      eqid: parseInt(currentDevice.number),
+      eqType: 60, // AGC类型
+      dataType: 1, // 遥信
+      point: "404",
+      value: agcControlMode.value
+    })
+    
+    // 发送到TCP 1187端口
+    const res = await sendAgcAvcStatesToTcp(messages)
+    if (res.code === 0) {
+      console.log('AGC状态已发送到TCP 1187端口')
+    } else {
+      console.error('发送AGC状态失败:', res.msg)
+      ElMessage.error('发送AGC状态失败: ' + res.msg)
+    }
+  } catch (error) {
+    console.error('发送AGC状态失败:', error)
+    ElMessage.error('发送AGC状态失败: ' + error.message)
+  }
 })
 
-// 监听AVC状态变化并自动保存
-watch([avcFunctionState, avcControlMode, avcControlAuthority], async () => {
+// 监听AVC状态变化并发送到TCP 1187端口
+watch([avcFunctionState, avcControlMode, avcControlAuthority], async (newValues, oldValues) => {
+  // 如果是初始化加载时的赋值，不触发发送
+  if (!oldValues || oldValues.every((val, index) => val === newValues[index])) {
+    return
+  }
+  
   // 获取当前选中的设备
   const currentDevice = deviceList.value.find(device => device.number === mainActiveTab.value)
   if (!currentDevice) return
   
-  // try {
-  //   // 更新AVC状态（与agvc_bwd_his表）
-  //   const res = await updateAvcStatus({
-  //     number: currentDevice.number,
-  //     avcFunctionState: avcFunctionState.value,
-  //     avcControlMode: avcControlMode.value,
-  //     avcControlAuthority: avcControlAuthority.value
-  //   })
-  //   if (res.code !== 0) {
-  //     console.error('保存AVC状态失败:', res.msg)
-  //   }
-  // } catch (error) {
-  //   console.error('保存AVC状态失败:', error)
-  // }
+  try {
+    const messages = []
+    
+    // AVC功能投退状态 (point: 401, dataType: 1-遥信)
+    messages.push({
+      psid: currentPsid.value || 1,
+      eqid: parseInt(currentDevice.number),
+      eqType: 61, // AVC类型
+      dataType: 1, // 遥信
+      point: "401",
+      value: avcFunctionState.value
+    })
+    
+    // AVC控制权限 (point: 402, dataType: 1-遥信)
+    messages.push({
+      psid: currentPsid.value || 1,
+      eqid: parseInt(currentDevice.number),
+      eqType: 61, // AVC类型
+      dataType: 1, // 遥信
+      point: "402",
+      value: avcControlAuthority.value
+    })
+    
+    // AVC调节方式 (point: 404, dataType: 1-遥信)
+    messages.push({
+      psid: currentPsid.value || 1,
+      eqid: parseInt(currentDevice.number),
+      eqType: 61, // AVC类型
+      dataType: 1, // 遥信
+      point: "404",
+      value: avcControlMode.value
+    })
+    
+    // 发送到TCP 1187端口
+    const res = await sendAgcAvcStatesToTcp(messages)
+    if (res.code === 0) {
+      console.log('AVC状态已发送到TCP 1187端口')
+    } else {
+      console.error('发送AVC状态失败:', res.msg)
+      ElMessage.error('发送AVC状态失败: ' + res.msg)
+    }
+  } catch (error) {
+    console.error('发送AVC状态失败:', error)
+    ElMessage.error('发送AVC状态失败: ' + error.message)
+  }
 })
 
 // 定时刷新实时数据
