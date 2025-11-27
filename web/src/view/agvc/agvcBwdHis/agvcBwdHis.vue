@@ -2,7 +2,7 @@
 <template>
   <div>
     <!-- 设备选择卡片 -->
-    <el-card class="device-selector-card" shadow="hover">
+    <el-card class="device-selector-card mt-4" shadow="hover">
       <div class="device-info">
         <div class="device-name-row">
           <el-dropdown 
@@ -10,10 +10,13 @@
             size="large"
             @command="handleDeviceCommand"
           >
-            <el-button type="primary" size="large" style="width: 300px;">
+          <span class="text-2xl font-bold cursor-pointer">
+            {{ getCurrentDevice()?.name || '请选择并网点设备' }}<el-icon class="align-center pl-2"><ArrowDown /></el-icon>
+          </span>
+            <!-- <el-button type="primary" size="large" style="width: 300px;">
               {{ getCurrentDevice()?.name || '请选择并网点设备' }}
               <el-icon class="el-icon--right"><ArrowDown /></el-icon>
-            </el-button>
+            </el-button> -->
             <template #dropdown>
               <el-dropdown-menu>
                 <el-dropdown-item
@@ -106,7 +109,7 @@
                     <el-col :span="8">
                       <div class="section-title">AGC参数设置</div>
                       <div class="control-row" style="margin-top: 20px;">
-                        <el-button size="default" @click="openAgcParametersDialog" style="width: 100%; margin-bottom: 10px;">参数设置</el-button>
+                        <!-- <el-button size="default" @click="openAgcParametersDialog" style="width: 100%; margin-bottom: 10px;">参数设置</el-button> -->
                         <el-button size="default" @click="openAgcPlanCurvesDialog" style="width: 100%;">计划曲线</el-button>
                       </div>
                     </el-col>
@@ -116,44 +119,52 @@
                 <!-- 电站负荷 -->
                 <div class="control-section">
                   <div class="section-title">电站负荷</div>
-                  <div class="control-grid load-grid">
-                    <!-- 目标有功 - 改为只读 -->
-                    <div class="control-item">
-                      <div class="item-label">目标有功(kW)</div>
-                      <div class="item-value readonly">{{ formatNumber(targetActivePower) }}</div>
+                  <div class="flex justify-between">
+                    <!-- 目标电压 -->
+                    <div class="flex w-[28%] justify-between px-6 py-4 rounded-lg border-1 border-solid border-gray-200 devide-x-2 devide-solid devide-gray-200">
+                      <!-- 目标有功 - 改为只读 -->
+                      <div class="control-item">
+                        <div class="item-label">目标有功(kW)</div>
+                        <div class="font-bold text-blue-400 text-xl">{{ formatNumber(targetActivePower) }}</div>
+                      </div>
+                      
+                      <!-- 当前有功 -->
+                      <div class="control-item">
+                        <div class="item-label">当前有功(kW)</div>
+                        <div class="font-bold text-[#41C198] text-xl">{{ formatNumber(currentActivePower) }}</div>
+                      </div>
                     </div>
                     
-                    <!-- 当前有功 -->
-                    <div class="control-item">
-                      <div class="item-label">当前有功(kW)</div>
-                      <div class="item-value readonly">{{ formatNumber(currentActivePower) }}</div>
-                    </div>
-                    
+                    <div class="flex w-[28%] justify-between px-6 py-4 rounded-lg border-1 border-solid border-gray-200 devide-x-2 devide-solid devide-gray-200">
+
                     <!-- 可调上限 -->
-                    <div class="control-item">
-                      <div class="item-label">可调上限(kW)</div>
-                      <div class="item-value readonly">{{ formatNumber(agcUpperLimit) }}</div>
-                    </div>
-                    
-                    <!-- 可调下限 -->
-                    <div class="control-item">
-                      <div class="item-label">可调下限(kW)</div>
-                      <div class="item-value readonly">{{ formatNumber(agcLowerLimit) }}</div>
+                      <div class="control-item">
+                        <div class="item-label">可调上限(kW)</div>
+                        <div class="font-bold text-blue-400 text-xl">{{ formatNumber(agcUpperLimit) }}</div>
+                      </div>
+                      
+                      <!-- 可调下限 -->
+                      <div class="control-item">
+                        <div class="item-label">可调下限(kW)</div>
+                        <div class="font-bold text-[#41C198] text-xl">{{ formatNumber(agcLowerLimit) }}</div>
+                      </div>
                     </div>
                     
                     <!-- 系统频率 -->
-                    <div class="control-item">
-                      <div class="item-label">系统频率(Hz)</div>
-                      <div class="item-value readonly">{{ formatNumber(systemFrequency) }}</div>
+                    <div class="flex w-[28%] justify-between px-6 py-4 rounded-lg border-1 border-solid border-gray-200 devide-x-2 devide-solid devide-gray-200">
+                      <div class="control-item">
+                        <div class="item-label">系统频率(Hz)</div>
+                        <div class="font-bold text-xl text-[#41C198]">{{ formatNumber(systemFrequency) }}</div>
+                      </div>
                     </div>
-                  </div>
+                </div>
                 </div>
               </div>
             </el-tab-pane>
             
             <!-- AVC控制标签页 -->
             <el-tab-pane label="AVC控制" name="avc">
-            <div class="control-content">
+            <div class="control-content " v-if="controlActiveTab === 'avc'">
               <!-- AVC折线图 - 放在最上面 -->
               <div class="chart-section chart-top">
                 <div class="section-title">AVC曲线图</div>
@@ -220,7 +231,7 @@
                     <el-col :span="7">
                       <div class="section-title">AVC参数设置</div>
                       <div class="control-row" style="margin-top: 20px;">
-                        <el-button size="default" @click="openAvcParametersDialog" style="width: 100%; margin-bottom: 10px;">参数设置</el-button>
+                        <!-- <el-button size="default" @click="openAvcParametersDialog" style="width: 100%; margin-bottom: 10px;">参数设置</el-button> -->
                         <el-button size="default" @click="openAvcPlanCurvesDialog" style="width: 100%;">计划曲线</el-button>
                       </div>
                     </el-col>
@@ -230,35 +241,39 @@
                 <!-- 电站负荷 -->
                 <div class="control-section">
                   <div class="section-title">电站负荷</div>
-                  <div class="control-grid load-grid">
+                  <div class="flex justify-between">
                     <!-- 目标电压 -->
-                    <div class="control-item">
-                      <div class="item-label">目标电压(kV)</div>
-                      <div class="item-value readonly">{{ formatNumber(targetVoltage) }}</div>
+                    <div class="flex w-[28%] justify-between px-6 py-4 rounded-lg border-1 border-solid border-gray-200 devide-x-2 devide-solid devide-gray-200">
+                      <div class="">
+                        <div class="item-label">目标电压(kV)</div>
+                        <div class="font-bold text-blue-400 text-xl">{{ formatNumber(targetVoltage) }}</div>
+                      </div>
+                      
+                      <!-- 当前电压 -->
+                      <div class="">
+                        <div class="item-label">当前电压(kV)</div>
+                        <div class="font-bold text-[#41C198] text-xl">{{ formatNumber(currentVoltage) }}</div>
+                      </div>
                     </div>
-                    
-                    <!-- 当前电压 -->
-                    <div class="control-item">
-                      <div class="item-label">当前电压(kV)</div>
-                      <div class="item-value readonly">{{ formatNumber(currentVoltage) }}</div>
-                    </div>
-                    
-                    <!-- 目标无功 -->
-                    <div class="control-item">
-                      <div class="item-label">目标无功(kVar)</div>
-                      <div class="item-value readonly">{{ formatNumber(targetReactive) }}</div>
-                    </div>
-                    
-                    <!-- 当前无功 -->
-                    <div class="control-item">
-                      <div class="item-label">当前无功(kVar)</div>
-                      <div class="item-value readonly">{{ formatNumber(currentReactive) }}</div>
-                    </div>
-                    
+                    <div class="flex w-[28%] justify-between px-6 py-4 rounded-lg border-1 border-solid border-gray-200 devide-x-2 devide-solid devide-gray-200">
+                      <!-- 目标无功 -->
+                      <div class="control-item">
+                        <div class="item-label">目标无功(kVar)</div>
+                        <div class="font-bold text-blue-400 text-xl">{{ formatNumber(targetReactive) }}</div>
+                      </div>
+                      
+                      <!-- 当前无功 -->
+                      <div class="control-item">
+                        <div class="item-label">当前无功(kVar)</div>
+                        <div class="font-bold text-[#41C198] text-xl">{{ formatNumber(currentReactive) }}</div>
+                      </div>
+                    </div>                    
                     <!-- 系统阻抗 -->
-                    <div class="control-item">
-                      <div class="item-label">系统阻抗</div>
-                      <div class="item-value readonly">{{ formatNumber(systemImpedance) }}</div>
+                    <div class="flex w-[28%] justify-between px-6 py-4 rounded-lg border-1 border-solid border-gray-200 devide-x-2 devide-solid devide-gray-200">
+                      <div class="">
+                        <div class="item-label">系统阻抗</div>
+                        <div class="font-bold text-[#41C198] text-xl">{{ formatNumber(systemImpedance) }}</div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1685,11 +1700,6 @@ const handleResize = () => {
   font-size: 14px;
   font-weight: bold;
   color: #303133;
-}
-
-.item-value.readonly {
-  color: #909399;
-  font-weight: normal;
 }
 
 .radio-group {

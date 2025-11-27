@@ -210,6 +210,8 @@ const handleResize = () => {
 // 监听props变化，重新加载数据
 watch(() => [props.psid, props.eqid], () => {
   if (props.psid && props.eqid) {
+    // 重新初始化图表以确保完全重新渲染
+    initVoltageChart()
     loadChartData()
   }
 }, { immediate: false })
