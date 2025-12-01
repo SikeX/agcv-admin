@@ -309,6 +309,57 @@
             />
           </el-form-item>
         </el-tab-pane>
+        <el-tab-pane label="InfluxDB 配置" name="15" class="mt-3.5">
+          <el-form-item label="地址">
+            <el-input
+              v-model.trim="config.influxdb.host"
+              placeholder="请输入地址"
+            />
+          </el-form-item>
+          <el-form-item label="端口">
+            <el-input
+              v-model.trim="config.influxdb.port"
+              placeholder="请输入端口"
+            />
+          </el-form-item>
+          <el-form-item label="Token">
+            <el-input
+              v-model.trim="config.influxdb.token"
+              placeholder="请输入Token"
+              show-password
+            />
+          </el-form-item>
+          <el-form-item label="组织 (Org)">
+            <el-input
+              v-model.trim="config.influxdb.org"
+              placeholder="请输入组织名称"
+            />
+          </el-form-item>
+          <el-form-item label="Bucket">
+            <el-input
+              v-model.trim="config.influxdb.bucket"
+              placeholder="请输入Bucket名称"
+            />
+          </el-form-item>
+          <el-form-item label="数据保留时间">
+            <el-input
+              v-model.trim="config.influxdb.retention"
+              placeholder="如 30d, 720h, 0s (永久)"
+            />
+          </el-form-item>
+          <el-form-item label="默认Measurement">
+            <el-input
+              v-model.trim="config.influxdb.measurement"
+              placeholder="默认 agvc_data"
+            />
+          </el-form-item>
+          <el-form-item label="NBQ Measurement">
+            <el-input
+              v-model.trim="config.influxdb.nbqMeasurement"
+              placeholder="默认 nbq_data"
+            />
+          </el-form-item>
+        </el-tab-pane>
         <el-tab-pane label="验证码配置" name="7" class="mt-3.5">
           <el-form-item label="字符长度">
             <el-input-number
@@ -996,6 +1047,7 @@
     'aliyun-oss': {},
     'hua-wei-obs': {},
     'cloudflare-r2': {},
+    influxdb: {},
     captcha: {},
     zap: {},
     local: {},
