@@ -15,9 +15,9 @@ type AgvcChartService struct{}
 
 // PowerChartData 电站出力图表数据
 type PowerChartData struct {
-	Time                string   `json:"time"`
-	CurrentActivePower  *float64 `json:"currentActivePower"`  // BWD当前有功
-	TargetActivePower   *float64 `json:"targetActivePower"`   // AGC目标有功
+	Time               string   `json:"time"`
+	CurrentActivePower *float64 `json:"currentActivePower"` // BWD当前有功
+	TargetActivePower  *float64 `json:"targetActivePower"`  // AGC目标有功
 }
 
 // VoltageReactiveChartData 电压和无功图表数据
@@ -87,7 +87,7 @@ func (chartService *AgvcChartService) GetPowerChartData(ctx context.Context, psi
 	// 合并两个查询
 	combinedFlux := fluxBwd + "\n\n" + fluxAgc
 
-	global.GVA_LOG.Info(fmt.Sprintf("执行Flux查询: %s", combinedFlux))
+	//global.GVA_LOG.Info(fmt.Sprintf("执行Flux查询: %s", combinedFlux))
 
 	// 执行查询
 	result, err := queryAPI.Query(ctx, combinedFlux)
@@ -211,7 +211,7 @@ func (chartService *AgvcChartService) GetVoltageReactiveChartData(ctx context.Co
 	// 合并两个查询
 	combinedFlux := fluxBwd + "\n\n" + fluxAvc
 
-	global.GVA_LOG.Info(fmt.Sprintf("执行Flux查询: %s", combinedFlux))
+	//global.GVA_LOG.Info(fmt.Sprintf("执行Flux查询: %s", combinedFlux))
 
 	// 执行查询
 	result, err := queryAPI.Query(ctx, combinedFlux)

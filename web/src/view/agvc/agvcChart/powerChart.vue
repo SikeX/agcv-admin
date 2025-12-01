@@ -2,13 +2,7 @@
   <div>
     <div class="gva-table-box">
       <el-card>
-        <template #header>
-          <div class="card-header">
-            <span>电站出力监控</span>
-            <!-- <el-tag type="success" effect="dark">自动刷新中(5s)</el-tag> -->
-          </div>
-        </template>
-        <div v-loading="loading" style="height: 500px">
+        <div v-loading="loading" style="height: 400px">
           <div ref="chartRef" style="width: 100%; height: 100%"></div>
         </div>
       </el-card>
@@ -43,6 +37,20 @@ let chartInstance = null
 const loading = ref(false)
 let refreshTimer = null
 
+const tooltipFormatter = (params) =>{
+  const value = params[0].axisValue
+  const date = new Date(value)
+  const dateStr = `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')}`
+  const dateStyle =`时间:${dateStr}<br>`
+  let allStyle = ''
+  for (const item of params) {
+   allStyle += ` ${item.marker} ${item.seriesName}: ${item.value || 0}<br>`
+  }
+  allStyle = dateStyle + allStyle
+
+  return allStyle
+}
+
 // 初始化图表
 const initChart = () => {
   if (!chartRef.value) return
@@ -54,14 +62,13 @@ const initChart = () => {
   chartInstance = echarts.init(chartRef.value)
   
   const option = {
-    title: {
-      text: '电站出力监控',
-      left: 'center'
-    },
     tooltip: {
       trigger: 'axis',
       axisPointer: {
         type: 'cross'
+      },
+      formatter: (params) => {
+        return tooltipFormatter(params)
       }
     },
     legend: {
@@ -90,7 +97,13 @@ const initChart = () => {
       name: '功率 (kW)',
       axisLabel: {
         formatter: '{value}'
-      }
+      },
+      min: function (value) {
+        return Math.floor(value.min - 10);
+      },
+      max: function (value) {
+        return Math.ceil(value.max + 10);
+      },
     },
     series: [
       {

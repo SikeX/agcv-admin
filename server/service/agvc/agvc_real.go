@@ -67,7 +67,7 @@ func (agvcRealService *AgvcRealService) GetRealData(ctx context.Context, psid, e
 	// 构建Flux查询语句 - 查询该设备所有点位的最新值
 	flux := fmt.Sprintf(`
         from(bucket: "%s")
-            |> range(start: -1y)
+            |> range(start: -1h)
             |> filter(fn: (r) => r["_measurement"] == "%s")
             |> filter(fn: (r) => r["psid"] == "%d")
             |> filter(fn: (r) => r["eqid"] == "%d")
@@ -84,7 +84,7 @@ func (agvcRealService *AgvcRealService) GetRealData(ctx context.Context, psid, e
 		eqType,
 	)
 
-	fmt.Println(flux)
+	//fmt.Println(flux)
 
 	// 执行查询
 	result, err := queryAPI.Query(ctx, flux)

@@ -2,7 +2,7 @@
 <template>
   <div>
     <!-- 设备选择卡片 -->
-    <el-card class="device-selector-card mt-4" shadow="hover">
+    <el-card class="bg-white dark:text-slate-300 dark:bg-slate-900 mt-4" shadow="hover" body-style="padding: 10px;">
       <div class="device-info">
         <div class="device-name-row">
           <el-dropdown 
@@ -33,7 +33,7 @@
         <div class="device-details">
           <span class="detail-item">
             <span class="detail-label">并网点容量：</span>
-            <span class="detail-value">{{ getCurrentDevice()?.capacity || '未设置' }} kW</span>
+            <span class="detail-value">{{ getCurrentDevice()?.capacity || '未设置' }} kWp</span>
           </span>
           <span class="detail-item">
             <span class="detail-label">并网日期：</span>
@@ -44,8 +44,8 @@
     </el-card>
 
     <!-- AGC/AVC控制标签页 -->
-    <div class="main-tabs" style="margin-top: 20px;">
-      <el-tabs v-model="controlActiveTab" type="border-card" style="position: relative;">
+    <div class="main-tabs bg-white dark:text-slate-300 dark:bg-slate-900" style="margin-top: 10px;">
+      <el-tabs v-model="controlActiveTab"  style="position: relative;">
         <!-- 按钮组 - 绝对定位放在右上角 -->
         <div style="position: absolute; right: 20px; top: 8px; display: flex; gap: 10px; z-index: 100;" @click.stop>
           <!-- <el-button size="small" @click="showHistoryDataDialog">历史数据查看</el-button> -->
@@ -53,12 +53,12 @@
         </div>
         <!-- AGC控制标签页 -->
         <el-tab-pane label="AGC控制" name="agc">
-          <div class="control-content">
+          <div class="control-content" v-if="controlActiveTab === 'agc'">
             <!-- AGC折线图 - 放在最上面 -->
             <div class="chart-section chart-top">
               <div class="section-title">电站出力曲线图</div>
               <!-- PowerChart组件渲染 -->
-              <div style="margin-top: 20px;">
+              <div>
                 <PowerChart :psid="currentPsid" :eqid="mainActiveTab" />
               </div>
             </div>
@@ -74,9 +74,9 @@
                         <div class="control-item">
                           <div class="item-label">电站AGC功能投退</div>
                           <div class="radio-group">
-                            <el-radio-group v-model="agcFunctionState" size="small">
+                            <el-radio-group v-model="agcFunctionState" size="small" @change="updateAGCState">
                               <el-radio :label="1">投入</el-radio>
-                              <el-radio :label="0">退出</el-radio>
+                              <el-radio :label="0">推出</el-radio>
                             </el-radio-group>
                           </div>
                         </div>
@@ -85,7 +85,7 @@
                         <div class="control-item">
                           <div class="item-label">电站AGC调节方式</div>
                           <div class="radio-group">
-                            <el-radio-group v-model="agcControlMode" size="small">
+                            <el-radio-group v-model="agcControlMode" size="small" @change="updateAGCControlMode">
                               <el-radio :label="1">闭环指导</el-radio>
                               <el-radio :label="0">开环指导</el-radio>
                             </el-radio-group>
@@ -96,7 +96,7 @@
                         <div class="control-item">
                           <div class="item-label">电站AGC控制权限</div>
                           <div class="radio-group">
-                            <el-radio-group v-model="agcControlAuthority" size="small">
+                            <el-radio-group v-model="agcControlAuthority" size="small" @change="updateAGCControlAuthority">
                               <el-radio :label="1">调度控制</el-radio>
                               <el-radio :label="0">站内控制</el-radio>
                             </el-radio-group>
@@ -185,9 +185,9 @@
                         <div class="control-item">
                           <div class="item-label">电站AVC功能投退</div>
                           <div class="radio-group">
-                            <el-radio-group v-model="avcFunctionState" size="small">
+                            <el-radio-group v-model="avcFunctionState" size="small" @change="updateAVCFunctionState">
                               <el-radio :label="1">投入</el-radio>
-                              <el-radio :label="0">退出</el-radio>
+                              <el-radio :label="0">推出</el-radio>
                             </el-radio-group>
                           </div>
                         </div>
@@ -196,7 +196,7 @@
                         <div class="control-item">
                           <div class="item-label">电站AVC调节方式</div>
                           <div class="radio-group">
-                            <el-radio-group v-model="avcControlMode" size="small">
+                            <el-radio-group v-model="avcControlMode" size="small" @change="updateAVCControlMode">
                               <el-radio :label="1">开环指导</el-radio>
                               <el-radio :label="0">闭环调节</el-radio>
                             </el-radio-group>
@@ -207,7 +207,7 @@
                         <div class="control-item">
                           <div class="item-label">电站AVC控制权限</div>
                           <div class="radio-group">
-                            <el-radio-group v-model="avcControlAuthority" size="small">
+                            <el-radio-group v-model="avcControlAuthority" size="small" @change="updateAVCControlAuthority">
                               <el-radio :label="1">站内控制</el-radio>
                               <el-radio :label="0">调度控制</el-radio>
                             </el-radio-group>
@@ -465,6 +465,7 @@ import { ref, reactive, nextTick, onMounted, onUnmounted, watch } from 'vue'
 import { useAppStore } from "@/pinia"
 import * as echarts from 'echarts'
 import { ArrowDown } from '@element-plus/icons-vue'
+import { updateAuthority } from '@/api/authority';
 
 
 
@@ -561,6 +562,7 @@ const onDeviceChange = async (deviceNumber) => {
     // 更新电站编号
     if (device.psid) {
       currentPsid.value = device.psid
+      currentDevice.value = device.number
     }
     
     // 加载新设备的参数和数据
@@ -600,6 +602,7 @@ const getDeviceList = async () => {
       // 设置当前电站编号
       if (deviceList.value.length > 0 && deviceList.value[0].psid) {
         currentPsid.value = deviceList.value[0].psid
+        currentDevice.value = deviceList.value[0].number
       }
       console.log('2. 设备列表长度:', deviceList.value.length)
       
@@ -665,12 +668,12 @@ const loadDeviceParameters = async (number) => {
     const statusRes = await getAgcStatus({ number })
     console.log('AGC状态响应:', statusRes)
     if (statusRes.code === 0 && statusRes.data) {
-      agcFunctionState.value = statusRes.data.agcFunctionState
-      agcControlMode.value = statusRes.data.agcControlMode
-      agcControlAuthority.value = statusRes.data.agcControlAuthority
-      targetActivePower.value = statusRes.data.targetActivePower
-      agcUpperLimit.value = statusRes.data.agcUpperLimit || 0
-      agcLowerLimit.value = statusRes.data.agcLowerLimit || 0
+      agcFunctionState.value = statusRes.data.agcFunctionState || 0
+      agcControlMode.value = statusRes.data.agcControlMode || 0
+      agcControlAuthority.value = statusRes.data.agcControlAuthority || 0
+      targetActivePower.value = statusRes.data.targetActivePower 
+      agcUpperLimit.value = statusRes.data.agcUpperLimit
+      agcLowerLimit.value = statusRes.data.agcLowerLimit
     }
     
     // 加载AVC状态（从agvc_bwd_his表）
@@ -678,11 +681,11 @@ const loadDeviceParameters = async (number) => {
     const avcStatusRes = await getAvcStatus({ number })
     console.log('AVC状态响应:', avcStatusRes)
     if (avcStatusRes.code === 0 && avcStatusRes.data) {
-      avcFunctionState.value = avcStatusRes.data.avcFunctionState
-      avcControlMode.value = avcStatusRes.data.avcControlMode
-      avcControlAuthority.value = avcStatusRes.data.avcControlAuthority
-      targetReactive.value = avcStatusRes.data.targetReactivePower || 0
-      targetVoltage.value = avcStatusRes.data.targetVoltage || 0
+      avcFunctionState.value = avcStatusRes.data.avcFunctionState || 0
+      avcControlMode.value = avcStatusRes.data.avcControlMode || 0
+      avcControlAuthority.value = avcStatusRes.data.avcControlAuthority || 0
+      targetReactive.value = avcStatusRes.data.targetReactivePower
+      targetVoltage.value = avcStatusRes.data.targetVoltage
 
     }
     
@@ -751,62 +754,110 @@ const targetReactive = ref(0) // 目标无功
 const currentReactive = ref(0) // 当前无功
 
 // AGC状态值
-const agcFunctionState = ref(1) // 1: 投入, 0: 退出
+const agcFunctionState = ref(1) // 1: 投入, 0: 推出
 const agcControlMode = ref(1) // 1: 闭环指导, 0: 开环指导
 const agcControlAuthority = ref(1) // 1: 调度控制, 0: 站内控制
 
 // AVC状态值
-const avcFunctionState = ref(1) // 1: 投入, 0: 退出
+const avcFunctionState = ref(1) // 1: 投入, 0: 推出
 const avcControlMode = ref(1) // 1: 开环指导, 0: 闭环调节
 const avcControlAuthority = ref(1) // 1: 站内控制, 0: 调度控制
 
 // 已禁用loading状态，不再显示loading动画和遮罩
 let isLoadingAgcStatus = false
 
-// 监听AGC状态变化并发送到TCP 1187端口
-watch([agcFunctionState, agcControlMode, agcControlAuthority], async (newValues, oldValues) => {
-  // 如果是初始化加载时的赋值，不触发发送
-  if (!oldValues || oldValues.every((val, index) => val === newValues[index])) {
-    return
-  }
-  
-  // 获取当前选中的设备
-  const currentDevice = deviceList.value.find(device => device.number === mainActiveTab.value)
-  if (!currentDevice) return
-  
+const updateAGCState = async (value) => { 
+  updateAGVCState('agcFunctionState', value)
+}
+const updateAGCControlMode = async (value) => { 
+  updateAGVCState('agcControlMode', value)
+}
+
+const updateAGCControlAuthority = async (value) => { 
+  updateAGVCState('agcControlAuthority', value)
+}
+const updateAVCState = async (value) => { 
+  updateAGVCState('avcFunctionState', value)
+}
+const updateAVCControlMode = async (value) => { 
+  updateAGVCState('avcControlMode', value)
+}
+const updateAVCControlAuthority = async (value) => { 
+  updateAGVCState('avcControlAuthority', value)
+}
+
+
+const updateAGVCState = async (type, value) => {
   try {
     const messages = []
-    
-    // AGC功能投退状态 (point: 401, dataType: 1-遥信)
-    messages.push({
-      psid: currentPsid.value || 1,
-      eqid: parseInt(currentDevice.number),
-      eqType: 60, // AGC类型
-      dataType: 1, // 遥信
-      point: "401",
-      value: agcFunctionState.value
-    })
-    
-    // AGC控制权限 (point: 402, dataType: 1-遥信)
-    messages.push({
-      psid: currentPsid.value || 1,
-      eqid: parseInt(currentDevice.number),
-      eqType: 60, // AGC类型
-      dataType: 1, // 遥信
-      point: "402",
-      value: agcControlAuthority.value
-    })
-    
-    // AGC调节方式 (point: 404, dataType: 1-遥信)
-    messages.push({
-      psid: currentPsid.value || 1,
-      eqid: parseInt(currentDevice.number),
-      eqType: 60, // AGC类型
-      dataType: 1, // 遥信
-      point: "404",
-      value: agcControlMode.value
-    })
-    
+    switch (type) {
+      case 'agcFunctionState':
+        // AGC功能投退状态 (point: 401, dataType: 1-遥信)
+        messages.push({
+          psid: currentPsid.value || 1,
+          eqid: parseInt(currentDevice.value),
+          eqType: 60, // AGC类型
+          dataType: 1, // 遥信
+          point: "401",
+          value: value
+        })
+        break
+      case 'agcControlMode':
+        // AGC控制模式 (point: 404, dataType: 1-遥信)
+        messages.push({
+          psid: currentPsid.value || 1,
+          eqid: parseInt(currentDevice.number),
+          eqType: 60, // AGC类型
+          dataType: 1, // 遥信
+          point: "404",
+          value: value
+        })
+        break
+      case 'agcControlAuthority':
+        // AGC控制权限 (point: 402, dataType: 1-遥信)
+        messages.push({
+          psid: currentPsid.value || 1,
+          eqid: parseInt(currentDevice.number),
+          eqType: 60, // AGC类型
+          dataType: 1, // 遥信
+          point: "402",
+          value: value
+        })
+        break
+      case 'avcFunctionState':
+        // AVC功能投退状态 (point: 401, dataType: 1-遥信)
+        messages.push({
+          psid: currentPsid.value || 1,
+          eqid: parseInt(currentDevice.number),
+          eqType: 61, // AVC类型
+          dataType: 1, // 遥信
+          point: "401",
+          value: value
+        })
+        break
+      case 'avcControlMode':
+        // AVC控制模式 (point: 404, dataType: 1-遥信)
+        messages.push({
+          psid: currentPsid.value || 1,
+          eqid: parseInt(currentDevice.number),
+          eqType: 61, // AVC类型
+          dataType: 1, // 遥信
+          point: "404",
+          value: value
+        })
+        break
+      case 'avcControlAuthority':
+        // AVC控制权限 (point: 406, dataType: 1-遥信)
+        messages.push({
+          psid: currentPsid.value || 1,
+          eqid: parseInt(currentDevice.number),
+          eqType: 61, // AVC类型
+          dataType: 1, // 遥信
+          point: "402",
+          value: value
+        })
+        break
+    }
     // 发送到TCP 1187端口
     const res = await sendAgcAvcStatesToTcp(messages)
     if (res.code === 0) {
@@ -819,66 +870,7 @@ watch([agcFunctionState, agcControlMode, agcControlAuthority], async (newValues,
     console.error('发送AGC状态失败:', error)
     ElMessage.error('发送AGC状态失败: ' + error.message)
   }
-})
-
-// 监听AVC状态变化并发送到TCP 1187端口
-watch([avcFunctionState, avcControlMode, avcControlAuthority], async (newValues, oldValues) => {
-  // 如果是初始化加载时的赋值，不触发发送
-  if (!oldValues || oldValues.every((val, index) => val === newValues[index])) {
-    return
-  }
-  
-  // 获取当前选中的设备
-  const currentDevice = deviceList.value.find(device => device.number === mainActiveTab.value)
-  if (!currentDevice) return
-  
-  try {
-    const messages = []
-    
-    // AVC功能投退状态 (point: 401, dataType: 1-遥信)
-    messages.push({
-      psid: currentPsid.value || 1,
-      eqid: parseInt(currentDevice.number),
-      eqType: 61, // AVC类型
-      dataType: 1, // 遥信
-      point: "401",
-      value: avcFunctionState.value
-    })
-    
-    // AVC控制权限 (point: 402, dataType: 1-遥信)
-    messages.push({
-      psid: currentPsid.value || 1,
-      eqid: parseInt(currentDevice.number),
-      eqType: 61, // AVC类型
-      dataType: 1, // 遥信
-      point: "402",
-      value: avcControlAuthority.value
-    })
-    
-    // AVC调节方式 (point: 404, dataType: 1-遥信)
-    messages.push({
-      psid: currentPsid.value || 1,
-      eqid: parseInt(currentDevice.number),
-      eqType: 61, // AVC类型
-      dataType: 1, // 遥信
-      point: "404",
-      value: avcControlMode.value
-    })
-    
-    // 发送到TCP 1187端口
-    const res = await sendAgcAvcStatesToTcp(messages)
-    if (res.code === 0) {
-      console.log('AVC状态已发送到TCP 1187端口')
-    } else {
-      console.error('发送AVC状态失败:', res.msg)
-      ElMessage.error('发送AVC状态失败: ' + res.msg)
-    }
-  } catch (error) {
-    console.error('发送AVC状态失败:', error)
-    ElMessage.error('发送AVC状态失败: ' + error.message)
-  }
-})
-
+}
 // 定时刷新实时数据
 let realtimeTimer = null
 
@@ -1278,37 +1270,6 @@ const savePlanCurves = async () => {
   }
 }
 
-// 显示历史数据弹窗（从主标签右侧按钮进入）
-const showHistoryDataDialog = async () => {
-  // 获取当前选中的设备
-  const current = deviceList.value.find(device => device.number === mainActiveTab.value)
-  if (!current) {
-    ElMessage.warning('请先选择设备')
-    return
-  }
-  
-  // 设置当前设备
-  currentDevice.value = current
-  
-  // 设置默认日期范围为最近7天
-  const end = new Date()
-  const start = new Date()
-  start.setTime(start.getTime() - 3600 * 1000 * 24 * 7)
-  historyDateRange.value = [start, end]
-  
-  // 显示弹窗
-  historyDialogVisible.value = true
-  
-  // 在DOM更新后初始化图表并加载数据
-  await nextTick()
-  
-  // 先初始化图表
-  initChart()
-  
-  // 再加载历史数据（加载完成后会自动调用updateChart）
-  await loadHistoryData()
-}
-
 // =========== 表格控制部分结束 ===============
 
 // 获取需要的字典 可能为空 按需保留
@@ -1327,29 +1288,6 @@ const currentDevice = ref(null)
 
 // 历史数据图表实例（独立命名，避免与AGC/AVC图表冲突）
 let historyChartInstance = null
-
-// 显示历史数据
-const showHistoryData = async (row) => {
-  // 保存当前设备信息
-  currentDevice.value = row
-  
-  // 设置默认日期范围为最近7天
-  const end = new Date()
-  const start = new Date()
-  start.setTime(start.getTime() - 3600 * 1000 * 24 * 7)
-  historyDateRange.value = [start, end]
-  
-  // 加载历史数据
-  loadHistoryData()
-  
-  // 显示弹窗
-  historyDialogVisible.value = true
-  
-  // 在下次DOM更新后初始化图表
-  nextTick(() => {
-    initChart()
-  })
-}
 
 // 加载历史数据
 const loadHistoryData = async () => {
@@ -1695,7 +1633,6 @@ const handleResize = () => {
 
 /* 主标签页 */
 .main-tabs {
-  background: #ffffff;
   border: 1px solid #e4e7ed;
   border-radius: 4px;
   padding: 15px;
@@ -1797,8 +1734,7 @@ const handleResize = () => {
   margin-top: 0;
   padding-top: 0;
   border-top: none;
-  margin-bottom: 30px;
-  padding-bottom: 20px;
+  margin-bottom: 20px;
   border-bottom: 2px solid #f0f0f0;
 }
 
@@ -1840,15 +1776,10 @@ const handleResize = () => {
   text-align: center;
 }
 
-/* 设备选择卡片样式 */
-.device-selector-card {
-  margin-bottom: 20px;
-}
-
 .device-info {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 10px;
 }
 
 .device-name-row {

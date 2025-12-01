@@ -2,13 +2,7 @@
   <div>
     <div class="gva-table-box">
       <el-card>
-        <template #header>
-          <div class="card-header">
-            <span>电压监控</span>
-            <!-- <el-tag type="success" effect="dark">自动刷新中(5s)</el-tag> -->
-          </div>
-        </template>
-        <div v-loading="loading" style="height: 500px">
+        <div v-loading="loading" style="height: 400px">
           <div ref="voltageChartRef" style="width: 100%; height: 100%"></div>
         </div>
       </el-card>
@@ -43,6 +37,20 @@ let voltageChartInstance = null
 const loading = ref(false)
 let refreshTimer = null
 
+const tooltipFormatter = (params) =>{
+  const value = params[0].axisValue
+  const date = new Date(value)
+  const dateStr = `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')}`
+  const dateStyle =`时间:${dateStr}<br>`
+  let allStyle = ''
+  for (const item of params) {
+   allStyle += ` ${item.marker} ${item.seriesName}: ${item.value || 0}<br>`
+  }
+  allStyle = dateStyle + allStyle
+
+  return allStyle
+}
+
 // 初始化电压图表
 const initVoltageChart = () => {
   if (!voltageChartRef.value) return
@@ -54,18 +62,15 @@ const initVoltageChart = () => {
   voltageChartInstance = echarts.init(voltageChartRef.value)
   
   const option = {
-    title: {
-      text: '电压监控',
-      left: 'center',
-      textStyle: {
-        fontSize: 14
-      }
-    },
     tooltip: {
       trigger: 'axis',
       axisPointer: {
         type: 'cross'
-      }
+      },
+      formatter: (params) => {
+          return tooltipFormatter(params)
+        }
+      
     },
     legend: {
       data: ['当前电压', '目标电压'],
@@ -93,7 +98,13 @@ const initVoltageChart = () => {
       name: '电压 (kV)',
       axisLabel: {
         formatter: '{value}'
-      }
+      },
+      min: function (value) {
+        return Math.floor(value.min - 10);
+      },
+      max: function (value) {
+        return Math.ceil(value.max + 10);
+      },
     },
     series: [
       {

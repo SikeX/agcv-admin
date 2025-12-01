@@ -6,8 +6,8 @@ import packageInfo from '../../package.json'
 const greenText = (text) => `\x1b[32m${text}\x1b[0m`
 
 export const config = {
-  appName: 'Gin-Vue-Admin',
-  appLogo: 'logo.png',
+  appName: '四可边缘(AGC&AVC)自动控制系统',
+  appLogo: 'logo.jpg',
   showViteLogo: true,
   KeepAliveTabs: true,
   logs: []

@@ -1,10 +1,9 @@
 package agcv_main
 
 import (
-	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
+	"net"
 	"time"
 
 	"github.com/flipped-aurora/gin-vue-admin/server/model/agvc/agvc_main"
@@ -12,9 +11,6 @@ import (
 	"github.com/flipped-aurora/gin-vue-admin/server/service/agvc/cons"
 
 	"github.com/flipped-aurora/gin-vue-admin/server/global"
-	"github.com/plgd-dev/go-coap/v3/message"
-	"github.com/plgd-dev/go-coap/v3/message/codes"
-	"github.com/plgd-dev/go-coap/v3/udp"
 	"go.uber.org/zap"
 )
 
@@ -29,7 +25,7 @@ func (s *coapSender) SendData(host string, port int, messages []request.CoAPData
 	}
 
 	// 创建CoAP客户端
-	conn, err := udp.Dial(fmt.Sprintf("%s:%d", host, port))
+	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", host, port))
 	if err != nil {
 		global.GVA_LOG.Error("连接CoAP服务器失败",
 			zap.String("host", host),
@@ -47,12 +43,7 @@ func (s *coapSender) SendData(host string, port int, messages []request.CoAPData
 		return fmt.Errorf("序列化数据失败: %v", err)
 	}
 
-	// 创建CoAP请求
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	// 发送POST请求
-	resp, err := conn.Post(ctx, "/agvc/data", message.AppJSON, bytes.NewReader(jsonData))
+	_, err = conn.Write(jsonData)
 	if err != nil {
 		global.GVA_LOG.Error("发送CoAP数据失败",
 			zap.String("host", host),
@@ -61,19 +52,18 @@ func (s *coapSender) SendData(host string, port int, messages []request.CoAPData
 		return fmt.Errorf("发送CoAP数据失败: %v", err)
 	}
 
-	// 检查响应
-	if resp.Code() != codes.Content && resp.Code() != codes.Created && resp.Code() != codes.Changed {
-		respBody, _ := resp.ReadBody()
-		global.GVA_LOG.Warn("CoAP服务器返回非成功状态",
-			zap.String("code", resp.Code().String()),
-			zap.String("body", string(respBody)))
-		return fmt.Errorf("CoAP服务器返回错误: %s", resp.Code().String())
+	buf := make([]byte, 1024)
+	conn.SetReadDeadline(time.Now().Add(10 * time.Second))
+	n, err := conn.Read(buf)
+	if err != nil {
+		global.GVA_LOG.Error("接收CoAP响应失败",
+			zap.String("host", host),
+			zap.Int("port", port),
+			zap.Error(err))
+		return fmt.Errorf("接收CoAP响应失败: %v", err)
 	}
-
-	global.GVA_LOG.Info("CoAP数据发送成功",
-		zap.String("host", host),
-		zap.Int("port", port),
-		zap.Int("count", len(messages)))
+	res := string(buf[:n])
+	fmt.Println(res)
 
 	return nil
 }

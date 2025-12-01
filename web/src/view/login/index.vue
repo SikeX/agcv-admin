@@ -1,133 +1,99 @@
 <template>
-  <div id="userLayout" class="w-full h-full relative">
-    <div
-      class="rounded-lg flex items-center justify-evenly w-full h-full md:w-screen md:h-screen md:bg-[#194bfb] bg-white"
-    >
-      <div class="md:w-3/5 w-10/12 h-full flex items-center justify-evenly">
-        <div
-          class="oblique h-[130%] w-3/5 bg-white dark:bg-slate-900 transform -rotate-12 absolute -ml-52"
-        />
-        <!-- 分割斜块 -->
-        <div
-          class="z-[999] pt-12 pb-10 md:w-96 w-full rounded-lg flex flex-col justify-between box-border"
-        >
-          <div>
-            <div class="flex items-center justify-center">
-              <img class="w-24" :src="$GIN_VUE_ADMIN.appLogo" alt />
-            </div>
-            <div class="mb-9">
-              <p class="text-center text-4xl font-bold">
-                {{ $GIN_VUE_ADMIN.appName }}
-              </p>
-              <p class="text-center text-sm font-normal text-gray-500 mt-2.5">
-                A management platform using Golang and Vue
-              </p>
-            </div>
-            <el-form
-              ref="loginForm"
-              :model="loginFormData"
-              :rules="rules"
-              :validate-on-rule-change="false"
-              @keyup.enter="submitForm"
-            >
-              <el-form-item prop="username" class="mb-6">
-                <el-input
-                  v-model="loginFormData.username"
-                  size="large"
-                  placeholder="请输入用户名"
-                  suffix-icon="user"
-                />
-              </el-form-item>
-              <el-form-item prop="password" class="mb-6">
-                <el-input
-                  v-model="loginFormData.password"
-                  show-password
-                  size="large"
-                  type="password"
-                  placeholder="请输入密码"
-                />
-              </el-form-item>
-              <el-form-item
-                v-if="loginFormData.openCaptcha"
-                prop="captcha"
-                class="mb-6"
-              >
-                <div class="flex w-full justify-between">
-                  <el-input
-                    v-model="loginFormData.captcha"
-                    placeholder="请输入验证码"
-                    size="large"
-                    class="flex-1 mr-5"
-                  />
-                  <div class="w-1/3 h-11 bg-[#c3d4f2] rounded">
-                    <img
-                      v-if="picPath"
-                      class="w-full h-full"
-                      :src="picPath"
-                      alt="请输入验证码"
-                      @click="loginVerify()"
-                    />
-                  </div>
-                </div>
-              </el-form-item>
-              <el-form-item class="mb-6">
-                <el-button
-                  class="shadow shadow-active h-11 w-full"
-                  type="primary"
-                  size="large"
-                  @click="submitForm"
-                  >登 录</el-button
-                >
-              </el-form-item>
-              <el-form-item class="mb-6">
-                <el-button
-                  class="shadow shadow-active h-11 w-full"
-                  type="primary"
-                  size="large"
-                  @click="checkInit"
-                  >前往初始化</el-button
-                >
-              </el-form-item>
-            </el-form>
-          </div>
+  <div id="userLayout" class="w-full h-full min-h-screen bg-blue-50">
+    <div class="shadow-2xl rounded-lg flex flex-col md:flex-row w-[60%] h-[60%] absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 overflow-hidden">
+      <!-- 左侧品牌区域 -->
+      <div class="w-full md:w-[55%] bg-[#4699F5] flex flex-col items-center justify-center p-8 relative overflow-hidden">
+        <div class="relative z-10 w-full flex flex-col  justify-center gap-4 h-full">
+          <img class="w-40" src="@/assets/logo-ln.png" alt="logo">
+          <p class="text-white text-2xl mb-8">四可边缘(AGC&AVC)自动控制系统</p>
+          <img src="@/assets/login-2.png" alt="login-2" class="max-h-[30%] w-auto object-contain">
         </div>
       </div>
-      <div class="hidden md:block w-1/2 h-full float-right bg-[#194bfb]">
-        <img
-          class="h-full"
-          src="@/assets/login_right_banner.jpg"
-          alt="banner"
-        />
+      
+      <!-- 右侧登录区域 -->
+      <div class="w-full md:w-[45%] bg-white flex items-center justify-center p-8">
+        <div class="w-full max-w-md flex flex-col">
+          <h2 class="text-2xl font-bold text-gray-800 mb-8">欢迎登录</h2>
+          
+          <el-form
+            ref="loginForm"
+            :model="loginFormData"
+            :rules="rules"
+            :validate-on-rule-change="false"
+            @keyup.enter="submitForm"
+            class="space-y-6"
+          >
+            <el-form-item prop="username">
+              <el-input
+                v-model="loginFormData.username"
+                size="large"
+                placeholder="请输入用户名"
+                prefix-icon="el-icon-user"
+                class="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+              />
+            </el-form-item>
+            
+            <el-form-item prop="password">
+              <el-input
+                v-model="loginFormData.password"
+                show-password
+                size="large"
+                type="password"
+                placeholder="请输入密码"
+                prefix-icon="el-icon-lock"
+                class="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+              />
+            </el-form-item>
+            
+            <!-- <el-form-item v-if="loginFormData.openCaptcha" prop="captcha">
+              <div class="flex w-full gap-4">
+                <el-input
+                  v-model="loginFormData.captcha"
+                  placeholder="请输入验证码"
+                  size="large"
+                  prefix-icon="el-icon-document-checked"
+                  class="flex-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                />
+                <div class="w-1/3 h-12 bg-[#f0f2f5] rounded-md overflow-hidden">
+                  <img
+                    v-if="picPath"
+                    class="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                    :src="picPath"
+                    alt="请输入验证码"
+                    @click="loginVerify()"
+                  />
+                </div>
+              </div>
+            </el-form-item> -->
+            
+            <el-form-item class="flex items-center justify-between">
+              <el-checkbox v-model="loginFormData.rememberMe" class="text-gray-600">记住密码</el-checkbox>
+            </el-form-item>
+            
+            <el-form-item>
+              <el-button
+                class="w-full h-12 text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 transition-all duration-300"
+                type="primary"
+                size="large"
+                @click="submitForm"
+              >登录</el-button>
+            </el-form-item>
+          </el-form>
+        </div>
       </div>
     </div>
-
-    <BottomInfo class="left-0 right-0 absolute bottom-3 mx-auto w-full z-20">
-      <div class="links items-center justify-center gap-2 hidden md:flex">
-        <a href="https://www.gin-vue-admin.com/" target="_blank">
-          <img src="@/assets/docs.png" class="w-8 h-8" alt="文档" />
-        </a>
-        <a href="https://support.qq.com/product/371961" target="_blank">
-          <img src="@/assets/kefu.png" class="w-8 h-8" alt="客服" />
-        </a>
-        <a
-          href="https://github.com/flipped-aurora/gin-vue-admin"
-          target="_blank"
-        >
-          <img src="@/assets/github.png" class="w-8 h-8" alt="github" />
-        </a>
-        <a href="https://space.bilibili.com/322210472" target="_blank">
-          <img src="@/assets/video.png" class="w-8 h-8" alt="视频站" />
-        </a>
-      </div>
-    </BottomInfo>
+    
+    <!-- 页脚信息 -->
+    <div class="absolute bottom-0 left-0 right-0 text-center text-gray-500 text-sm py-4 bg-white/80 backdrop-blur-sm z-10">
+      <p>Copyright © 2018-2023 绿能中环（西安）新能源科技有限公司 All Rights Reserved</p>
+    </div>
   </div>
 </template>
 
 <script setup>
   import { captcha } from '@/api/user'
   import { checkDB } from '@/api/initdb'
-  import BottomInfo from '@/components/bottomInfo/bottomInfo.vue'
-  import { reactive, ref } from 'vue'
+  import { reactive, ref, onMounted } from 'vue'
   import { ElMessage } from 'element-plus'
   import { useRouter } from 'vue-router'
   import { useUserStore } from '@/pinia/modules/user'
@@ -137,16 +103,18 @@
   })
 
   const router = useRouter()
+  
   // 验证函数
   const checkUsername = (rule, value, callback) => {
-    if (value.length < 5) {
+    if (!value || value.length < 5) {
       return callback(new Error('请输入正确的用户名'))
     } else {
       callback()
     }
   }
+  
   const checkPassword = (rule, value, callback) => {
-    if (value.length < 6) {
+    if (!value || value.length < 6) {
       return callback(new Error('请输入正确的密码'))
     } else {
       callback()
@@ -155,18 +123,28 @@
 
   // 获取验证码
   const loginVerify = async () => {
-    const ele = await captcha()
-    rules.captcha.push({
-      max: ele.data.captchaLength,
-      min: ele.data.captchaLength,
-      message: `请输入${ele.data.captchaLength}位验证码`,
-      trigger: 'blur'
-    })
-    picPath.value = ele.data.picPath
-    loginFormData.captchaId = ele.data.captchaId
-    loginFormData.openCaptcha = ele.data.openCaptcha
+    try {
+      const ele = await captcha()
+      if (ele.data) {
+        rules.captcha = [{
+          max: ele.data.captchaLength,
+          min: ele.data.captchaLength,
+          message: `请输入${ele.data.captchaLength}位验证码`,
+          trigger: 'blur'
+        }]
+        picPath.value = ele.data.picPath
+        loginFormData.captchaId = ele.data.captchaId
+        loginFormData.openCaptcha = ele.data.openCaptcha
+      }
+    } catch (error) {
+      console.error('获取验证码失败:', error)
+      ElMessage({
+        type: 'error',
+        message: '获取验证码失败，请稍后重试',
+        showClose: true
+      })
+    }
   }
-  loginVerify()
 
   // 登录相关操作
   const loginForm = ref(null)
@@ -176,24 +154,35 @@
     password: '',
     captcha: '',
     captchaId: '',
-    openCaptcha: false
+    openCaptcha: false,
+    rememberMe: false
   })
+  
   const rules = reactive({
     username: [{ validator: checkUsername, trigger: 'blur' }],
     password: [{ validator: checkPassword, trigger: 'blur' }],
-    captcha: [
-      {
-        message: '验证码格式不正确',
-        trigger: 'blur'
-      }
-    ]
+    captcha: []
   })
 
   const userStore = useUserStore()
+  
   const login = async () => {
-    return await userStore.LoginIn(loginFormData)
+    try {
+      return await userStore.LoginIn(loginFormData)
+    } catch (error) {
+      console.error('登录失败:', error)
+      ElMessage({
+        type: 'error',
+        message: '登录失败，请检查网络或联系管理员',
+        showClose: true
+      })
+      return false
+    }
   }
+  
   const submitForm = () => {
+    if (!loginForm.value) return
+    
     loginForm.value.validate(async (v) => {
       if (!v) {
         // 未通过前端静态验证
@@ -202,7 +191,7 @@
           message: '请正确填写登录信息',
           showClose: true
         })
-        await loginVerify()
+        // await loginVerify()
         return false
       }
 
@@ -211,7 +200,7 @@
 
       // 登陆失败，刷新验证码
       if (!flag) {
-        await loginVerify()
+        // await loginVerify()
         return false
       }
 
@@ -220,19 +209,29 @@
     })
   }
 
-  // 跳转初始化
-  const checkInit = async () => {
-    const res = await checkDB()
-    if (res.code === 0) {
-      if (res.data?.needInit) {
-        userStore.NeedInit()
-        await router.push({ name: 'Init' })
-      } else {
-        ElMessage({
-          type: 'info',
-          message: '已配置数据库信息，无法初始化'
-        })
-      }
-    }
-  }
+  // 初始化加载
+  onMounted(() => {
+    // loginVerify()
+  })
 </script>
+
+<style scoped>
+  #userLayout {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  }
+  
+  /* 自定义滚动条样式 */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background-color: rgba(144, 147, 153, 0.3);
+    border-radius: 3px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background-color: transparent;
+  }
+</style>

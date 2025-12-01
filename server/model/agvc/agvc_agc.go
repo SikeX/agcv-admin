@@ -99,7 +99,6 @@ func GetFieldNameByPointAgc(dataType int, point string) (string, bool) {
 // GetPointInfoByPointAgc 根据dataType和point值获取AGC点位信息
 func GetPointInfoByPointAgc(dataType int, point string) (PointInfoAgc, bool) {
 	key := fmt.Sprintf("%d-%s", dataType, point)
-	fmt.Println("aaaaaaaaaa", pointToFieldMappingAgc)
 	pointInfo, ok := pointToFieldMappingAgc[key]
 	return pointInfo, ok
 }
