@@ -4,14 +4,14 @@
     <div class="gva-search-box">
       <el-form ref="elSearchFormRef" :inline="true" :model="searchInfo" class="demo-form-inline" @keyup.enter="onSubmit">
             <el-form-item label="电站编号" prop="psid">
-  <el-input-number v-model="searchInfo.psid" placeholder="搜索条件" :controls="false" style="width: 100%" />
+  <el-input-number v-model="searchInfo.psid" placeholder="请输入电站编号" :controls="false" style="width: 100%" />
 </el-form-item>
             <el-form-item label="逆变器编号" prop="inverterNo">
-  <el-input-number v-model="searchInfo.inverterNo" placeholder="搜索条件" :controls="false" style="width: 100%" />
+  <el-input-number v-model="searchInfo.inverterNo" placeholder="请输入逆变器编号" :controls="false" style="width: 100%" />
 </el-form-item>
             
             <el-form-item label="逆变器名称" prop="name">
-  <el-input v-model="searchInfo.name" placeholder="搜索条件" />
+  <el-input v-model="searchInfo.name" placeholder="请输入逆变器名称" />
 </el-form-item>
             
             <el-form-item label="参与调节" prop="isParticipateAdjust">
@@ -116,13 +116,17 @@
                 </div>
               </div>
             </template>
+            
 
           <el-form :model="formData" label-position="top" ref="elFormRef" :rules="rule" label-width="80px">
+            <el-form-item label="电站编号:" prop="psid">
+    <el-input-number v-model="formData.psid" style="width:100%" :clearable="true" placeholder="请输入电站编号" />
+</el-form-item>
             <el-form-item label="逆变器编号:" prop="inverterNo">
-    <el-input v-model="formData.inverterNo" :clearable="true" placeholder="请输入逆变器编号" />
+    <el-input-number v-model="formData.inverterNo" style="width:100%" :clearable="true" placeholder="请输入逆变器编号" />
 </el-form-item>
             <el-form-item label="并网点编号:" prop="bwdNo">
-    <el-input v-model="formData.bwdNo" :clearable="true" placeholder="请输入并网点编号" />
+    <el-input-number v-model="formData.bwdNo" style="width:100%" :clearable="true" placeholder="请输入并网点编号" />
 </el-form-item>
             <el-form-item label="逆变器名称:" prop="name">
     <el-input v-model="formData.name" :clearable="true" placeholder="请输入逆变器名称" />

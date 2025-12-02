@@ -1,19 +1,24 @@
 <template>
-  <div id="userLayout" class="w-full h-full min-h-screen bg-blue-50">
-    <div class="shadow-2xl rounded-lg flex flex-col md:flex-row w-[60%] h-[60%] absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 overflow-hidden">
+  <div id="userLayout" class="w-full h-full min-h-screen relative overflow-hidden">
+    <!-- 背景图片层 -->
+    <img src="@/assets/login-bg.png" alt="login background" class="absolute inset-0 w-full h-full object-cover z-0">
+    <!-- 遮罩层（可选，用于提高内容可读性） -->
+    <div class="absolute inset-0 bg-black bg-opacity-10 z-0"></div>
+    
+    <div class="shadow-2xl rounded-lg flex flex-col md:flex-row w-[60%] h-[60%] absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 overflow-hidden z-10">
       <!-- 左侧品牌区域 -->
       <div class="w-full md:w-[55%] bg-[#4699F5] flex flex-col items-center justify-center p-8 relative overflow-hidden">
         <div class="relative z-10 w-full flex flex-col  justify-center gap-4 h-full">
           <img class="w-40" src="@/assets/logo-ln.png" alt="logo">
-          <p class="text-white text-2xl mb-8">四可边缘(AGC&AVC)自动控制系统</p>
-          <img src="@/assets/login-2.png" alt="login-2" class="max-h-[30%] w-auto object-contain">
+          <p class="text-white text-3xl mb-8">四可边缘(AGC&AVC)自动控制系统</p>
+          <img src="@/assets/login-2.png" alt="login-2" class="max-h-[40%] w-auto object-contain">
         </div>
       </div>
       
       <!-- 右侧登录区域 -->
       <div class="w-full md:w-[45%] bg-white flex items-center justify-center p-8">
         <div class="w-full max-w-md flex flex-col">
-          <h2 class="text-2xl font-bold text-gray-800 mb-8">欢迎登录</h2>
+          <h2 class="text-3xl font-bold text-gray-800 mb-8">欢迎登录</h2>
           
           <el-form
             ref="loginForm"
@@ -84,8 +89,8 @@
     </div>
     
     <!-- 页脚信息 -->
-    <div class="absolute bottom-0 left-0 right-0 text-center text-gray-500 text-sm py-4 bg-white/80 backdrop-blur-sm z-10">
-      <p>Copyright © 2018-2023 绿能中环（西安）新能源科技有限公司 All Rights Reserved</p>
+    <div class="absolute bottom-0 left-0 right-0 text-center text-white text-sm py-6 z-10">
+      <p>Copyright © 2018-2025 绿能中环（西安）新能源科技有限公司 All Rights Reserved</p>
     </div>
   </div>
 </template>

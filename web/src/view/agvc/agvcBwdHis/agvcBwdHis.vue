@@ -561,12 +561,12 @@ const onDeviceChange = async (deviceNumber) => {
     console.log('选中设备:', device)
     // 更新电站编号
     if (device.psid) {
-      currentPsid.value = device.psid
+      // currentPsid.value = device.psid
       currentDevice.value = device.number
     }
     
     // 加载新设备的参数和数据
-    await loadDeviceParameters(device.number)
+    await loadDeviceParameters(device.psid,device.number)
   }
 }
 
@@ -598,9 +598,10 @@ const getDeviceList = async () => {
         capacity: item.capacity,
         gridConnectionDate: item.gridConnectionDate
       }))
-      
+
       // 设置当前电站编号
-      if (deviceList.value.length > 0 && deviceList.value[0].psid) {
+      if (deviceList.value.length > 0 && deviceList.value[0].psid !== null) {
+        
         currentPsid.value = deviceList.value[0].psid
         currentDevice.value = deviceList.value[0].number
       }
@@ -634,27 +635,8 @@ const getDeviceList = async () => {
   }
 }
 
-// 选择设备
-const selectDevice = async (device) => {
-  console.log('========== selectDevice 开始 ==========')
-  // 设置主标签页为当前设备
-  mainActiveTab.value = device.number
-  
-  // 更新电站编号
-  if (device.psid) {
-    currentPsid.value = device.psid
-  }
-  
-  // 等待DOM更新
-  await nextTick()
-  
-  // 2. 再加载该设备的参数和曲线
-  await loadDeviceParameters(device.number)
-  //await loadDevicePlanCurves(device.number)
-}
-
 // 加载设备参数
-const loadDeviceParameters = async (number) => {
+const loadDeviceParameters = async (psid, number) => {
   if (!number) {
     console.error('设备编号为空')
     return
@@ -665,7 +647,8 @@ const loadDeviceParameters = async (number) => {
   try {    
     // 加载AGC状态
     console.log('3. 加载AGC状态...')
-    const statusRes = await getAgcStatus({ number })
+    console.log('psid:', psid, 'number:', number)
+    const statusRes = await getAgcStatus({ psid, number })
     console.log('AGC状态响应:', statusRes)
     if (statusRes.code === 0 && statusRes.data) {
       agcFunctionState.value = statusRes.data.agcFunctionState || 0
@@ -678,7 +661,7 @@ const loadDeviceParameters = async (number) => {
     
     // 加载AVC状态（从agvc_bwd_his表）
     console.log('3.5. 加载AVC状态...')
-    const avcStatusRes = await getAvcStatus({ number })
+    const avcStatusRes = await getAvcStatus({ psid, number })
     console.log('AVC状态响应:', avcStatusRes)
     if (avcStatusRes.code === 0 && avcStatusRes.data) {
       avcFunctionState.value = avcStatusRes.data.avcFunctionState || 0
@@ -1554,7 +1537,7 @@ onMounted(() => {
   // 设置定时器，每秒刷新一次设备参数
   refreshTimer = setInterval(() => {
     if (mainActiveTab.value) {
-      loadDeviceParameters(mainActiveTab.value)
+      loadDeviceParameters(currentPsid.value, mainActiveTab.value)
     }
   }, 5000)
 })
@@ -1564,7 +1547,7 @@ watch(mainActiveTab, (newNumber, oldNumber) => {
   if (!newNumber || newNumber === oldNumber) return
   console.log('并网点切换:', oldNumber, '->', newNumber)
   // 加载新设备的参数和曲线
-  loadDeviceParameters(newNumber)
+  loadDeviceParameters(currentPsid.value, newNumber)
   // loadDevicePlanCurves(newNumber)
   
 })
