@@ -335,27 +335,15 @@
               placeholder="请输入组织名称"
             />
           </el-form-item>
-          <el-form-item label="Bucket">
+          <el-form-item label="agvc储存桶（保留1天）">
             <el-input
-              v-model.trim="config.influxdb.bucket"
-              placeholder="请输入Bucket名称"
-            />
-          </el-form-item>
-          <el-form-item label="数据保留时间">
-            <el-input
-              v-model.trim="config.influxdb.retention"
-              placeholder="如 30d, 720h, 0s (永久)"
-            />
-          </el-form-item>
-          <el-form-item label="默认Measurement">
-            <el-input
-              v-model.trim="config.influxdb.measurement"
+              v-model.trim="config.influxdb.agvcBucket"
               placeholder="默认 agvc_data"
             />
           </el-form-item>
-          <el-form-item label="NBQ Measurement">
+          <el-form-item label="逆变器储存桶（保留7天）">
             <el-input
-              v-model.trim="config.influxdb.nbqMeasurement"
+              v-model.trim="config.influxdb.nbqBucket"
               placeholder="默认 nbq_data"
             />
           </el-form-item>

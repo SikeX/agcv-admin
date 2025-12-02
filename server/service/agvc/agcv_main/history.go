@@ -66,11 +66,18 @@ func (s *history) QueryHistoryData(req request.HistoryDataRequest) ([]map[string
 
 // buildFluxQuery 构建Flux查询语句
 func (s *history) buildFluxQuery(req request.HistoryDataRequest) string {
-    bucket := global.GVA_CONFIG.InfluxDB.Bucket
+    // 根据设备类型选择bucket
+    var bucket string
+    if req.EQType == "1" { // NBQ设备类型，使用逆变器储存桶
+        bucket = global.GVA_CONFIG.InfluxDB.GetNbqBucket()
+    } else { // 其他设备类型，使用agvc储存桶
+        bucket = global.GVA_CONFIG.InfluxDB.GetAgvcBucket()
+    }
+
     startTime := time.Unix(req.StartTime, 0).Format(time.RFC3339)
     endTime := time.Unix(req.EndTime, 0).Format(time.RFC3339)
 
-    // 基础查询
+    // 基础查询，Measurement统一使用"agvc"
     query := fmt.Sprintf(`from(bucket: "%s")
   |> range(start: %s, stop: %s)
   |> filter(fn: (r) => r["_measurement"] == "%s")
@@ -118,9 +125,17 @@ func (s *history) QueryLatestData(psid, eqid, eqType, dataType, point string, du
         return 0, fmt.Errorf("InfluxDB客户端未初始化")
     }
 
-    bucket := global.GVA_CONFIG.InfluxDB.Bucket
+    // 根据设备类型选择bucket
+    var bucket string
+    if eqType == "1" { // NBQ设备类型，使用逆变器储存桶
+        bucket = global.GVA_CONFIG.InfluxDB.GetNbqBucket()
+    } else { // 其他设备类型，使用agvc储存桶
+        bucket = global.GVA_CONFIG.InfluxDB.GetAgvcBucket()
+    }
+
     startTime := time.Now().Add(-duration).Format(time.RFC3339)
 
+    // Measurement统一使用"agvc"
     query := fmt.Sprintf(`from(bucket: "%s")
   |> range(start: %s)
   |> filter(fn: (r) => r["_measurement"] == "%s")
@@ -168,10 +183,18 @@ func (s *history) QueryAggregateData(psid, eqid, eqType, dataType, point string,
         return 0, fmt.Errorf("不支持的聚合函数: %s", aggregateFunc)
     }
 
-    bucket := global.GVA_CONFIG.InfluxDB.Bucket
+    // 根据设备类型选择bucket
+    var bucket string
+    if eqType == "1" { // NBQ设备类型，使用逆变器储存桶
+        bucket = global.GVA_CONFIG.InfluxDB.GetNbqBucket()
+    } else { // 其他设备类型，使用agvc储存桶
+        bucket = global.GVA_CONFIG.InfluxDB.GetAgvcBucket()
+    }
+
     start := time.Unix(startTime, 0).Format(time.RFC3339)
     end := time.Unix(endTime, 0).Format(time.RFC3339)
 
+    // Measurement统一使用"agvc"
     query := fmt.Sprintf(`from(bucket: "%s")
   |> range(start: %s, stop: %s)
   |> filter(fn: (r) => r["_measurement"] == "%s")
