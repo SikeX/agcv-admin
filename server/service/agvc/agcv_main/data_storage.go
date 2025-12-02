@@ -1,314 +1,332 @@
 package agcv_main
 
 import (
-	"context"
-	"encoding/json"
-	"fmt"
-	"sync"
-	"time"
+    "context"
+    "encoding/json"
+    "fmt"
+    "sync"
+    "time"
 
-	"github.com/flipped-aurora/gin-vue-admin/server/global"
-	"github.com/flipped-aurora/gin-vue-admin/server/model/agvc/agvc_main"
-	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
-	"github.com/influxdata/influxdb-client-go/v2/api/write"
-	"go.uber.org/zap"
+    "github.com/flipped-aurora/gin-vue-admin/server/global"
+    "github.com/flipped-aurora/gin-vue-admin/server/model/agvc/agvc_main"
+    influxdb2 "github.com/influxdata/influxdb-client-go/v2"
+    "github.com/influxdata/influxdb-client-go/v2/api/write"
+    "go.uber.org/zap"
 )
 
 type dataStorage struct {
-	mu           sync.RWMutex
-	realtimeData map[string]*agvc_main.RealtimeData // key: psid_eqid_eqType_dataType_point
-	saveTimer    *time.Ticker
-	stopChan     chan struct{}
+    mu           sync.RWMutex
+    realtimeData map[string]*agvc_main.RealtimeData // key: psid_eqid_eqType_dataType_point
+    saveTimer    *time.Ticker
+    stopChan     chan struct{}
 }
 
 var DataStorage = new(dataStorage)
 
 // Initialize 初始化数据存储服务
 func (s *dataStorage) Initialize() {
-	s.realtimeData = make(map[string]*agvc_main.RealtimeData)
-	s.stopChan = make(chan struct{})
+    s.realtimeData = make(map[string]*agvc_main.RealtimeData)
+    s.stopChan = make(chan struct{})
 
-	// 启动5分钟定时保存到InfluxDB
-	s.saveTimer = time.NewTicker(5 * time.Second)
-	go s.periodicSave()
+    // 启动5分钟定时保存到InfluxDB
+    s.saveTimer = time.NewTicker(5 * time.Second)
+    go s.periodicSave()
 
-	global.GVA_LOG.Info("数据存储服务初始化成功")
+    global.GVA_LOG.Info("数据存储服务初始化成功")
 }
 
 // Stop 停止数据存储服务
 func (s *dataStorage) Stop() {
-	// 停止定时器
-	if s.saveTimer != nil {
-		s.saveTimer.Stop()
-	}
+    // 停止定时器
+    if s.saveTimer != nil {
+        s.saveTimer.Stop()
+    }
 
-	// 关闭前强制保存一次数据
-	s.mu.RLock()
-	dataCount := len(s.realtimeData)
-	s.mu.RUnlock()
+    // 关闭前强制保存一次数据
+    s.mu.RLock()
+    dataCount := len(s.realtimeData)
+    s.mu.RUnlock()
 
-	if dataCount > 0 {
-		global.GVA_LOG.Info("服务关闭前保存数据到InfluxDB", zap.Int("数据量", dataCount))
-		if err := s.saveToInfluxDB(); err != nil {
-			global.GVA_LOG.Error("服务关闭前保存数据失败", zap.Error(err))
-		} else {
-			global.GVA_LOG.Info("服务关闭前数据保存成功")
-		}
-	}
+    if dataCount > 0 {
+        global.GVA_LOG.Info("服务关闭前保存数据到InfluxDB", zap.Int("数据量", dataCount))
+        if err := s.saveToInfluxDB(); err != nil {
+            global.GVA_LOG.Error("服务关闭前保存数据失败", zap.Error(err))
+        } else {
+            global.GVA_LOG.Info("服务关闭前数据保存成功")
+        }
+    }
 
-	close(s.stopChan)
-	global.GVA_LOG.Info("数据存储服务已停止")
+    close(s.stopChan)
+    global.GVA_LOG.Info("数据存储服务已停止")
 }
 
 // StoreData 存储实时数据到内存
 func (s *dataStorage) StoreData(data *agvc_main.RealtimeData) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+    s.mu.Lock()
+    defer s.mu.Unlock()
 
-	key := s.makeKey(data.PSID, data.EQID, data.EQType, data.DataType, data.Point)
-	data.Timestamp = time.Now().Unix()
-	s.realtimeData[key] = data
+    key := s.makeKey(data.PSID, data.EQID, data.EQType, data.DataType, data.Point)
+    data.Timestamp = time.Now().Unix()
+    s.realtimeData[key] = data
 }
 
 // StoreBatch 批量存储数据
 func (s *dataStorage) StoreBatch(dataList []*agvc_main.RealtimeData) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+    s.mu.Lock()
+    defer s.mu.Unlock()
 
-	now := time.Now().Unix()
-	for _, data := range dataList {
-		key := s.makeKey(data.PSID, data.EQID, data.EQType, data.DataType, data.Point)
-		data.Timestamp = now
-		s.realtimeData[key] = data
-	}
+    now := time.Now().Unix()
+    for _, data := range dataList {
+        key := s.makeKey(data.PSID, data.EQID, data.EQType, data.DataType, data.Point)
+        data.Timestamp = now
+        s.realtimeData[key] = data
+    }
 }
 
 // StoreAgvcDataBatch 批量存储AGVC数据（从CoAP接收的数据格式）
 func (s *dataStorage) StoreAgvcDataBatch(dataBatch []agvc_main.AgvcDataItem) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+    s.mu.Lock()
+    defer s.mu.Unlock()
 
-	now := time.Now().Unix()
-	for _, item := range dataBatch {
-		// 转换为内部RealtimeData格式
-		data := &agvc_main.RealtimeData{
-			PSID:      item.Psid,
-			EQID:      item.Eqid,
-			EQType:    item.EqType,
-			DataType:  item.DataType,
-			Point:     item.Point,
-			Value:     item.Value,
-			Timestamp: now,
-		}
-		key := s.makeKey(data.PSID, data.EQID, data.EQType, data.DataType, data.Point)
-		s.realtimeData[key] = data
-	}
+    now := time.Now().Unix()
+    for _, item := range dataBatch {
+        // 转换为内部RealtimeData格式
+        data := &agvc_main.RealtimeData{
+            PSID:      item.Psid,
+            EQID:      item.Eqid,
+            EQType:    item.EqType,
+            DataType:  item.DataType,
+            Point:     item.Point,
+            Value:     item.Value,
+            Timestamp: now,
+        }
+        key := s.makeKey(data.PSID, data.EQID, data.EQType, data.DataType, data.Point)
+        s.realtimeData[key] = data
+    }
 }
 
 // GetData 从内存获取实时数据
 func (s *dataStorage) GetData(psid, eqid, eqType, dataType int, point string) (*agvc_main.RealtimeData, bool) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+    s.mu.RLock()
+    defer s.mu.RUnlock()
 
-	key := s.makeKey(psid, eqid, eqType, dataType, point)
-	data, exists := s.realtimeData[key]
-	return data, exists
+    key := s.makeKey(psid, eqid, eqType, dataType, point)
+    data, exists := s.realtimeData[key]
+    return data, exists
 }
 
 // GetDeviceData 获取设备的所有实时数据
 func (s *dataStorage) GetDeviceData(psid, eqid, eqType, dataType int) map[string]*agvc_main.RealtimeData {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+    s.mu.RLock()
+    defer s.mu.RUnlock()
 
-	result := make(map[string]*agvc_main.RealtimeData)
-	prefix := fmt.Sprintf("%d_%d_%d_%d_", psid, eqid, eqType, dataType)
+    result := make(map[string]*agvc_main.RealtimeData)
+    prefix := fmt.Sprintf("%d_%d_%d_%d_", psid, eqid, eqType, dataType)
 
-	for key, data := range s.realtimeData {
-		if len(key) >= len(prefix) && key[:len(prefix)] == prefix {
-			result[data.Point] = data
-		}
-	}
+    for key, data := range s.realtimeData {
+        if len(key) >= len(prefix) && key[:len(prefix)] == prefix {
+            result[data.Point] = data
+        }
+    }
 
-	return result
+    return result
 }
 
 // GetDeviceAllData 获取设备所有数据类型的实时数据
 func (s *dataStorage) GetDeviceAllData(psid, eqid, eqType int) map[string]*agvc_main.RealtimeData {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+    s.mu.RLock()
+    defer s.mu.RUnlock()
 
-	result := make(map[string]*agvc_main.RealtimeData)
-	prefix := fmt.Sprintf("%d_%d_%d_", psid, eqid, eqType)
+    result := make(map[string]*agvc_main.RealtimeData)
+    prefix := fmt.Sprintf("%d_%d_%d_", psid, eqid, eqType)
 
-	for key, data := range s.realtimeData {
-		if len(key) >= len(prefix) && key[:len(prefix)] == prefix {
-			fullKey := fmt.Sprintf("%d_%s", data.DataType, data.Point)
-			result[fullKey] = data
-		}
-	}
+    for key, data := range s.realtimeData {
+        if len(key) >= len(prefix) && key[:len(prefix)] == prefix {
+            fullKey := fmt.Sprintf("%d_%s", data.DataType, data.Point)
+            result[fullKey] = data
+        }
+    }
 
-	return result
+    return result
 }
 
 // periodicSave 定期保存数据到InfluxDB
 func (s *dataStorage) periodicSave() {
-	for {
-		select {
-		case <-s.saveTimer.C:
-			s.mu.RLock()
-			dataCount := len(s.realtimeData)
-			s.mu.RUnlock()
+    for {
+        select {
+        case <-s.saveTimer.C:
+            s.mu.RLock()
+            dataCount := len(s.realtimeData)
+            s.mu.RUnlock()
 
-			if dataCount == 0 {
-				global.GVA_LOG.Debug("无数据需要保存到InfluxDB")
-				continue
-			}
+            if dataCount == 0 {
+                global.GVA_LOG.Debug("无数据需要保存到InfluxDB")
+                continue
+            }
 
-			if err := s.saveToInfluxDB(); err != nil {
-				global.GVA_LOG.Error("保存数据到InfluxDB失败", zap.Error(err))
-			} else {
-				global.GVA_LOG.Info("数据已保存到InfluxDB", zap.Int("数据量", dataCount))
-			}
-		case <-s.stopChan:
-			return
-		}
-	}
+            if err := s.saveToInfluxDB(); err != nil {
+                global.GVA_LOG.Error("保存数据到InfluxDB失败", zap.Error(err))
+            } else {
+                global.GVA_LOG.Info("数据已保存到InfluxDB", zap.Int("数据量", dataCount))
+            }
+        case <-s.stopChan:
+            return
+        }
+    }
 }
 
 // saveToInfluxDB 保存数据到InfluxDB
 func (s *dataStorage) saveToInfluxDB() error {
-	if global.GVA_INFLUXDB == nil {
-		return fmt.Errorf("InfluxDB客户端未初始化")
-	}
+    if global.GVA_INFLUXDB == nil {
+        return fmt.Errorf("InfluxDB客户端未初始化")
+    }
 
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+    s.mu.RLock()
+    defer s.mu.RUnlock()
 
-	writeAPI := global.GVA_INFLUXDB.WriteAPIBlocking(global.GVA_CONFIG.InfluxDB.Org, global.GVA_CONFIG.InfluxDB.Bucket)
+    now := time.Now()
 
-	var points []*write.Point
-	now := time.Now()
+    // 按设备类型分组数据，使用不同的bucket
+    nbqPoints := make([]*write.Point, 0)
+    agvcPoints := make([]*write.Point, 0)
 
-	for _, data := range s.realtimeData {
-		// 创建InfluxDB点
-		point := influxdb2.NewPoint(
-			"agvc_data",
-			map[string]string{
-				"psid":     fmt.Sprintf("%d", data.PSID),
-				"eqid":     fmt.Sprintf("%d", data.EQID),
-				"eqType":   fmt.Sprintf("%d", data.EQType),
-				"dataType": fmt.Sprintf("%d", data.DataType),
-				"point":    data.Point,
-			},
-			map[string]interface{}{
-				"value": data.Value,
-			},
-			now,
-		)
-		points = append(points, point)
-	}
+    for _, data := range s.realtimeData {
+        // 创建InfluxDB点，Measurement统一使用"agvc"
+        point := influxdb2.NewPoint(
+            global.GVA_CONFIG.InfluxDB.GetMeasurement(),
+            map[string]string{
+                "psid":     fmt.Sprintf("%d", data.PSID),
+                "eqid":     fmt.Sprintf("%d", data.EQID),
+                "eqType":   fmt.Sprintf("%d", data.EQType),
+                "dataType": fmt.Sprintf("%d", data.DataType),
+                "point":    data.Point,
+            },
+            map[string]interface{}{
+                "value": data.Value,
+            },
+            now,
+        )
 
-	if len(points) > 0 {
-		return writeAPI.WritePoint(context.Background(), points...)
-	}
+        // 根据设备类型分组
+        if data.EQType == 1 { // NBQ设备类型
+            nbqPoints = append(nbqPoints, point)
+        } else { // 其他设备类型
+            agvcPoints = append(agvcPoints, point)
+        }
+    }
 
-	return nil
+    // 分别写入不同的bucket
+    if len(nbqPoints) > 0 {
+        writeAPI := global.GVA_INFLUXDB.WriteAPIBlocking(global.GVA_CONFIG.InfluxDB.Org, global.GVA_CONFIG.InfluxDB.GetNbqBucket())
+        if err := writeAPI.WritePoint(context.Background(), nbqPoints...); err != nil {
+            return fmt.Errorf("写入NBQ数据失败: %v", err)
+        }
+    }
+
+    if len(agvcPoints) > 0 {
+        writeAPI := global.GVA_INFLUXDB.WriteAPIBlocking(global.GVA_CONFIG.InfluxDB.Org, global.GVA_CONFIG.InfluxDB.GetAgvcBucket())
+        if err := writeAPI.WritePoint(context.Background(), agvcPoints...); err != nil {
+            return fmt.Errorf("写入AGVC数据失败: %v", err)
+        }
+    }
+
+    return nil
 }
 
 // makeKey 生成Map键
 func (s *dataStorage) makeKey(psid, eqid, eqType, dataType int, point string) string {
-	return fmt.Sprintf("%d_%d_%d_%d_%s", psid, eqid, eqType, dataType, point)
+    return fmt.Sprintf("%d_%d_%d_%d_%s", psid, eqid, eqType, dataType, point)
 }
 
 // GetDataAsFloat64 获取数据并转换为float64（用于数值计算）
 func (s *dataStorage) GetDataAsFloat64(psid, eqid, eqType, dataType int, point string) (float64, error) {
-	// psid := 1
-	// eqid :=
-	// eqType := code[7:9]
-	// dataType := code[9:11]
-	// point := code[11:]
-	data, exists := s.GetData(psid, eqid, eqType, dataType, point)
-	if !exists {
-		return 0, fmt.Errorf("数据不存在")
-	}
+    // psid := 1
+    // eqid :=
+    // eqType := code[7:9]
+    // dataType := code[9:11]
+    // point := code[11:]
+    data, exists := s.GetData(psid, eqid, eqType, dataType, point)
+    if !exists {
+        return 0, fmt.Errorf("数据不存在")
+    }
 
-	switch v := data.Value.(type) {
-	case float64:
-		return v, nil
-	case float32:
-		return float64(v), nil
-	case int:
-		return float64(v), nil
-	case int64:
-		return float64(v), nil
-	case string:
-		var f float64
-		if _, err := fmt.Sscanf(v, "%f", &f); err != nil {
-			return 0, fmt.Errorf("无法转换字符串为float64: %v", err)
-		}
-		return f, nil
-	default:
-		return 0, fmt.Errorf("不支持的数据类型: %T", v)
-	}
+    switch v := data.Value.(type) {
+    case float64:
+        return v, nil
+    case float32:
+        return float64(v), nil
+    case int:
+        return float64(v), nil
+    case int64:
+        return float64(v), nil
+    case string:
+        var f float64
+        if _, err := fmt.Sscanf(v, "%f", &f); err != nil {
+            return 0, fmt.Errorf("无法转换字符串为float64: %v", err)
+        }
+        return f, nil
+    default:
+        return 0, fmt.Errorf("不支持的数据类型: %T", v)
+    }
 }
 
 // GetDataAsInt 获取数据并转换为int（用于状态判断）
 func (s *dataStorage) GetDataAsInt(psid, eqid, eqType, dataType int, point string) (int, error) {
-	data, exists := s.GetData(psid, eqid, eqType, dataType, point)
-	if !exists {
-		return 0, fmt.Errorf("数据不存在")
-	}
+    data, exists := s.GetData(psid, eqid, eqType, dataType, point)
+    if !exists {
+        return 0, fmt.Errorf("数据不存在")
+    }
 
-	switch v := data.Value.(type) {
-	case int:
-		return v, nil
-	case int64:
-		return int(v), nil
-	case float64:
-		return int(v), nil
-	case float32:
-		return int(v), nil
-	case bool:
-		if v {
-			return 1, nil
-		}
-		return 0, nil
-	default:
-		return 0, fmt.Errorf("不支持的数据类型: %T", v)
-	}
+    switch v := data.Value.(type) {
+    case int:
+        return v, nil
+    case int64:
+        return int(v), nil
+    case float64:
+        return int(v), nil
+    case float32:
+        return int(v), nil
+    case bool:
+        if v {
+            return 1, nil
+        }
+        return 0, nil
+    default:
+        return 0, fmt.Errorf("不支持的数据类型: %T", v)
+    }
 }
 
 // ExportSnapshot 导出当前数据快照（用于调试）
 func (s *dataStorage) ExportSnapshot() string {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+    s.mu.RLock()
+    defer s.mu.RUnlock()
 
-	data, _ := json.MarshalIndent(s.realtimeData, "", "  ")
-	return string(data)
+    data, _ := json.MarshalIndent(s.realtimeData, "", "  ")
+    return string(data)
 }
 
 // GetDataCount 获取当前存储的数据量
 func (s *dataStorage) GetDataCount() int {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	return len(s.realtimeData)
+    s.mu.RLock()
+    defer s.mu.RUnlock()
+    return len(s.realtimeData)
 }
 
 // SetData 设置指定点位的数据值
 func (s *dataStorage) SetData(psid, eqid, eqType, dataType int, point string, value interface{}) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+    s.mu.Lock()
+    defer s.mu.Unlock()
 
-	key := s.makeKey(psid, eqid, eqType, dataType, point)
-	data := &agvc_main.RealtimeData{
-		PSID:      psid,
-		EQID:      eqid,
-		EQType:    eqType,
-		DataType:  dataType,
-		Point:     point,
-		Value:     value,
-		Timestamp: time.Now().Unix(),
-	}
-	s.realtimeData[key] = data
-	return nil
+    key := s.makeKey(psid, eqid, eqType, dataType, point)
+    data := &agvc_main.RealtimeData{
+        PSID:      psid,
+        EQID:      eqid,
+        EQType:    eqType,
+        DataType:  dataType,
+        Point:     point,
+        Value:     value,
+        Timestamp: time.Now().Unix(),
+    }
+    s.realtimeData[key] = data
+    return nil
 }
