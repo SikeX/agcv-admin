@@ -92,12 +92,12 @@ influxdb:
   port: "8086"
   token: yZe5ObSHattxNgK5Ul_pAgyUu2Z5TiUz2FHCBRIk72RArzsjGpuM7uaRP9N0sAZjOcbL6djYFMYyuZfFYKLDNA==
   org: test
-  bucket: test
+  agvcBucket: agvc_data
+  agvcRetention: 24h
+  nbqBucket: nbq_data
+  nbqRetention: 168h
   username: admin
   password: "12345678"
-  measurement: agvc_data
-  nbqMeasurement: nbq_data
-  retention: 30d
 jwt:
   signing-key: bbe5b265-7f40-4277-a597-0de9b121d347
   expires-time: 7d

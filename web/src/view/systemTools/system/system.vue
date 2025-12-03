@@ -335,17 +335,37 @@
               placeholder="请输入组织名称"
             />
           </el-form-item>
-          <el-form-item label="agvc储存桶（保留1天）">
+          <el-form-item label="agvc储存桶">
             <el-input
               v-model.trim="config.influxdb.agvcBucket"
               placeholder="默认 agvc_data"
             />
           </el-form-item>
-          <el-form-item label="逆变器储存桶（保留7天）">
+          <el-form-item label="agvc储存桶保留时间">
+            <el-input
+              v-model.trim="config.influxdb.agvcRetention"
+              placeholder="格式: 24h, 7d, 168h"
+            >
+              <template #append>
+                <span>（1天=24h）</span>
+              </template>
+            </el-input>
+          </el-form-item>
+          <el-form-item label="逆变器储存桶">
             <el-input
               v-model.trim="config.influxdb.nbqBucket"
               placeholder="默认 nbq_data"
             />
+          </el-form-item>
+          <el-form-item label="逆变器储存桶保留时间">
+            <el-input
+              v-model.trim="config.influxdb.nbqRetention"
+              placeholder="格式: 24h, 7d, 168h"
+            >
+              <template #append>
+                <span>（7天=168h）</span>
+              </template>
+            </el-input>
           </el-form-item>
         </el-tab-pane>
         <el-tab-pane label="验证码配置" name="7" class="mt-3.5">
@@ -1049,6 +1069,14 @@
     const res = await getSystemConfig()
     if (res.code === 0) {
       config.value = res.data.config
+      
+      // 设置InfluxDB保留时间的默认值
+      if (!config.value.influxdb.agvcRetention) {
+        config.value.influxdb.agvcRetention = '24h'
+      }
+      if (!config.value.influxdb.nbqRetention) {
+        config.value.influxdb.nbqRetention = '168h'
+      }
     }
   }
   initForm()
