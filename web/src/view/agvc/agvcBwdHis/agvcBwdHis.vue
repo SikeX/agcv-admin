@@ -429,24 +429,11 @@
 
 <script setup>
 import {
-  createAgvcBwdHis,
-  deleteAgvcBwdHis,
-  deleteAgvcBwdHisByIds,
-  updateAgvcBwdHis,
-  findAgvcBwdHis,
   getAgvcBwdHisList,
   getAgvcBwdHistory,
-  generateAgvcBwdTestData,
-  // 新增的API
-  updateAgcParameters,
-  updateAvcParameters,
   updatePlanCurves,
-  getAgcParameters,
-  getAvcParameters,
   getPlanCurves,
-  updateAgcStatus,
   getAgcStatus,
-  updateAvcStatus,
   getAvcStatus,
   getBwdRealtimeData,
   sendAgcAvcStatesToTcp
@@ -789,7 +776,7 @@ const updateAGVCState = async (type, value) => {
         // AGC控制模式 (point: 404, dataType: 1-遥信)
         messages.push({
           psid: currentPsid.value,
-          eqid: parseInt(currentDevice.number),
+          eqid: parseInt(currentDevice.value),
           eqType: 60, // AGC类型
           dataType: 1, // 遥信
           point: "404",
@@ -800,7 +787,7 @@ const updateAGVCState = async (type, value) => {
         // AGC控制权限 (point: 402, dataType: 1-遥信)
         messages.push({
           psid: currentPsid.value,
-          eqid: parseInt(currentDevice.number),
+          eqid: parseInt(currentDevice.value),
           eqType: 60, // AGC类型
           dataType: 1, // 遥信
           point: "402",
@@ -811,7 +798,7 @@ const updateAGVCState = async (type, value) => {
         // AVC功能投退状态 (point: 401, dataType: 1-遥信)
         messages.push({
           psid: currentPsid.value,
-          eqid: parseInt(currentDevice.number),
+          eqid: parseInt(currentDevice.value),
           eqType: 61, // AVC类型
           dataType: 1, // 遥信
           point: "401",
@@ -822,7 +809,7 @@ const updateAGVCState = async (type, value) => {
         // AVC控制模式 (point: 404, dataType: 1-遥信)
         messages.push({
           psid: currentPsid.value,
-          eqid: parseInt(currentDevice.number),
+          eqid: parseInt(currentDevice.value),
           eqType: 61, // AVC类型
           dataType: 1, // 遥信
           point: "404",
@@ -833,7 +820,7 @@ const updateAGVCState = async (type, value) => {
         // AVC控制权限 (point: 406, dataType: 1-遥信)
         messages.push({
           psid: currentPsid.value,
-          eqid: parseInt(currentDevice.number),
+          eqid: parseInt(currentDevice.value),
           eqType: 61, // AVC类型
           dataType: 1, // 遥信
           point: "402",
@@ -852,72 +839,6 @@ const updateAGVCState = async (type, value) => {
   } catch (error) {
     console.error('发送AGC状态失败:', error)
     ElMessage.error('发送AGC状态失败: ' + error.message)
-  }
-}
-// 定时刷新实时数据
-let realtimeTimer = null
-
-// 刷新实时数据
-const refreshRealtimeData = async () => {
-  const currentDevice = deviceList.value.find(device => device.number === mainActiveTab.value)
-  if (!currentDevice) {
-    return
-  }
-  
-  try {
-    // 从历史数据中获取最新数据作为实时数据
-    const now = new Date()
-    const endTime = now.toISOString().split('T')[0]
-    const startTime = new Date(now.getTime() - 60000).toISOString().split('T')[0] // 最近1分钟
-    
-    const realtimeRes = await getAgvcBwdHistory({ eqid: currentDevice.number, startTime, endTime })
-    if (realtimeRes.code === 0 && realtimeRes.data && realtimeRes.data.length > 0) {
-      // 提取最新数据更新电站负荷字段
-      const sortedData = realtimeRes.data.sort((a, b) => new Date(a.time) - new Date(b.time))
-      const latestData = {}
-      sortedData.forEach(item => {
-        latestData[item.point] = item.value
-      })
-      
-      // 更新AGC相关实时数据
-      currentActivePower.value = latestData['100'] || currentActivePower.value
-      targetActivePower.value = latestData['101'] || targetActivePower.value
-      agcUpperLimit.value = latestData['401'] || agcUpperLimit.value
-      agcLowerLimit.value = latestData['402'] || agcLowerLimit.value
-      systemFrequency.value = latestData['10'] || systemFrequency.value
-      
-      // 更新AVC相关实时数据
-      targetVoltage.value = latestData['102'] || targetVoltage.value
-      currentVoltage.value = latestData['103'] || currentVoltage.value
-      targetReactive.value = latestData['104'] || targetReactive.value
-      currentReactive.value = latestData['105'] || currentReactive.value
-      systemImpedance.value = latestData['106'] || systemImpedance.value
-      
-      console.log('实时数据刷新完成')
-    }
-  } catch (error) {
-    console.error('刷新实时数据失败:', error)
-  }
-}
-
-// 启动定时刷新
-const startRealtimeTimer = () => {
-  // 清除现有定时器
-  if (realtimeTimer) {
-    clearInterval(realtimeTimer)
-  }
-  
-  // 设置30秒刷新一次
-  realtimeTimer = setInterval(refreshRealtimeData, 30000)
-  console.log('实时数据定时刷新已启动，间隔30秒')
-}
-
-// 停止定时刷新
-const stopRealtimeTimer = () => {
-  if (realtimeTimer) {
-    clearInterval(realtimeTimer)
-    realtimeTimer = null
-    console.log('实时数据定时刷新已停止')
   }
 }
 
@@ -961,16 +882,7 @@ const formatNumber = (value) => {
 const agcUpperLimit = ref(0) // 可调上限(kW) - TODO:pengchen
 const agcLowerLimit = ref(0) // 可调下限(kW) - TODO:pengchen
 
-// 目标值变化处理
-const onTargetActivePowerChange = (value) => {
-  console.log('目标有功变化:', value)
-  // TODO: 发送控制指令
-}
 
-const onTargetVoltageChange = (value) => {
-  console.log('目标电压变化:', value)
-  // TODO: 发送控制指令
-}
 
 // AGC参数设置弹窗
 const agcParametersDialogVisible = ref(false)
@@ -987,40 +899,6 @@ const agcParametersForm = ref({
   agcMicroAdjustmentCoefficient: 0
 })
 
-// 打开AGC参数设置弹窗
-const openAgcParametersDialog = async () => {
-  // 获取当前选中的设备
-  const currentDevice = deviceList.value.find(device => device.number === mainActiveTab.value)
-  if (!currentDevice) {
-    ElMessage.warning('请先选择设备')
-    return
-  }
-  
-  // 从并网点配置中获取数据
-  try {
-    const res = await getAgvcBwdSettingList({ number: currentDevice.number })
-    if (res.code === 0 && res.data.list.length > 0) {
-      const setting = res.data.list[0]
-      agcParametersForm.value = {
-        ID: setting.ID, // 保存ID用于更新
-        number: setting.number || '',
-        name: setting.name || '',
-        voltageLevel: setting.voltageLevel || '',
-        agcFunctionExit: setting.agcFunctionExit || '',
-        agcStepSize: setting.agcStepSize || 0,
-        agcStepPeriod: setting.agcStepPeriod || 0,
-        agcVibrationRange: setting.agcVibrationRange || 0,
-        agcControlPeriod: setting.agcControlPeriod || 0,
-        agcMicroAdjustmentCoefficient: setting.agcMicroAdjustmentCoefficient || 0
-      }
-      agcParametersDialogVisible.value = true
-    } else {
-      ElMessage.error('未找到并网点配置数据')
-    }
-  } catch (error) {
-    ElMessage.error('获取并网点配置数据失败: ' + error.message)
-  }
-}
 
 // 保存AGC参数（同时更新并网点配置）
 const saveAgcParameters = async () => {
@@ -1063,42 +941,6 @@ const avcParametersForm = ref({
   avcAdjustmentRangeMin: 0,
   avcAdjustmentRangeMax: 0
 })
-
-// 打开AVC参数设置弹窗
-const openAvcParametersDialog = async () => {
-  // 获取当前选中的设备
-  const currentDevice = deviceList.value.find(device => device.number === mainActiveTab.value)
-  if (!currentDevice) {
-    ElMessage.warning('请先选择设备')
-    return
-  }
-  
-  // 从并网点配置中获取数据
-  try {
-    const res = await getAgvcBwdSettingList({ number: currentDevice.number })
-    if (res.code === 0 && res.data.list.length > 0) {
-      const setting = res.data.list[0]
-      avcParametersForm.value = {
-        ID: setting.ID, // 保存ID用于更新
-        number: setting.number || '',
-        name: setting.name || '',
-        voltageLevel: setting.voltageLevel || '',
-        avcStepSize: setting.avcStepSize || 0,
-        avcStepPeriod: setting.avcStepPeriod || 0,
-        avcVibrationRange: setting.avcVibrationRange || 0,
-        avcControlPeriod: setting.avcControlPeriod || 0,
-        avcSystemImpedance: setting.avcSystemImpedance || 0,
-        avcAdjustmentRangeMin: setting.avcAdjustmentRangeMin || 0,
-        avcAdjustmentRangeMax: setting.avcAdjustmentRangeMax || 0
-      }
-      avcParametersDialogVisible.value = true
-    } else {
-      ElMessage.error('未找到并网点配置数据')
-    }
-  } catch (error) {
-    ElMessage.error('获取并网点配置数据失败: ' + error.message)
-  }
-}
 
 // 保存AVC参数（同时更新并网点配置）
 const saveAvcParameters = async () => {
@@ -1167,7 +1009,7 @@ const openAgcPlanCurvesDialog = async () => {
   
   // 加载AGC计划曲线
   try {
-    const res = await getPlanCurves({ number: currentDevice.number, curveType: 'agc' })
+    const res = await getPlanCurves({ number: currentDevice.value, curveType: 'agc' })
     if (res.code === 0 && res.data) {
       localCurveData.value = res.data.localCurve || []
     }
@@ -1192,7 +1034,7 @@ const openAvcPlanCurvesDialog = async () => {
   
   // 加载AVC计划曲线
   try {
-    const res = await getPlanCurves({ number: currentDevice.number, curveType: planCurvesType.value })
+    const res = await getPlanCurves({ number: currentDevice.value, curveType: planCurvesType.value })
     if (res.code === 0 && res.data) {
       localCurveData.value = res.data.localCurve || []
     }
@@ -1226,13 +1068,13 @@ const savePlanCurves = async () => {
     }
     
     console.log('保存计划曲线:', {
-      number: currentDevice.number,
+      number: currentDevice.value,
       curveType: planCurvesType.value,
       localCurveData: localCurveData.value
     })
     
     const res = await updatePlanCurves({
-      number: currentDevice.number,
+      number: currentDevice.value,
       curveType: planCurvesType.value,
       planCurves: {
         localCurve: localCurveData.value
@@ -1244,7 +1086,7 @@ const savePlanCurves = async () => {
       planCurvesDialogVisible.value = false
       
       // 保存成功后重新加载计划曲线
-      loadDevicePlanCurves(currentDevice.number)
+      loadDevicePlanCurves(currentDevice.value)
     } else {
       ElMessage.error('保存失败: ' + res.msg)
     }

@@ -2,7 +2,7 @@
   <div>
     <div class="gva-table-box">
       <el-card>
-        <div v-loading="loading" style="height: 400px">
+        <div style="height: 400px">
           <div ref="chartRef" style="width: 100%; height: 100%"></div>
         </div>
       </el-card>
@@ -34,7 +34,6 @@ const props = defineProps({
 
 const chartRef = ref()
 let chartInstance = null
-const loading = ref(false)
 let refreshTimer = null
 
 const tooltipFormatter = (params) =>{
@@ -98,11 +97,12 @@ const initChart = () => {
       axisLabel: {
         formatter: '{value}'
       },
+      interval: 0.2,
       min: function (value) {
-        return Math.floor(value.min - 10);
+        return Math.floor(value.min - 1);
       },
       max: function (value) {
-        return Math.ceil(value.max + 10);
+        return Math.ceil(value.max + 1);
       },
     },
     series: [
@@ -132,8 +132,11 @@ const initChart = () => {
 
 // 加载图表数据
 const loadChartData = async() => {
+  console.log("props.psid, props.eqid", props.psid, props.eqid)
+  if (props.psid === "" || props.eqid === "") {
+    return
+  }
   
-  loading.value = true
   try {
     // 查询最近5分钟的数据
     const now = new Date()
@@ -152,9 +155,7 @@ const loadChartData = async() => {
     }
   } catch (error) {
     console.error('获取数据失败:', error)
-  } finally {
-    loading.value = false
-  }
+  } 
 }
 
 // 更新图表数据
@@ -213,7 +214,7 @@ const handleResize = () => {
 
 // 监听props变化，重新加载数据
 watch(() => [props.psid, props.eqid], () => {
-  if (props.psid && props.eqid) {
+  if (props.psid !== "" && props.eqid !== "") {
     // 重新初始化图表以确保完全重新渲染
     initChart()
     loadChartData()

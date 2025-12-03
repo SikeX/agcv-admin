@@ -105,7 +105,7 @@ export const getAgvcNbqHisList = (params) => {
 export const getAgvcNbqHisPublic = () => {
   return service({
     url: '/agvcNbqHis/getAgvcNbqHisPublic',
-    method: 'get',
+    method: 'get'
   })
 }
 
@@ -136,6 +136,7 @@ export const getNbqRealData = (params) => {
   return service({
     url: '/agvcNbqHis/getNbqRealData',
     method: 'get',
+    donNotShowLoading: true,
     params
   })
 }

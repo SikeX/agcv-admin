@@ -15,11 +15,11 @@ type AgvcBwd struct {
 	Psid                 *int     `json:"psid" form:"psid" point:"name:电站编号"`
 	Eqid                 *int     `json:"eqid" form:"eqid" point:"name:设备编号"`
 	Name                 *string  `json:"name" form:"name" point:"name:并网点名称"`
-	CurrentActivePower   *float64 `json:"currentActivePower" form:"currentActivePower" point:"name:当前有功(kW),value:10,type:2"`
+	CurrentActivePower   *float64 `json:"currentActivePower" form:"currentActivePower" point:"name:当前有功(kW),value:7,type:2"`
 	CurrentVoltage       *float64 `json:"currentVoltage" form:"currentVoltage" point:"name:当前电压(kV),value:12,type:2"`
 	CurrentReactivePower *float64 `json:"currentReactivePower" form:"currentReactivePower" point:"name:当前无功(kVar),value:8,type:2"`
-	SystemFrequency      *float64 `json:"systemFrequency" form:"systemFrequency" point:"name:系统频率(Hz),value:13,type:2"`
-	SystemImpedance      *float64 `json:"systemImpedance" form:"systemImpedance" point:"name:系统阻抗,value:14,type:2"`
+	SystemFrequency      *float64 `json:"systemFrequency" form:"systemFrequency" point:"name:系统频率(Hz),value:10,type:2"`
+	SystemImpedance      *float64 `json:"systemImpedance" form:"systemImpedance" point:"name:系统阻抗,value:9,type:2"`
 }
 
 // TableName agvcBwdHis表 AgvcBwdHis自定义表名 agvc_bwd_his
