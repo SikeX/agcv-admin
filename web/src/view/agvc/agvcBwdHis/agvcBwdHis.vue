@@ -777,7 +777,7 @@ const updateAGVCState = async (type, value) => {
       case 'agcFunctionState':
         // AGC功能投退状态 (point: 401, dataType: 1-遥信)
         messages.push({
-          psid: currentPsid.value || 1,
+          psid: currentPsid.value,
           eqid: parseInt(currentDevice.value),
           eqType: 60, // AGC类型
           dataType: 1, // 遥信
@@ -788,7 +788,7 @@ const updateAGVCState = async (type, value) => {
       case 'agcControlMode':
         // AGC控制模式 (point: 404, dataType: 1-遥信)
         messages.push({
-          psid: currentPsid.value || 1,
+          psid: currentPsid.value,
           eqid: parseInt(currentDevice.number),
           eqType: 60, // AGC类型
           dataType: 1, // 遥信
@@ -799,7 +799,7 @@ const updateAGVCState = async (type, value) => {
       case 'agcControlAuthority':
         // AGC控制权限 (point: 402, dataType: 1-遥信)
         messages.push({
-          psid: currentPsid.value || 1,
+          psid: currentPsid.value,
           eqid: parseInt(currentDevice.number),
           eqType: 60, // AGC类型
           dataType: 1, // 遥信
@@ -810,7 +810,7 @@ const updateAGVCState = async (type, value) => {
       case 'avcFunctionState':
         // AVC功能投退状态 (point: 401, dataType: 1-遥信)
         messages.push({
-          psid: currentPsid.value || 1,
+          psid: currentPsid.value,
           eqid: parseInt(currentDevice.number),
           eqType: 61, // AVC类型
           dataType: 1, // 遥信
@@ -821,7 +821,7 @@ const updateAGVCState = async (type, value) => {
       case 'avcControlMode':
         // AVC控制模式 (point: 404, dataType: 1-遥信)
         messages.push({
-          psid: currentPsid.value || 1,
+          psid: currentPsid.value,
           eqid: parseInt(currentDevice.number),
           eqType: 61, // AVC类型
           dataType: 1, // 遥信
@@ -832,7 +832,7 @@ const updateAGVCState = async (type, value) => {
       case 'avcControlAuthority':
         // AVC控制权限 (point: 406, dataType: 1-遥信)
         messages.push({
-          psid: currentPsid.value || 1,
+          psid: currentPsid.value,
           eqid: parseInt(currentDevice.number),
           eqType: 61, // AVC类型
           dataType: 1, // 遥信

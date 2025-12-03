@@ -132,9 +132,6 @@ const initChart = () => {
 
 // 加载图表数据
 const loadChartData = async() => {
-  if (!props.psid || !props.eqid) {
-    return
-  }
   
   loading.value = true
   try {

@@ -13,6 +13,7 @@ export const getPowerChartData = (params) => {
   return service({
     url: '/agvcChart/getPowerChartData',
     method: 'get',
+    donNotShowLoading: true,
     params: params
   })
 }
@@ -30,6 +31,7 @@ export const getVoltageReactiveChartData = (params) => {
   return service({
     url: '/agvcChart/getVoltageReactiveChartData',
     method: 'get',
+    donNotShowLoading: true,
     params: params
   })
 }

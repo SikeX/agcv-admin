@@ -76,7 +76,7 @@ func (agvcAgcHisService *AgvcAgcHisService) GetAgvcAgcHisInfoList(ctx context.Co
             |> filter(fn: (r) => r["eqid"] == "%s")
             |> filter(fn: (r) => r["eqType"] == "%s")
             |> filter(fn: (r) => r["dataType"] == "%d")`,
-			global.GVA_CONFIG.InfluxDB.Bucket, global.GVA_CONFIG.InfluxDB.GetMeasurement(),
+			global.GVA_CONFIG.InfluxDB.GetAgvcBucket(), global.GVA_CONFIG.InfluxDB.GetMeasurement(),
 			*setting.Psid, *setting.Eqid, agvc.EqTypeBWD, cons.YC)
 
 		flux += `
