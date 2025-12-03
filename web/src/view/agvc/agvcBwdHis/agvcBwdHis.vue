@@ -638,9 +638,17 @@ const loadDeviceParameters = async (psid, number) => {
     const statusRes = await getAgcStatus({ psid, number })
     console.log('AGC状态响应:', statusRes)
     if (statusRes.code === 0 && statusRes.data) {
-      agcFunctionState.value = statusRes.data.agcFunctionState || 0
-      agcControlMode.value = statusRes.data.agcControlMode || 0
-      agcControlAuthority.value = statusRes.data.agcControlAuthority || 0
+      // 🔥 只在防抖期外更新状态字段，防止覆盖用户刚修改的值
+      if (!isFieldInDebounce('agcFunctionState')) {
+        agcFunctionState.value = statusRes.data.agcFunctionState || 0
+      }
+      if (!isFieldInDebounce('agcControlMode')) {
+        agcControlMode.value = statusRes.data.agcControlMode || 0
+      }
+      if (!isFieldInDebounce('agcControlAuthority')) {
+        agcControlAuthority.value = statusRes.data.agcControlAuthority || 0
+      }
+      // 其他字段正常更新
       targetActivePower.value = statusRes.data.targetActivePower 
       agcUpperLimit.value = statusRes.data.agcUpperLimit
       agcLowerLimit.value = statusRes.data.agcLowerLimit
@@ -651,9 +659,17 @@ const loadDeviceParameters = async (psid, number) => {
     const avcStatusRes = await getAvcStatus({ psid, number })
     console.log('AVC状态响应:', avcStatusRes)
     if (avcStatusRes.code === 0 && avcStatusRes.data) {
-      avcFunctionState.value = avcStatusRes.data.avcFunctionState || 0
-      avcControlMode.value = avcStatusRes.data.avcControlMode || 0
-      avcControlAuthority.value = avcStatusRes.data.avcControlAuthority || 0
+      // 🔥 只在防抖期外更新状态字段，防止覆盖用户刚修改的值
+      if (!isFieldInDebounce('avcFunctionState')) {
+        avcFunctionState.value = avcStatusRes.data.avcFunctionState || 0
+      }
+      if (!isFieldInDebounce('avcControlMode')) {
+        avcControlMode.value = avcStatusRes.data.avcControlMode || 0
+      }
+      if (!isFieldInDebounce('avcControlAuthority')) {
+        avcControlAuthority.value = avcStatusRes.data.avcControlAuthority || 0
+      }
+      // 其他字段正常更新
       targetReactive.value = avcStatusRes.data.targetReactivePower
       targetVoltage.value = avcStatusRes.data.targetVoltage
 
@@ -736,6 +752,26 @@ const avcControlAuthority = ref(1) // 1: 站内控制, 0: 调度控制
 // 已禁用loading状态，不再显示loading动画和遮罩
 let isLoadingAgcStatus = false
 
+// 乐观更新：记录最近更新的字段，防止轮询覆盖
+const recentUpdates = ref({})
+const DEBOUNCE_TIME = 2000 // 2秒防抖时间
+
+// 记录字段更新
+const recordFieldUpdate = (fieldName) => {
+  recentUpdates.value[fieldName] = Date.now()
+  // 2秒后自动清理
+  setTimeout(() => {
+    delete recentUpdates.value[fieldName]
+  }, DEBOUNCE_TIME)
+}
+
+// 检查字段是否在防抖期内
+const isFieldInDebounce = (fieldName) => {
+  const updateTime = recentUpdates.value[fieldName]
+  if (!updateTime) return false
+  return (Date.now() - updateTime) < DEBOUNCE_TIME
+}
+
 const updateAGCState = async (value) => { 
   updateAGVCState('agcFunctionState', value)
 }
@@ -759,6 +795,9 @@ const updateAVCControlAuthority = async (value) => {
 
 const updateAGVCState = async (type, value) => {
   try {
+    // 🔥 立即记录字段更新，防止轮询覆盖
+    recordFieldUpdate(type)
+    
     const messages = []
     switch (type) {
       case 'agcFunctionState':
@@ -831,14 +870,14 @@ const updateAGVCState = async (type, value) => {
     // 发送到TCP 1187端口
     const res = await sendAgcAvcStatesToTcp(messages)
     if (res.code === 0) {
-      console.log('AGC状态已发送到TCP 1187端口')
+      console.log('AGC/AVC状态已发送到TCP 1187端口')
     } else {
-      console.error('发送AGC状态失败:', res.msg)
-      ElMessage.error('发送AGC状态失败: ' + res.msg)
+      console.error('发送AGC/AVC状态失败:', res.msg)
+      ElMessage.error('发送AGC/AVC状态失败: ' + res.msg)
     }
   } catch (error) {
-    console.error('发送AGC状态失败:', error)
-    ElMessage.error('发送AGC状态失败: ' + error.message)
+    console.error('发送AGC/AVC状态失败:', error)
+    ElMessage.error('发送AGC/AVC状态失败: ' + error.message)
   }
 }
 
