@@ -49,6 +49,15 @@
               />
             </el-form-item>
             
+            <el-form-item prop="backendAddress">
+              <el-input
+                v-model="loginFormData.backendAddress"
+                size="large"
+                placeholder="请输入后端地址（例如：127.0.0.1:8888）"
+                class="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+              />
+            </el-form-item>
+            
             <!-- <el-form-item v-if="loginFormData.openCaptcha" prop="captcha">
               <div class="flex w-full gap-4">
                 <el-input
@@ -159,7 +168,8 @@
     captcha: '',
     captchaId: '',
     openCaptcha: false,
-    rememberMe: false
+    rememberMe: false,
+    backendAddress: localStorage.getItem('backendAddress') || ''
   })
   
   const rules = reactive({
@@ -197,6 +207,11 @@
         })
         // await loginVerify()
         return false
+      }
+
+      // 保存后端地址到localStorage
+      if (loginFormData.backendAddress) {
+        localStorage.setItem('backendAddress', loginFormData.backendAddress)
       }
 
       // 通过验证，请求登陆

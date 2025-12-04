@@ -102,6 +102,15 @@ service.interceptors.request.use(
     if (!config.donNotShowLoading) {
       showLoading(config.loadingOption)
     }
+    
+    // 动态设置后端地址
+    const backendAddress = localStorage.getItem('backendAddress')
+    if (backendAddress) {
+      // 如果用户输入了后端地址，则使用该地址
+      const protocol = window.location.protocol // 获取当前协议 http: 或 https:
+      config.baseURL = `${protocol}//${backendAddress}`
+    }
+    
     const userStore = useUserStore()
     config.headers = {
       'Content-Type': 'application/json',

@@ -11,14 +11,18 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick, watch, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import * as echarts from 'echarts'
 import { getVoltageReactiveChartData } from '@/api/agvc/agvcChart'
+import { useAppStore } from '@/pinia'
 
 defineOptions({
   name: 'VoltageReactiveChart'
 })
+
+const appStore = useAppStore()
+const isDark = computed(() => appStore.isDark)
 
 // 接收父组件传递的props
 const props = defineProps({
@@ -60,7 +64,13 @@ const initVoltageChart = () => {
   
   voltageChartInstance = echarts.init(voltageChartRef.value)
   
+  // 根据暗黑模式设置颜色
+  const backgroundColor = isDark.value ? '#19202D' : 'transparent'
+  const textColor = isDark.value ? 'white' : '#333'
+  const gridLineColor = isDark.value ? '#303642' : '#e0e6f1'
+  
   const option = {
+    backgroundColor: backgroundColor,
     tooltip: {
       trigger: 'axis',
       axisPointer: {
@@ -73,7 +83,10 @@ const initVoltageChart = () => {
     },
     legend: {
       data: ['当前电压', '目标电压'],
-      top: 30
+      top: 30,
+      textStyle: {
+        color: textColor
+      }
     },
     grid: {
       left: '3%',
@@ -86,17 +99,42 @@ const initVoltageChart = () => {
       boundaryGap: false,
       data: [],
       axisLabel: {
+        color: textColor,
         formatter: (value) => {
           const date = new Date(value)
           return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')}`
+        }
+      },
+      axisLine: {
+        lineStyle: {
+          color: gridLineColor
+        }
+      },
+      splitLine: {
+        lineStyle: {
+          color: gridLineColor
         }
       }
     },
     yAxis: {
       type: 'value',
       name: '电压 (kV)',
+      nameTextStyle: {
+        color: textColor
+      },
       axisLabel: {
+        color: textColor,
         formatter: '{value}'
+      },
+      axisLine: {
+        lineStyle: {
+          color: gridLineColor
+        }
+      },
+      splitLine: {
+        lineStyle: {
+          color: gridLineColor
+        }
       },
       min: function (value) {
         return Math.floor(value.min - 1);
@@ -222,6 +260,14 @@ watch(() => [props.psid, props.eqid], () => {
     loadChartData()
   }
 }, { immediate: false })
+
+// 监听暗黑模式变化，重新初始化图表
+watch(isDark, () => {
+  if (voltageChartInstance) {
+    initVoltageChart()
+    loadChartData()
+  }
+})
 
 onMounted(async() => {
   await nextTick()
