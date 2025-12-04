@@ -2,7 +2,7 @@
 <template>
   <div>
     <!-- 设备选择卡片 -->
-    <el-card class="bg-white dark:text-slate-300 dark:bg-slate-900 mt-4" shadow="hover" body-style="padding: 10px;">
+    <el-card class="h-[5.5rem] bg-white dark:text-slate-300 dark:bg-slate-900 mt-4" shadow="hover" body-style="padding: 10px;">
       <div class="device-info">
         <div class="device-name-row">
           <el-dropdown 
@@ -10,7 +10,7 @@
             size="large"
             @command="handleDeviceCommand"
           >
-          <span class="text-2xl font-bold cursor-pointer">
+          <span class="text-2xl  dark:text-white font-bold cursor-pointer">
             {{ getCurrentDevice()?.name || '请选择并网点设备' }}<el-icon class="align-center pl-2"><ArrowDown /></el-icon>
           </span>
             <!-- <el-button type="primary" size="large" style="width: 300px;">
@@ -44,12 +44,12 @@
     </el-card>
 
     <!-- AGC/AVC控制标签页 -->
-    <div class="main-tabs bg-white dark:text-slate-300 dark:bg-slate-900" style="margin-top: 10px;">
+    <div class="main-tabs  bg-white dark:bg-slate-900 dark:text-white" style="margin-top: 10px;">
       <el-tabs v-model="controlActiveTab"  style="position: relative;">
         <!-- 按钮组 - 绝对定位放在右上角 -->
         <div style="position: absolute; right: 20px; top: 8px; display: flex; gap: 10px; z-index: 100;" @click.stop>
-          <!-- <el-button size="small" @click="showHistoryDataDialog">历史数据查看</el-button> -->
-          <!-- <el-button size="small" @click="generateTestData">生成测试数据</el-button> -->
+          <!-- <el-button size="medium" @click="showHistoryDataDialog">历史数据查看</el-button> -->
+          <!-- <el-button size="medium" @click="generateTestData">生成测试数据</el-button> -->
         </div>
         <!-- AGC控制标签页 -->
         <el-tab-pane label="AGC控制" name="agc">
@@ -74,7 +74,7 @@
                         <div class="control-item">
                           <div class="item-label">电站AGC功能投退</div>
                           <div class="radio-group">
-                            <el-radio-group v-model="agcFunctionState" size="small" @change="updateAGCState">
+                            <el-radio-group v-model="agcFunctionState" size="medium" @change="updateAGCState">
                               <el-radio :label="1">投入</el-radio>
                               <el-radio :label="0">推出</el-radio>
                             </el-radio-group>
@@ -85,7 +85,7 @@
                         <div class="control-item">
                           <div class="item-label">电站AGC调节方式</div>
                           <div class="radio-group">
-                            <el-radio-group v-model="agcControlMode" size="small" @change="updateAGCControlMode">
+                            <el-radio-group v-model="agcControlMode" size="medium" @change="updateAGCControlMode">
                               <el-radio :label="1">闭环指导</el-radio>
                               <el-radio :label="0">开环指导</el-radio>
                             </el-radio-group>
@@ -96,21 +96,12 @@
                         <div class="control-item">
                           <div class="item-label">电站AGC控制权限</div>
                           <div class="radio-group">
-                            <el-radio-group v-model="agcControlAuthority" size="small" @change="updateAGCControlAuthority">
+                            <el-radio-group v-model="agcControlAuthority" size="medium" @change="updateAGCControlAuthority">
                               <el-radio :label="1">调度控制</el-radio>
                               <el-radio :label="0">站内控制</el-radio>
                             </el-radio-group>
                           </div>
                         </div>
-                      </div>
-                    </el-col>
-                    
-                    <!-- 右侧：AGC参数设置 -->
-                    <el-col :span="8">
-                      <div class="section-title">AGC参数设置</div>
-                      <div class="control-row" style="margin-top: 20px;">
-                        <!-- <el-button size="default" @click="openAgcParametersDialog" style="width: 100%; margin-bottom: 10px;">参数设置</el-button> -->
-                        <el-button size="default" @click="openAgcPlanCurvesDialog" style="width: 100%;">计划曲线</el-button>
                       </div>
                     </el-col>
                   </el-row>
@@ -121,40 +112,40 @@
                   <div class="section-title">电站负荷</div>
                   <div class="flex justify-between">
                     <!-- 目标电压 -->
-                    <div class="flex w-[28%] justify-between px-6 py-4 rounded-lg border-1 border-solid border-gray-200 devide-x-2 devide-solid devide-gray-200">
+                    <div class="flex w-[28%] justify-between px-6 py-4 rounded-lg border-1 border-solid border-gray-200 dark:border-[#454B55] devide-x-2 devide-solid devide-gray-200">
                       <!-- 目标有功 - 改为只读 -->
                       <div class="control-item">
                         <div class="item-label">目标有功(kW)</div>
-                        <div class="font-bold text-blue-400 text-xl">{{ formatNumber(targetActivePower) }}</div>
+                        <div class=" text-blue-400 text-xl">{{ formatNumber(targetActivePower) }}</div>
                       </div>
                       
                       <!-- 当前有功 -->
                       <div class="control-item">
                         <div class="item-label">当前有功(kW)</div>
-                        <div class="font-bold text-[#41C198] text-xl">{{ formatNumber(currentActivePower) }}</div>
+                        <div class=" text-[#41C198] text-xl">{{ formatNumber(currentActivePower) }}</div>
                       </div>
                     </div>
                     
-                    <div class="flex w-[28%] justify-between px-6 py-4 rounded-lg border-1 border-solid border-gray-200 devide-x-2 devide-solid devide-gray-200">
+                    <div class="flex w-[28%] justify-between px-6 py-4 rounded-lg border-1 border-solid border-gray-200 dark:border-[#454B55] devide-x-2 devide-solid devide-gray-200">
 
                     <!-- 可调上限 -->
                       <div class="control-item">
                         <div class="item-label">可调上限(kW)</div>
-                        <div class="font-bold text-blue-400 text-xl">{{ formatNumber(agcUpperLimit) }}</div>
+                        <div class=" text-blue-400 text-xl">{{ formatNumber(agcUpperLimit) }}</div>
                       </div>
                       
                       <!-- 可调下限 -->
                       <div class="control-item">
                         <div class="item-label">可调下限(kW)</div>
-                        <div class="font-bold text-[#41C198] text-xl">{{ formatNumber(agcLowerLimit) }}</div>
+                        <div class=" text-[#41C198] text-xl">{{ formatNumber(agcLowerLimit) }}</div>
                       </div>
                     </div>
                     
                     <!-- 系统频率 -->
-                    <div class="flex w-[28%] justify-between px-6 py-4 rounded-lg border-1 border-solid border-gray-200 devide-x-2 devide-solid devide-gray-200">
+                    <div class="flex w-[28%] justify-between px-6 py-4 rounded-lg border-1 border-solid border-gray-200 dark:border-[#454B55] devide-x-2 devide-solid devide-gray-200">
                       <div class="control-item">
                         <div class="item-label">系统频率(Hz)</div>
-                        <div class="font-bold text-xl text-[#41C198]">{{ formatNumber(systemFrequency) }}</div>
+                        <div class=" text-xl text-[#41C198]">{{ formatNumber(systemFrequency) }}</div>
                       </div>
                     </div>
                 </div>
@@ -185,7 +176,7 @@
                         <div class="control-item">
                           <div class="item-label">电站AVC功能投退</div>
                           <div class="radio-group">
-                            <el-radio-group v-model="avcFunctionState" size="small" @change="updateAVCFunctionState">
+                            <el-radio-group v-model="avcFunctionState" size="medium" @change="updateAVCFunctionState">
                               <el-radio :label="1">投入</el-radio>
                               <el-radio :label="0">推出</el-radio>
                             </el-radio-group>
@@ -196,7 +187,7 @@
                         <div class="control-item">
                           <div class="item-label">电站AVC调节方式</div>
                           <div class="radio-group">
-                            <el-radio-group v-model="avcControlMode" size="small" @change="updateAVCControlMode">
+                            <el-radio-group v-model="avcControlMode" size="medium" @change="updateAVCControlMode">
                               <el-radio :label="1">开环指导</el-radio>
                               <el-radio :label="0">闭环调节</el-radio>
                             </el-radio-group>
@@ -207,7 +198,7 @@
                         <div class="control-item">
                           <div class="item-label">电站AVC控制权限</div>
                           <div class="radio-group">
-                            <el-radio-group v-model="avcControlAuthority" size="small" @change="updateAVCControlAuthority">
+                            <el-radio-group v-model="avcControlAuthority" size="medium" @change="updateAVCControlAuthority">
                               <el-radio :label="1">站内控制</el-radio>
                               <el-radio :label="0">调度控制</el-radio>
                             </el-radio-group>
@@ -226,15 +217,6 @@
                         </el-radio-group>
                       </div>
                     </el-col>
-                    
-                    <!-- 右侧：AVC参数设置 -->
-                    <el-col :span="7">
-                      <div class="section-title">AVC参数设置</div>
-                      <div class="control-row" style="margin-top: 20px;">
-                        <!-- <el-button size="default" @click="openAvcParametersDialog" style="width: 100%; margin-bottom: 10px;">参数设置</el-button> -->
-                        <el-button size="default" @click="openAvcPlanCurvesDialog" style="width: 100%;">计划曲线</el-button>
-                      </div>
-                    </el-col>
                   </el-row>
                 </div>
                 
@@ -243,36 +225,36 @@
                   <div class="section-title">电站负荷</div>
                   <div class="flex justify-between">
                     <!-- 目标电压 -->
-                    <div class="flex w-[28%] justify-between px-6 py-4 rounded-lg border-1 border-solid border-gray-200 devide-x-2 devide-solid devide-gray-200">
+                    <div class="flex w-[28%] justify-between px-6 py-4 rounded-lg border-1 border-solid border-gray-200 dark:border-[#454B55] devide-x-2 devide-solid devide-gray-200">
                       <div class="">
                         <div class="item-label">目标电压(kV)</div>
-                        <div class="font-bold text-blue-400 text-xl">{{ formatNumber(targetVoltage) }}</div>
+                        <div class=" text-blue-400 text-xl">{{ formatNumber(targetVoltage) }}</div>
                       </div>
                       
                       <!-- 当前电压 -->
                       <div class="">
                         <div class="item-label">当前电压(kV)</div>
-                        <div class="font-bold text-[#41C198] text-xl">{{ formatNumber(currentVoltage) }}</div>
+                        <div class=" text-[#41C198] text-xl">{{ formatNumber(currentVoltage) }}</div>
                       </div>
                     </div>
-                    <div class="flex w-[28%] justify-between px-6 py-4 rounded-lg border-1 border-solid border-gray-200 devide-x-2 devide-solid devide-gray-200">
+                    <div class="flex w-[28%] justify-between px-6 py-4 rounded-lg border-1 border-solid border-gray-200 dark:border-[#454B55] devide-x-2 devide-solid devide-gray-200">
                       <!-- 目标无功 -->
                       <div class="control-item">
                         <div class="item-label">目标无功(kVar)</div>
-                        <div class="font-bold text-blue-400 text-xl">{{ formatNumber(targetReactive) }}</div>
+                        <div class=" text-blue-400 text-xl">{{ formatNumber(targetReactive) }}</div>
                       </div>
                       
                       <!-- 当前无功 -->
                       <div class="control-item">
                         <div class="item-label">当前无功(kVar)</div>
-                        <div class="font-bold text-[#41C198] text-xl">{{ formatNumber(currentReactive) }}</div>
+                        <div class=" text-[#41C198] text-xl">{{ formatNumber(currentReactive) }}</div>
                       </div>
                     </div>                    
                     <!-- 系统阻抗 -->
-                    <div class="flex w-[28%] justify-between px-6 py-4 rounded-lg border-1 border-solid border-gray-200 devide-x-2 devide-solid devide-gray-200">
+                    <div class="flex w-[28%] justify-between px-6 py-4 rounded-lg border-1 border-solid border-gray-200 dark:border-[#454B55] devide-x-2 devide-solid devide-gray-200">
                       <div class="">
                         <div class="item-label">系统阻抗</div>
-                        <div class="font-bold text-[#41C198] text-xl">{{ formatNumber(systemImpedance) }}</div>
+                        <div class=" text-[#41C198] text-xl">{{ formatNumber(systemImpedance) }}</div>
                       </div>
                     </div>
                   </div>
@@ -677,7 +659,7 @@ const loadDeviceParameters = async (psid, number) => {
     
     // 加载并网点实时数据
     console.log('3.6. 加载并网点实时数据...')
-    const realtimeRes = await getBwdRealtimeData({ number })
+    const realtimeRes = await getBwdRealtimeData({ psid, number })
     console.log('实时数据响应:', realtimeRes)
     if (realtimeRes.code === 0 && realtimeRes.data) {
       // 更新AGC相关实时数据
@@ -1503,6 +1485,10 @@ const handleResize = () => {
   margin-bottom: 20px;
 }
 
+.dark .main-tabs {
+  border: 1px solid #3D444E;
+}
+
 /* 控制内容 */
 .control-content {
   padding: 15px 0;
@@ -1515,6 +1501,10 @@ const handleResize = () => {
   border-bottom: 1px solid #f0f0f0;
 }
 
+.dark .control-section {
+  border-bottom: 1px solid #3D444E;
+}
+
 .control-section:last-child {
   border-bottom: none;
   margin-bottom: 0;
@@ -1525,9 +1515,13 @@ const handleResize = () => {
   font-size: 14px;
   font-weight: bold;
   margin-bottom: 10px;
-  color: #606266;
+  color: #000000;
   display: flex;
   align-items: center;
+}
+
+.dark .section-title {
+  color: #ffffff;
 }
 
 .section-title::before {
@@ -1566,15 +1560,23 @@ const handleResize = () => {
 }
 
 .item-label {
-  font-size: 12px;
+  font-size: 14px;
   color: #606266;
   margin-bottom: 5px;
+}
+
+.dark .item-label {
+  color: #ffffff;
 }
 
 .item-value {
   font-size: 14px;
   font-weight: bold;
   color: #303133;
+}
+
+.dark .item-value {
+  color: #ffffff;
 }
 
 .radio-group {
@@ -1593,6 +1595,12 @@ const handleResize = () => {
   border-top: 2px solid #f0f0f0;
 }
 
+.dark .chart-section {
+  border-top: 2px solid #3D444E;
+}
+
+
+
 /* 图表区域 - 位于最上面 */
 .chart-section.chart-top {
   margin-top: 0;
@@ -1602,21 +1610,15 @@ const handleResize = () => {
   border-bottom: 2px solid #f0f0f0;
 }
 
+.dark .chart-section.chart-top {
+  border-bottom: 2px solid #3D444E;
+}
+
+
 /* AVC模式切换 */
 .avc-mode-switch {
   margin-bottom: 15px;
   text-align: center;
-}
-
-/* 图表容器 */
-.chart-container {
-  height: 400px;
-  margin-top: 15px;
-  border: 1px solid #e4e7ed;
-  border-radius: 4px;
-  width: 100%;
-  margin: 15px 0 0 0;
-  padding: 0;
 }
 
 .chart-wrapper {
@@ -1670,13 +1672,21 @@ const handleResize = () => {
 }
 
 .detail-label {
-  color: #909399;
+  color: #606266;
   margin-right: 8px;
+}
+
+.dark .detail-label {
+  color: #ffffff;
 }
 
 .detail-value {
   color: #606266;
   font-weight: 500;
+}
+
+.dark .detail-value {
+  color: #ffffff;
 }
 
 /* 响应式调整 */

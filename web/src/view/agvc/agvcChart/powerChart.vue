@@ -97,7 +97,7 @@ const initChart = () => {
       axisLabel: {
         formatter: '{value}'
       },
-      interval: 0.2,
+      // interval: 0.2,
       min: function (value) {
         return Math.floor(value.min - 1);
       },

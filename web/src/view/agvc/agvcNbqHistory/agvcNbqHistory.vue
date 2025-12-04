@@ -42,9 +42,9 @@
         max-height="600"
         v-loading="loading"
       >
-        <el-table-column align="center" label="设备编号" prop="inverterNo" width="120" fixed="left" />
-        <el-table-column align="center" label="设备名称" prop="name" width="150" fixed="left" />
-        <el-table-column align="center" label="采集时间" prop="ctime" width="180" fixed="left">
+        <el-table-column align="center" label="设备编号" prop="inverterNo" min-width="120" fixed="left" />
+        <el-table-column align="center" label="设备名称" prop="name" min-width="150" fixed="left" />
+        <el-table-column align="center" label="采集时间" prop="ctime" min-width="180" fixed="left">
           <template #default="scope">
             {{ formatTime(scope.row.ctime) }}
           </template>
@@ -52,67 +52,67 @@
         
         
         <!-- 发电量相关 -->
-        <el-table-column align="center" label="总发电量(kWh)" prop="totalPowerGeneration" width="150">
+        <el-table-column align="center" label="总发电量(kWh)" prop="totalPowerGeneration" min-width="150">
           <template #default="scope">{{ formatValue(scope.row.totalPowerGeneration) }}</template>
         </el-table-column>
-        <el-table-column align="center" label="日发电量(kWh)" prop="dailyPowerGeneration" width="150">
+        <el-table-column align="center" label="日发电量(kWh)" prop="dailyPowerGeneration" min-width="150">
           <template #default="scope">{{ formatValue(scope.row.dailyPowerGeneration) }}</template>
         </el-table-column>
-        <el-table-column align="center" label="月发电量(kWh)" prop="monthlyPowerGeneration" width="150">
+        <el-table-column align="center" label="月发电量(kWh)" prop="monthlyPowerGeneration" min-width="150">
           <template #default="scope">{{ formatValue(scope.row.monthlyPowerGeneration) }}</template>
         </el-table-column>
-        <el-table-column align="center" label="年发电量(kWh)" prop="annualPowerGeneration" width="150">
+        <el-table-column align="center" label="年发电量(kWh)" prop="annualPowerGeneration" min-width="150">
           <template #default="scope">{{ formatValue(scope.row.annualPowerGeneration) }}</template>
         </el-table-column>
         
         <!-- 功率相关 -->
-        <el-table-column align="center" label="交流功率(kW)" prop="acPower" width="130">
+        <el-table-column align="center" label="交流功率(kW)" prop="acPower" min-width="130">
           <template #default="scope">{{ formatValue(scope.row.acPower) }}</template>
         </el-table-column>
-        <el-table-column align="center" label="直流功率(kW)" prop="dcPower" width="130">
+        <el-table-column align="center" label="直流功率(kW)" prop="dcPower" min-width="130">
           <template #default="scope">{{ formatValue(scope.row.dcPower) }}</template>
         </el-table-column>
-        <el-table-column align="center" label="无功功率(kVar)" prop="reactivePower" width="140">
+        <el-table-column align="center" label="无功功率(kVar)" prop="reactivePower" min-width="140">
           <template #default="scope">{{ formatValue(scope.row.reactivePower) }}</template>
         </el-table-column>
-        <el-table-column align="center" label="视在功率(kVa)" prop="apparentPower" width="140">
+        <el-table-column align="center" label="视在功率(kVa)" prop="apparentPower" min-width="140">
           <template #default="scope">{{ formatValue(scope.row.apparentPower) }}</template>
         </el-table-column>
         
         <!-- 电压电流 -->
-        <el-table-column align="center" label="A相电压(V)" prop="phaseAVoltage" width="130">
+        <el-table-column align="center" label="A相电压(V)" prop="phaseAVoltage" min-width="130">
           <template #default="scope">{{ formatValue(scope.row.phaseAVoltage) }}</template>
         </el-table-column>
-        <el-table-column align="center" label="B相电压(V)" prop="phaseBVoltage" width="130">
+        <el-table-column align="center" label="B相电压(V)" prop="phaseBVoltage" min-width="130">
           <template #default="scope">{{ formatValue(scope.row.phaseBVoltage) }}</template>
         </el-table-column>
-        <el-table-column align="center" label="C相电压(V)" prop="phaseCVoltage" width="130">
+        <el-table-column align="center" label="C相电压(V)" prop="phaseCVoltage" min-width="130">
           <template #default="scope">{{ formatValue(scope.row.phaseCVoltage) }}</template>
         </el-table-column>
-        <el-table-column align="center" label="A相电流(A)" prop="phaseACurrent" width="130">
+        <el-table-column align="center" label="A相电流(A)" prop="phaseACurrent" min-width="130">
           <template #default="scope">{{ formatValue(scope.row.phaseACurrent) }}</template>
         </el-table-column>
-        <el-table-column align="center" label="B相电流(A)" prop="phaseBCurrent" width="130">
+        <el-table-column align="center" label="B相电流(A)" prop="phaseBCurrent" min-width="130">
           <template #default="scope">{{ formatValue(scope.row.phaseBCurrent) }}</template>
         </el-table-column>
-        <el-table-column align="center" label="C相电流(A)" prop="phaseCCurrent" width="130">
+        <el-table-column align="center" label="C相电流(A)" prop="phaseCCurrent" min-width="130">
           <template #default="scope">{{ formatValue(scope.row.phaseCCurrent) }}</template>
         </el-table-column>
         
         <!-- 其他参数 -->
-        <el-table-column align="center" label="功率因数" prop="powerFactor" width="110">
+        <el-table-column align="center" label="功率因数" prop="powerFactor" min-width="110">
           <template #default="scope">{{ formatValue(scope.row.powerFactor) }}</template>
         </el-table-column>
-        <el-table-column align="center" label="设备温度(℃)" prop="deviceTemperature" width="130">
+        <el-table-column align="center" label="设备温度(℃)" prop="deviceTemperature" min-width="150">
           <template #default="scope">{{ formatValue(scope.row.deviceTemperature) }}</template>
         </el-table-column>
-        <el-table-column align="center" label="转换效率(%)" prop="conversionEfficiency" width="130">
+        <el-table-column align="center" label="转换效率(%)" prop="conversionEfficiency" min-width="150">
           <template #default="scope">{{ formatValue(scope.row.conversionEfficiency) }}</template>
         </el-table-column>
-        <el-table-column align="center" label="电网频率(Hz)" prop="gridFrequency" width="130">
+        <el-table-column align="center" label="电网频率(Hz)" prop="gridFrequency" min-width="150">
           <template #default="scope">{{ formatValue(scope.row.gridFrequency) }}</template>
         </el-table-column>
-        <el-table-column align="center" label="设备状态码" prop="deviceStatusCode" width="120">
+        <el-table-column align="center" label="设备状态码" prop="deviceStatusCode" min-width="150">
           <template #default="scope">{{ formatValue(scope.row.deviceStatusCode) }}</template>
         </el-table-column>
       </el-table>

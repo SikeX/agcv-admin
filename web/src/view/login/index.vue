@@ -5,20 +5,20 @@
     <!-- 遮罩层（可选，用于提高内容可读性） -->
     <div class="absolute inset-0 bg-black bg-opacity-10 z-0"></div>
     
-    <div class="shadow-2xl rounded-lg flex flex-col md:flex-row w-[60%] h-[60%] absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 overflow-hidden z-10">
+    <div class="shadow-2xl rounded-lg flex flex-col md:flex-row w-[52%] h-[57%] absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 overflow-hidden z-10">
       <!-- 左侧品牌区域 -->
-      <div class="w-full md:w-[55%] bg-[#4699F5] flex flex-col items-center justify-center p-8 relative overflow-hidden">
-        <div class="relative z-10 w-full flex flex-col  justify-center gap-4 h-full">
-          <img class="w-40" src="@/assets/logo-ln.png" alt="logo">
+      <div class="w-[50%] bg-[#4699F5] flex flex-col items-start p-15 relative overflow-hidden">
+        <div class="relative z-10 w-full flex flex-col gap-6 h-full items-start">
+          <img class="h-[3.75rem] w-auto object-contain" src="@/assets/logo-ln.png" alt="logo">
           <p class="text-white text-3xl mb-8">四可边缘(AGC&AVC)自动控制系统</p>
-          <img src="@/assets/login-2.png" alt="login-2" class="max-h-[40%] w-auto object-contain">
+          <img src="@/assets/login-2.png" alt="login-2" class="max-h-[45%] w-auto object-contain">
         </div>
       </div>
       
       <!-- 右侧登录区域 -->
-      <div class="w-full md:w-[45%] bg-white flex items-center justify-center p-8">
-        <div class="w-full max-w-md flex flex-col">
-          <h2 class="text-3xl font-bold text-gray-800 mb-8">欢迎登录</h2>
+      <div class="w-[50%] bg-white flex items-center p-20 box-border">
+        <div class="w-full max-w-md flex flex-col gap-12">
+          <h2 class="text-[2.75rem] font-thin mb-8">欢迎登录</h2>
           
           <el-form
             ref="loginForm"
@@ -26,14 +26,14 @@
             :rules="rules"
             :validate-on-rule-change="false"
             @keyup.enter="submitForm"
-            class="space-y-6"
+            class="space-y-8"
+            size="medium"
           >
             <el-form-item prop="username">
               <el-input
                 v-model="loginFormData.username"
                 size="large"
                 placeholder="请输入用户名"
-                prefix-icon="el-icon-user"
                 class="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
               />
             </el-form-item>
@@ -45,7 +45,6 @@
                 size="large"
                 type="password"
                 placeholder="请输入密码"
-                prefix-icon="el-icon-lock"
                 class="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
               />
             </el-form-item>
@@ -71,13 +70,13 @@
               </div>
             </el-form-item> -->
             
-            <el-form-item class="flex items-center justify-between">
-              <el-checkbox v-model="loginFormData.rememberMe" class="text-gray-600">记住密码</el-checkbox>
+            <el-form-item class="flex items-center justify-between text-blue-500">
+              <el-checkbox v-model="loginFormData.rememberMe" >记住密码</el-checkbox>
             </el-form-item>
             
             <el-form-item>
               <el-button
-                class="w-full h-12 text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 transition-all duration-300"
+                class="w-full mt-8 h-12 text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 transition-all duration-300"
                 type="primary"
                 size="large"
                 @click="submitForm"
