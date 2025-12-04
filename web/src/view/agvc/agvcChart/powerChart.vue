@@ -11,14 +11,18 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick, watch, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import * as echarts from 'echarts'
 import { getPowerChartData } from '@/api/agvc/agvcChart'
+import { useAppStore } from '@/pinia'
 
 defineOptions({
   name: 'PowerChart'
 })
+
+const appStore = useAppStore()
+const isDark = computed(() => appStore.isDark)
 
 // 接收父组件传递的props
 const props = defineProps({
@@ -60,7 +64,13 @@ const initChart = () => {
   
   chartInstance = echarts.init(chartRef.value)
   
+  // 根据暗黑模式设置颜色
+  const backgroundColor = isDark.value ? '#19202D' : 'transparent'
+  const textColor = isDark.value ? 'white' : '#333'
+  const gridLineColor = isDark.value ? '#303642' : '#e0e6f1'
+  
   const option = {
+    backgroundColor: backgroundColor,
     tooltip: {
       trigger: 'axis',
       axisPointer: {
@@ -72,7 +82,10 @@ const initChart = () => {
     },
     legend: {
       data: ['当前有功功率', '目标有功功率'],
-      top: 30
+      top: 30,
+      textStyle: {
+        color: textColor
+      }
     },
     grid: {
       left: '3%',
@@ -85,17 +98,42 @@ const initChart = () => {
       boundaryGap: false,
       data: [],
       axisLabel: {
+        color: textColor,
         formatter: (value) => {
           const date = new Date(value)
           return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')}`
+        }
+      },
+      axisLine: {
+        lineStyle: {
+          color: gridLineColor
+        }
+      },
+      splitLine: {
+        lineStyle: {
+          color: gridLineColor
         }
       }
     },
     yAxis: {
       type: 'value',
       name: '功率 (kW)',
+      nameTextStyle: {
+        color: textColor
+      },
       axisLabel: {
+        color: textColor,
         formatter: '{value}'
+      },
+      axisLine: {
+        lineStyle: {
+          color: gridLineColor
+        }
+      },
+      splitLine: {
+        lineStyle: {
+          color: gridLineColor
+        }
       },
       // interval: 0.2,
       min: function (value) {
@@ -220,6 +258,14 @@ watch(() => [props.psid, props.eqid], () => {
     loadChartData()
   }
 }, { immediate: false })
+
+// 监听暗黑模式变化，重新初始化图表
+watch(isDark, () => {
+  if (chartInstance) {
+    initChart()
+    loadChartData()
+  }
+})
 
 onMounted(async() => {
   await nextTick()
