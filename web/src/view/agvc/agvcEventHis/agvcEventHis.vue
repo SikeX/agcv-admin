@@ -55,6 +55,10 @@
     <div class="gva-table-box">
         <div class="gva-btn-list">
             <!-- 历史事件记录不可新增、编辑、删除 -->
+            <div style="display: flex; align-items: center; color: #909399; font-size: 14px;">
+              <el-icon style="margin-right: 5px;"><Refresh /></el-icon>
+              <span>页面每30秒自动刷新</span>
+            </div>
         </div>
         <el-table
         ref="multipleTable"
@@ -159,8 +163,9 @@ import {
 
 // 全量引入格式化工具 请按需保留
 import { getDictFunc, formatDate, filterDict } from '@/utils/format'
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { useAppStore } from "@/pinia"
+import { Refresh } from '@element-plus/icons-vue'
 
 
 defineOptions({
@@ -168,6 +173,10 @@ defineOptions({
 })
 
 const appStore = useAppStore()
+
+// 自动刷新相关
+let refreshTimer = null
+const autoRefreshInterval = 30000 // 30秒自动刷新一次
 
 // 控制更多查询条件显示/隐藏状态
 const showAllQuery = ref(false)
@@ -239,6 +248,34 @@ const setOptions = async () =>{
 
 // 获取需要的字典 可能为空 按需保留
 setOptions()
+
+// 启动自动刷新
+const startAutoRefresh = () => {
+  if (refreshTimer) {
+    clearInterval(refreshTimer)
+  }
+  refreshTimer = setInterval(() => {
+    getTableData()
+  }, autoRefreshInterval)
+}
+
+// 停止自动刷新
+const stopAutoRefresh = () => {
+  if (refreshTimer) {
+    clearInterval(refreshTimer)
+    refreshTimer = null
+  }
+}
+
+// 组件挂载时启动自动刷新
+onMounted(() => {
+  startAutoRefresh()
+})
+
+// 组件卸载时停止自动刷新
+onUnmounted(() => {
+  stopAutoRefresh()
+})
 
 const detailForm = ref({})
 
