@@ -108,7 +108,7 @@
   import { checkDB } from '@/api/initdb'
   import { reactive, ref, onMounted } from 'vue'
   import { ElMessage } from 'element-plus'
-  import { useRouter } from 'vue-router'
+  import { useRouter, useRoute } from 'vue-router'
   import { useUserStore } from '@/pinia/modules/user'
 
   defineOptions({
@@ -116,6 +116,7 @@
   })
 
   const router = useRouter()
+const route = useRoute()
   
   // 验证函数
   const checkUsername = (rule, value, callback) => {
