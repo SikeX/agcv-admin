@@ -131,9 +131,10 @@ export const useUserStore = defineStore('user', () => {
     // 使用remove方法正确删除cookie
     xToken.remove()
     sessionStorage.clear()
-    // 清理所有相关的localStorage项
+    // 清理所有相关的localStorage项，但保留记住密码的信息
     localStorage.removeItem('originSetting')
     localStorage.removeItem('token')
+    // 不要清除backendAddress，因为用户可能希望保持后端地址设置
   }
 
   return {
