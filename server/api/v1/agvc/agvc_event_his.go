@@ -1,8 +1,8 @@
 package agvc
 
 import (
-	
-	"github.com/flipped-aurora/gin-vue-admin/server/global"
+    
+    "github.com/flipped-aurora/gin-vue-admin/server/global"
     "github.com/flipped-aurora/gin-vue-admin/server/model/common/response"
     "github.com/flipped-aurora/gin-vue-admin/server/model/agvc"
     agvcReq "github.com/flipped-aurora/gin-vue-admin/server/model/agvc/request"
@@ -27,18 +27,18 @@ func (agvcEventHisApi *AgvcEventHisApi) CreateAgvcEventHis(c *gin.Context) {
     // 创建业务用Context
     ctx := c.Request.Context()
 
-	var agvcEventHis agvc.AgvcEventHis
-	err := c.ShouldBindJSON(&agvcEventHis)
-	if err != nil {
-		response.FailWithMessage(err.Error(), c)
-		return
-	}
-	err = agvcEventHisService.CreateAgvcEventHis(ctx,&agvcEventHis)
-	if err != nil {
+    var agvcEventHis agvc.AgvcEventHis
+    err := c.ShouldBindJSON(&agvcEventHis)
+    if err != nil {
+        response.FailWithMessage(err.Error(), c)
+        return
+    }
+    err = agvcEventHisService.CreateAgvcEventHis(ctx,&agvcEventHis)
+    if err != nil {
         global.GVA_LOG.Error("创建失败!", zap.Error(err))
-		response.FailWithMessage("创建失败:" + err.Error(), c)
-		return
-	}
+        response.FailWithMessage("创建失败:" + err.Error(), c)
+        return
+    }
     response.OkWithMessage("创建成功", c)
 }
 
@@ -55,14 +55,14 @@ func (agvcEventHisApi *AgvcEventHisApi) DeleteAgvcEventHis(c *gin.Context) {
     // 创建业务用Context
     ctx := c.Request.Context()
 
-	ID := c.Query("ID")
-	err := agvcEventHisService.DeleteAgvcEventHis(ctx,ID)
-	if err != nil {
+    ID := c.Query("ID")
+    err := agvcEventHisService.DeleteAgvcEventHis(ctx,ID)
+    if err != nil {
         global.GVA_LOG.Error("删除失败!", zap.Error(err))
-		response.FailWithMessage("删除失败:" + err.Error(), c)
-		return
-	}
-	response.OkWithMessage("删除成功", c)
+        response.FailWithMessage("删除失败:" + err.Error(), c)
+        return
+    }
+    response.OkWithMessage("删除成功", c)
 }
 
 // DeleteAgvcEventHisByIds 批量删除历史事件
@@ -77,14 +77,14 @@ func (agvcEventHisApi *AgvcEventHisApi) DeleteAgvcEventHisByIds(c *gin.Context) 
     // 创建业务用Context
     ctx := c.Request.Context()
 
-	IDs := c.QueryArray("IDs[]")
-	err := agvcEventHisService.DeleteAgvcEventHisByIds(ctx,IDs)
-	if err != nil {
+    IDs := c.QueryArray("IDs[]")
+    err := agvcEventHisService.DeleteAgvcEventHisByIds(ctx,IDs)
+    if err != nil {
         global.GVA_LOG.Error("批量删除失败!", zap.Error(err))
-		response.FailWithMessage("批量删除失败:" + err.Error(), c)
-		return
-	}
-	response.OkWithMessage("批量删除成功", c)
+        response.FailWithMessage("批量删除失败:" + err.Error(), c)
+        return
+    }
+    response.OkWithMessage("批量删除成功", c)
 }
 
 // UpdateAgvcEventHis 更新历史事件
@@ -100,19 +100,19 @@ func (agvcEventHisApi *AgvcEventHisApi) UpdateAgvcEventHis(c *gin.Context) {
     // 从ctx获取标准context进行业务行为
     ctx := c.Request.Context()
 
-	var agvcEventHis agvc.AgvcEventHis
-	err := c.ShouldBindJSON(&agvcEventHis)
-	if err != nil {
-		response.FailWithMessage(err.Error(), c)
-		return
-	}
-	err = agvcEventHisService.UpdateAgvcEventHis(ctx,agvcEventHis)
-	if err != nil {
+    var agvcEventHis agvc.AgvcEventHis
+    err := c.ShouldBindJSON(&agvcEventHis)
+    if err != nil {
+        response.FailWithMessage(err.Error(), c)
+        return
+    }
+    err = agvcEventHisService.UpdateAgvcEventHis(ctx,agvcEventHis)
+    if err != nil {
         global.GVA_LOG.Error("更新失败!", zap.Error(err))
-		response.FailWithMessage("更新失败:" + err.Error(), c)
-		return
-	}
-	response.OkWithMessage("更新成功", c)
+        response.FailWithMessage("更新失败:" + err.Error(), c)
+        return
+    }
+    response.OkWithMessage("更新成功", c)
 }
 
 // FindAgvcEventHis 用id查询历史事件
@@ -128,14 +128,14 @@ func (agvcEventHisApi *AgvcEventHisApi) FindAgvcEventHis(c *gin.Context) {
     // 创建业务用Context
     ctx := c.Request.Context()
 
-	ID := c.Query("ID")
-	reagvcEventHis, err := agvcEventHisService.GetAgvcEventHis(ctx,ID)
-	if err != nil {
+    ID := c.Query("ID")
+    reagvcEventHis, err := agvcEventHisService.GetAgvcEventHis(ctx,ID)
+    if err != nil {
         global.GVA_LOG.Error("查询失败!", zap.Error(err))
-		response.FailWithMessage("查询失败:" + err.Error(), c)
-		return
-	}
-	response.OkWithData(reagvcEventHis, c)
+        response.FailWithMessage("查询失败:" + err.Error(), c)
+        return
+    }
+    response.OkWithData(reagvcEventHis, c)
 }
 // GetAgvcEventHisList 分页获取历史事件列表
 // @Tags AgvcEventHis
@@ -150,15 +150,15 @@ func (agvcEventHisApi *AgvcEventHisApi) GetAgvcEventHisList(c *gin.Context) {
     // 创建业务用Context
     ctx := c.Request.Context()
 
-	var pageInfo agvcReq.AgvcEventHisSearch
-	err := c.ShouldBindQuery(&pageInfo)
-	if err != nil {
-		response.FailWithMessage(err.Error(), c)
-		return
-	}
-	list, total, err := agvcEventHisService.GetAgvcEventHisInfoList(ctx,pageInfo)
-	if err != nil {
-	    global.GVA_LOG.Error("获取失败!", zap.Error(err))
+    var pageInfo agvcReq.AgvcEventHisSearch
+    err := c.ShouldBindQuery(&pageInfo)
+    if err != nil {
+        response.FailWithMessage(err.Error(), c)
+        return
+    }
+    list, total, err := agvcEventHisService.GetAgvcEventHisInfoList(ctx,pageInfo)
+    if err != nil {
+        global.GVA_LOG.Error("获取失败!", zap.Error(err))
         response.FailWithMessage("获取失败:" + err.Error(), c)
         return
     }
@@ -187,4 +187,41 @@ func (agvcEventHisApi *AgvcEventHisApi) GetAgvcEventHisPublic(c *gin.Context) {
     response.OkWithDetailed(gin.H{
        "info": "不需要鉴权的历史事件接口信息",
     }, "获取成功", c)
+}
+
+// ReceiveEventPush 接收事件推送（无需认证）
+// @Tags AgvcEventHis
+// @Summary 接收事件推送
+// @Accept application/json
+// @Produce application/json
+// @Param data body agvc.Event true "事件数据"
+// @Success 200 {object} response.Response{msg=string} "接收成功"
+// @Router /agvcEventHis/receiveEventPush [post]
+func (agvcEventHisApi *AgvcEventHisApi) ReceiveEventPush(c *gin.Context) {
+    // 创建业务用Context
+    ctx := c.Request.Context()
+
+    var event agvc.Event
+    err := c.ShouldBindJSON(&event)
+    if err != nil {
+        global.GVA_LOG.Error("参数绑定失败!", zap.Error(err))
+        response.FailWithMessage("参数错误:" + err.Error(), c)
+        return
+    }
+
+    err = agvcEventHisService.ReceiveEvent(ctx, &event)
+    if err != nil {
+        global.GVA_LOG.Error("事件入库失败!", zap.Error(err))
+        response.FailWithMessage("事件入库失败:" + err.Error(), c)
+        return
+    }
+
+    global.GVA_LOG.Info("接收到事件推送", 
+        zap.Int("psid", event.Psid),
+        zap.Int("eqid", event.Eqid),
+        zap.Int("eqType", event.EqType),
+        zap.String("datapoint", event.Datapoint),
+    )
+
+    response.OkWithMessage("接收成功", c)
 }

@@ -108,7 +108,7 @@
   import { checkDB } from '@/api/initdb'
   import { reactive, ref, onMounted } from 'vue'
   import { ElMessage } from 'element-plus'
-  import { useRouter } from 'vue-router'
+  import { useRouter, useRoute } from 'vue-router'
   import { useUserStore } from '@/pinia/modules/user'
 
   defineOptions({
@@ -116,6 +116,7 @@
   })
 
   const router = useRouter()
+  const route = useRoute()
   
   // 验证函数
   const checkUsername = (rule, value, callback) => {
@@ -162,14 +163,30 @@
   // 登录相关操作
   const loginForm = ref(null)
   const picPath = ref('')
+  
+  // 从URL参数或localStorage加载后端地址（URL优先）
+  const backendFromUrl = route.query.backend || ''
+  const backendFromStorage = localStorage.getItem('backendAddress') || ''
+  const initialBackend = backendFromUrl || backendFromStorage
+  
+  // 如果URL中有后端地址，保存到sessionStorage（用于当前tab）
+  if (backendFromUrl) {
+    sessionStorage.setItem('backendAddress', backendFromUrl)
+  }
+  
+  // 从localStorage加载记住的密码
+  const savedUsername = localStorage.getItem('rememberedUsername') || 'admin'
+  const savedPassword = localStorage.getItem('rememberedPassword') || ''
+  const savedRememberMe = localStorage.getItem('rememberMe') === 'true'
+  
   const loginFormData = reactive({
-    username: 'admin',
-    password: '',
+    username: savedUsername,
+    password: savedPassword,
     captcha: '',
     captchaId: '',
     openCaptcha: false,
-    rememberMe: false,
-    backendAddress: localStorage.getItem('backendAddress') || ''
+    rememberMe: savedRememberMe,
+    backendAddress: initialBackend
   })
   
   const rules = reactive({
@@ -209,9 +226,25 @@
         return false
       }
 
-      // 保存后端地址到localStorage
+      // 保存后端地址到sessionStorage（用于当前tab）和localStorage（用于默认值）
       if (loginFormData.backendAddress) {
+        sessionStorage.setItem('backendAddress', loginFormData.backendAddress)
         localStorage.setItem('backendAddress', loginFormData.backendAddress)
+        
+        // 更新URL参数，使后端地址体现在URL上
+        const newQuery = { ...route.query, backend: loginFormData.backendAddress }
+        router.replace({ query: newQuery })
+      }
+
+      // 记住密码功能
+      if (loginFormData.rememberMe) {
+        localStorage.setItem('rememberedUsername', loginFormData.username)
+        localStorage.setItem('rememberedPassword', loginFormData.password)
+        localStorage.setItem('rememberMe', 'true')
+      } else {
+        localStorage.removeItem('rememberedUsername')
+        localStorage.removeItem('rememberedPassword')
+        localStorage.removeItem('rememberMe')
       }
 
       // 通过验证，请求登陆
