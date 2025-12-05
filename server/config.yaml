@@ -39,7 +39,7 @@ coap:
     host: 0.0.0.0
     port: 1188
 cors:
-    mode: strict-whitelist
+    mode: allow-all
     whitelist:
         - allow-origin: example1.com
           allow-methods: POST, GET
@@ -95,7 +95,7 @@ influxdb:
     agvcBucket: agvc_data
     agvcRetention: 24h
     nbqBucket: nbq_data
-    nbqRetention: 168h
+    nbqRetention: 48h
     username: admin
     password: "12345678"
 jwt:

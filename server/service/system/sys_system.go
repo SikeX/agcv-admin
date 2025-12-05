@@ -133,7 +133,8 @@ func updateBucketRetention(ctx context.Context, bucketsAPI api.BucketsAPI, bucke
 		}
 	}
 
-	shardGroupDurationSeconds := int64(retentionSeconds)
+	//设置为1h
+	shardGroupDurationSeconds := int64(60 * 60)
 
 	// 更新保留策略
 	if needsUpdate {

@@ -2,7 +2,7 @@
 <template>
   <div>
     <!-- 设备选择卡片 -->
-    <el-card class="h-[5.5rem] bg-white dark:text-slate-300 dark:bg-slate-900 mt-4" shadow="hover" body-style="padding: 10px;">
+    <el-card class="h-[5.5rem] bg-white dark:text-slate-300 dark:bg-[#19202D] mt-4" shadow="hover" body-style="padding: 10px;">
       <div class="device-info">
         <div class="device-name-row">
           <el-dropdown 
@@ -44,7 +44,7 @@
     </el-card>
 
     <!-- AGC/AVC控制标签页 -->
-    <div class="main-tabs  bg-white dark:bg-slate-900 dark:text-white" style="margin-top: 10px;">
+    <div class="main-tabs  bg-white dark:bg-[#19202D] dark:text-white" style="margin-top: 10px;">
       <el-tabs v-model="controlActiveTab"  style="position: relative;">
         <!-- 按钮组 - 绝对定位放在右上角 -->
         <div style="position: absolute; right: 20px; top: 8px; display: flex; gap: 10px; z-index: 100;" @click.stop>

@@ -1,12 +1,10 @@
 <template>
   <div>
-    <div class="gva-table-box">
-      <el-card>
+      <el-card class="dark:bg-[#19202D]">
         <div style="height: 400px">
           <div ref="chartRef" style="width: 100%; height: 100%"></div>
         </div>
       </el-card>
-    </div>
   </div>
 </template>
 
@@ -47,7 +45,8 @@ const tooltipFormatter = (params) =>{
   const dateStyle =`时间:${dateStr}<br>`
   let allStyle = ''
   for (const item of params) {
-   allStyle += ` ${item.marker} ${item.seriesName}: ${item.value || 0}<br>`
+    let v = item.value == undefined ? 0 : item.value.toFixed(6)
+   allStyle += ` ${item.marker} ${item.seriesName}: ${v || 0}<br>`
   }
   allStyle = dateStyle + allStyle
 
@@ -66,7 +65,7 @@ const initChart = () => {
   
   // 根据暗黑模式设置颜色
   const backgroundColor = isDark.value ? '#19202D' : 'transparent'
-  const textColor = isDark.value ? 'white' : '#333'
+  const textColor = isDark.value ? 'white' : 'black'
   const gridLineColor = isDark.value ? '#303642' : '#e0e6f1'
   
   const option = {
@@ -74,7 +73,21 @@ const initChart = () => {
     tooltip: {
       trigger: 'axis',
       axisPointer: {
-        type: 'cross'
+        type: 'cross',
+        label: {
+          backgroundColor: gridLineColor,
+          color: textColor,
+          padding: [4, 8],
+          formatter: (params) => {
+            if (params.axisDimension === 'x') {
+            //返回utc转本地时间格式 yyyy-MM-dd HH:mm:ss
+            const date = new Date(params.value)
+            return `${date.getFullYear().toString().padStart(4, '0')}-${date.getMonth().toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')}`
+          } else { 
+            return params.value.toFixed(6)
+          }
+        },
+        },
       },
       formatter: (params) => {
         return tooltipFormatter(params)
@@ -170,7 +183,6 @@ const initChart = () => {
 
 // 加载图表数据
 const loadChartData = async() => {
-  console.log("props.psid, props.eqid", props.psid, props.eqid)
   if (props.psid === "" || props.eqid === "") {
     return
   }
